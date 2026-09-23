@@ -1,8 +1,10 @@
 import SwiftUI
 import SkyCore
 
+enum BrowserSection: Hashable { case group(TargetGroup), darkSites }
+
 final class TargetsViewState: ObservableObject {
-    @Published var group: TargetGroup = .nebulae
+    @Published var section: BrowserSection = .group(.nebulae)
     @Published var fitsOnly = false
     @Published var includeMoonWashed = false
     @Published var search = ""
@@ -19,8 +21,14 @@ struct TargetsView: View {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count
     }
 
+    private var selectedGroup: TargetGroup {
+        if case .group(let g) = ui.section { return g }
+        return .nebulae
+    }
+
     private var visible: [RankedTarget] {
-        targets.filter { $0.group == ui.group }
+        guard case .group(let g) = ui.section else { return [] }
+        return targets.filter { $0.group == g }
             .filter { !ui.fitsOnly || $0.fit == .fits }
             .filter { ui.includeMoonWashed || !$0.moonWashed }
             .filter { ui.search.isEmpty || $0.name.localizedCaseInsensitiveContains(ui.search) || $0.subtitle.localizedCaseInsensitiveContains(ui.search) }
@@ -28,8 +36,13 @@ struct TargetsView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(TargetGroup.allCases, id: \.self, selection: $ui.group) { g in
-                Label { HStack { Text(g.displayName); Spacer(); Text("\(count(g))").foregroundStyle(Theme.dim) } } icon: { Image(systemName: Theme.glyph(for: g)) }
+            List(TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites], id: \.self, selection: $ui.section) { section in
+                switch section {
+                case .group(let g):
+                    Label { HStack { Text(g.displayName); Spacer(); Text("\(count(g))").foregroundStyle(Theme.dim) } } icon: { Image(systemName: Theme.glyph(for: g)) }
+                case .darkSites:
+                    Label { HStack { Text("Dark sites"); Spacer(); Text("\(store.darkSites.count)").foregroundStyle(Theme.dim) } } icon: { Image(systemName: "moon.stars") }
+                }
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -41,10 +54,12 @@ struct TargetsView: View {
         } detail: {
             if let selected = ui.selected {
                 DetailView(target: selected) { ui.selected = nil }
-            } else if ui.group == .events {
-                eventsList
             } else {
-                grid
+                switch ui.section {
+                case .group(.events): eventsList
+                case .darkSites: darkSitesList
+                case .group: grid
+                }
             }
         }
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
@@ -52,10 +67,27 @@ struct TargetsView: View {
         .background(Theme.bg)
     }
 
+    private var darkSitesList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Dark sites").font(.title2.weight(.semibold))
+                Text("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)) of \(store.site?.name ?? "home") · sorted by tonight's score").font(.caption).foregroundStyle(Theme.dim)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
+            if store.darkSites.isEmpty {
+                Text("No dark sites within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)). Widen the radius in Settings.")
+                    .foregroundStyle(Theme.dim).padding(20)
+            }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                ForEach(store.sitePlans) { DarkSiteCard(plan: $0) }
+                ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan(id: $0.id, site: $0, score: 0, primary: nil, qualifies: false, forecastMissing: true)) }
+            }.padding(20)
+        }
+    }
+
     private var grid: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text(ui.group.displayName).font(.title2.weight(.semibold))
+                Text(selectedGroup.displayName).font(.title2.weight(.semibold))
                 if let w = store.plan?.primary, let s = store.site {
                     Text("Sorted by fit and altitude during tonight's clear window · \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s))").font(.caption).foregroundStyle(Theme.dim)
                 } else if let n = store.plan?.night, let ds = n.darkStart, let de = n.darkEnd, let s = store.site {
@@ -111,5 +143,35 @@ struct TargetsView: View {
             }.padding(.vertical, 4)
         }
         .overlay { if store.events.isEmpty { Text("No events tonight").foregroundStyle(Theme.dim) } }
+    }
+}
+
+struct DarkSiteCard: View {
+    @EnvironmentObject var store: Store
+    let plan: SitePlan
+    var body: some View {
+        let s = plan.site
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(s.name).font(.callout.weight(.semibold)).lineLimit(2)
+                Spacer()
+                if !plan.forecastMissing { Text("\(plan.score)").font(.title3.weight(.semibold)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
+            }
+            Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" + (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? ""))
+                .font(.caption).foregroundStyle(Theme.dim)
+            if let w = plan.primary, let home = store.site {
+                Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(.caption)
+            } else if plan.forecastMissing {
+                Text("No forecast fetched (beyond the nearest eight, or offline)").font(.caption).foregroundStyle(Theme.dim)
+            } else {
+                Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
+            }
+            HStack {
+                if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
+                Spacer()
+                Button("Use as beat") { store.adoptAsBeat(s) }.font(.caption)
+            }
+        }
+        .padding(12).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
     }
 }

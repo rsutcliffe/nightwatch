@@ -93,6 +93,13 @@ struct SettingsView: View {
                            binding: bind(\.alerts.quietEndHour), range: 0...23, step: 1)
                 Text("No banners between those hours; the popover still shows what was missed.").font(.caption).foregroundStyle(Theme.dim)
             }
+            Section("Dark sites") {
+                Toggle("Look for darker skies nearby", isOn: bind(\.darkSites.enabled))
+                Picker("Distance unit", selection: bind(\.darkSites.unit)) { Text("Kilometres").tag(DistanceUnit.km); Text("Miles").tag(DistanceUnit.mi) }
+                stepperRow("Search radius", value: Geo.format(km: store.config.darkSites.radiusKm, unit: store.config.darkSites.unit),
+                           binding: bind(\.darkSites.radiusKm), range: 5...300, step: 5)
+                Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest eight.").font(.caption).foregroundStyle(Theme.dim)
+            }
             Section("App") {
                 Picker("Wording", selection: bind(\.flavour)) { Text("Nightwatch").tag(Flavour.watch); Text("Plain").tag(Flavour.plain) }
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.

@@ -10,6 +10,7 @@ struct TonightView: View {
             header
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
+                awayLine(site)
                 cloudStrip(plan)
                 tiles(plan, site)
                 best(plan)
@@ -66,6 +67,19 @@ struct TonightView: View {
                         Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.caption).foregroundStyle(Theme.dim)
                     }
                 }
+            }
+        }
+    }
+
+    private func awayLine(_ site: Site) -> some View {
+        Group {
+            if let a = store.bestAway, let w = a.primary {
+                Button {
+                    open("targets")
+                } label: {
+                    Text("Darker sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
+                        .font(.caption).foregroundStyle(Theme.accent).multilineTextAlignment(.leading)
+                }.buttonStyle(.plain)
             }
         }
     }
