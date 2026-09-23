@@ -483,7 +483,8 @@ Usage:
 
 The VIIRS annual composite (NOAA/NASA Earth Observation Group, CC BY 4.0) is downloaded once with a free EOG
 account from https://eogdata.mines.edu/products/vnl/ . Output: 20-byte header (LPG1, south, west, cell, rows, cols),
-then rows x cols float32 little-endian, row 0 southernmost, NaN = no data.
+then rows x cols float32 little-endian, row 0 southernmost, NaN = no data. The "average_masked" product stores masked
+and unlit cells as 0 (no NaN), which reads as very dark; the 2025 file is 33601 x 86401 float32, uncompressed, 15 arc-second cells.
 """
 import argparse, struct, sys
 import numpy as np, tifffile
@@ -493,7 +494,10 @@ def geo(tif):
     scale = p.tags['ModelPixelScaleTag'].value
     tie = p.tags['ModelTiepointTag'].value
     sx, sy = float(scale[0]), float(scale[1])
-    lon0, lat0 = float(tie[3]), float(tie[4])          # top-left corner of pixel (0,0)
+    # The tie point maps raster point (I, J) to (X, Y). EOG's VIIRS files use (0.5, 0.5) -> (-180, 75), the centre of
+    # pixel (0, 0); other writers use (0, 0) for the corner. Shift to the top-left corner of pixel (0, 0) either way.
+    lon0 = float(tie[3]) - float(tie[0]) * sx
+    lat0 = float(tie[4]) + float(tie[1]) * sy
     return lon0, lat0, sx, sy
 
 def main():
@@ -510,7 +514,9 @@ def main():
         r0 = max(0, int((lat0 - north) / sy)); r1 = min(h, int(np.ceil((lat0 - south) / sy)))
         c0 = max(0, int((west - lon0) / sx)); c1 = min(w, int(np.ceil((east - lon0) / sx)))
         if r0 >= r1 or c0 >= c1: sys.exit('bbox does not intersect the raster')
-        arr = page.asarray()[r0:r1, c0:c1].astype(np.float32)      # north-up window
+    # The global file is 11.6 GB uncompressed; read only the window through a memory map (verified memmappable 2026-09-23).
+    m = tifffile.memmap(a.tif)
+    arr = np.array(m[r0:r1, c0:c1], dtype=np.float32)               # north-up window
     f = max(1, int(round(a.cell / sx)))
     rows, cols = arr.shape[0] // f, arr.shape[1] // f
     arr = arr[:rows * f, :cols * f].reshape(rows, f, cols, f)
