@@ -53,7 +53,10 @@ struct ThumbnailView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color(red: 0.055, green: 0.063, blue: 0.094))
             if let image = loader.image {
-                Image(nsImage: image).resizable().aspectRatio(contentMode: .fill).clipShape(RoundedRectangle(cornerRadius: 8))
+                // The image lives in an overlay so its natural size never widens the layout; the card decides the size.
+                Color.clear
+                    .overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             } else if target.group == .constellations, let c = store.constellation(target.id) {
                 ConstellationFigure(constellation: c).padding(6)
             } else {

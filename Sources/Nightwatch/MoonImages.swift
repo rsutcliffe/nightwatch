@@ -38,11 +38,12 @@ struct MoonTile: View {
                 } else {
                     Image(systemName: "moon").font(.caption).foregroundStyle(Theme.dim)
                 }
-            }.frame(width: 34, height: 34)
+            }.frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label).font(.caption2).foregroundStyle(Theme.dim)
-                Text(value).font(.callout.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(value).font(.callout.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.7).fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
         .padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10))
         .task(id: MoonImage.hourKey(for: at)) { loader.image = await MoonImages.image(at: at) }
