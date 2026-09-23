@@ -2,10 +2,10 @@
 """Build Sources/SkyCore/Resources/darksky/certified.json from Wikidata plus data/certified-curated.json."""
 import json, re, sys, urllib.parse, urllib.request
 UA = {'User-Agent': 'Nightwatch-data/0.2 (https://github.com/rsutcliffe/nightwatch)'}
-SPARQL = '''SELECT ?item ?label ?coord ?type ?country WHERE {
+SPARQL = '''SELECT ?item ?label ?coord ?type ?country ?iso WHERE {
   VALUES ?type { wd:Q3457162 wd:Q52216504 wd:Q72114283 }
   ?item wdt:P31 ?type ; wdt:P625 ?coord .
-  OPTIONAL { ?item wdt:P17 ?country }
+  OPTIONAL { ?item wdt:P17 ?country . OPTIONAL { ?country wdt:P297 ?iso } }
   OPTIONAL { ?item rdfs:label ?label FILTER(LANG(?label)="en") } }'''
 KIND = {'Q52216504': 'park', 'Q72114283': 'reserve', 'Q3457162': 'park'}
 
@@ -26,7 +26,7 @@ def wikidata():
         lon, lat = float(m.group(1)), float(m.group(2))
         out.setdefault(qid, {
             'id': 'wd-' + qid.lower(), 'name': r.get('label', {}).get('value', qid), 'kind': KIND[r['type']['value'].rsplit('/', 1)[1]],
-            'country': r.get('country', {}).get('value', '').rsplit('/', 1)[-1] or None,
+            'country': r.get('iso', {}).get('value') or None,
             'latitude': round(lat, 4), 'longitude': round(lon, 4), 'designated': None, 'bortle': None,
             'source': 'https://www.wikidata.org/wiki/' + qid, 'wikidata': qid})
     return list(out.values())

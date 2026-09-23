@@ -6,6 +6,7 @@ import Foundation
     let all = try DarkSites.bundledCertified()
     #expect(all.count >= 40)
     #expect(all.allSatisfy { $0.source.hasPrefix("http") })
+    #expect(all.allSatisfy { $0.country == nil || ($0.country!.count == 2 && $0.country! == $0.country!.uppercased()) })
     #expect(Set(all.map(\.id)).count == all.count)
     #expect(all.contains { $0.id == "gb-northumberland" })
 }
