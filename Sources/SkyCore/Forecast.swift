@@ -118,7 +118,7 @@ public struct SeeingSample: Equatable, Sendable {
 
 public enum SevenTimer {
     public static func url(latitude: Double, longitude: Double) -> URL {
-        var c = URLComponents(string: "http://www.7timer.info/bin/api.pl")!
+        var c = URLComponents(string: "https://www.7timer.info/bin/api.pl")!
         c.queryItems = [
             .init(name: "lon", value: String(format: "%.2f", longitude)),
             .init(name: "lat", value: String(format: "%.2f", latitude)),

@@ -33,6 +33,10 @@ func fixture(_ name: String) throws -> Data {
     #expect(u.contains("forecast_days=3"))
 }
 
+@Test func sevenTimerUrlIsHttps() {
+    #expect(SevenTimer.url(latitude: 53.38, longitude: -1.47).absoluteString.hasPrefix("https://www.7timer.info/bin/api.pl?"))
+}
+
 @Test func sevenTimerParsesInitAndTimepoints() throws {
     let data = try fixture("seventimer.json")
     let samples = try SevenTimer.parse(data)
