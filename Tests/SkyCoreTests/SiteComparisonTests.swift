@@ -30,7 +30,7 @@ private func site(_ id: String, km: Double) -> DarkSite {
 @Test func sortedByScoreThenDistanceMissingLast() {
     let s = [SitePlan(id: "far", site: site("far", km: 90), score: 80, primary: nil, qualifies: true, forecastMissing: false),
              SitePlan(id: "near", site: site("near", km: 20), score: 80, primary: nil, qualifies: true, forecastMissing: false),
-             SitePlan(id: "miss", site: site("miss", km: 5), score: 0, primary: nil, qualifies: false, forecastMissing: true),
+             SitePlan(id: "miss", site: site("miss", km: 5), score: 95, primary: nil, qualifies: false, forecastMissing: true),
              SitePlan(id: "low", site: site("low", km: 10), score: 30, primary: nil, qualifies: false, forecastMissing: false)]
     #expect(SiteComparison.sorted(s).map(\.id) == ["near", "far", "low", "miss"])
 }
