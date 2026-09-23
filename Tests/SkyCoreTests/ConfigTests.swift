@@ -39,3 +39,36 @@ import Foundation
     c.sites = []; c.activeSiteName = nil
     #expect(c.activeSite(auto: nil) == nil)
 }
+
+@Test func saveThroughSymlinkKeepsTheLink() throws {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let realURL = dir.appendingPathComponent("real").appendingPathComponent("config.json")
+    try ConfigStore.save(Config.default, to: realURL)
+
+    let linkURL = dir.appendingPathComponent("link.json")
+    try FileManager.default.createSymbolicLink(at: linkURL, withDestinationURL: realURL)
+
+    var modified = Config.default
+    modified.flavour = .plain
+    try ConfigStore.save(modified, to: linkURL)
+
+    #expect(try FileManager.default.attributesOfItem(atPath: linkURL.path)[.type] as? FileAttributeType == .typeSymbolicLink)
+    #expect(try ConfigStore.load(from: realURL).flavour == .plain)
+}
+
+@Test func decodesPartialFileWithDefaults() throws {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("config.json")
+    let json = #"{"flavour":"plain","goRule":{"minHours":2,"maxCloudPct":40,"minAltitudeDeg":30}}"#
+    try json.write(to: url, atomically: true, encoding: .utf8)
+
+    let c = try ConfigStore.load(from: url)
+    #expect(c.flavour == .plain)
+    #expect(c.goRule.minHours == 2)
+    var expected = Config.default
+    expected.flavour = .plain
+    expected.goRule = GoRule(minHours: 2, maxCloudPct: 40, minAltitudeDeg: 30)
+    #expect(c == expected)
+}

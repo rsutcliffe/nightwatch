@@ -37,6 +37,25 @@ public struct Config: Codable, Equatable, Sendable {
         if let n = activeSiteName, let s = sites.first(where: { $0.name == n }) { return s }
         return auto ?? sites.first
     }
+
+    enum CodingKeys: String, CodingKey {
+        case sites, activeSiteName, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled
+    }
+
+    /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
+    /// older version (fewer fields) still decodes instead of throwing.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        sites = try c.decodeIfPresent([Site].self, forKey: .sites) ?? []
+        activeSiteName = try c.decodeIfPresent(String.self, forKey: .activeSiteName)
+        fov = try c.decodeIfPresent(FieldOfView.self, forKey: .fov) ?? FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
+        fovPresetID = try c.decodeIfPresent(String.self, forKey: .fovPresetID) ?? "dwarf-mini"
+        goRule = try c.decodeIfPresent(GoRule.self, forKey: .goRule) ?? GoRule()
+        alerts = try c.decodeIfPresent(AlertSettings.self, forKey: .alerts) ?? AlertSettings()
+        flavour = try c.decodeIfPresent(Flavour.self, forKey: .flavour) ?? .watch
+        loginItem = try c.decodeIfPresent(Bool.self, forKey: .loginItem) ?? false
+        notifyEnabled = try c.decodeIfPresent(Bool.self, forKey: .notifyEnabled) ?? true
+    }
 }
 
 public enum ConfigStore {
@@ -51,9 +70,12 @@ public enum ConfigStore {
         return try d.decode(Config.self, from: Data(contentsOf: url))
     }
 
+    /// Resolves `url` to its real path first so an atomic write to a synced-settings symlink
+    /// replaces the symlink's target, not the symlink itself.
     public static func save(_ config: Config, to url: URL) throws {
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let target = url.resolvingSymlinksInPath()
+        try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
         let e = JSONEncoder(); e.outputFormatting = [.prettyPrinted, .sortedKeys]; e.dateEncodingStrategy = .iso8601
-        try e.encode(config).write(to: url, options: .atomic)
+        try e.encode(config).write(to: target, options: .atomic)
     }
 }
