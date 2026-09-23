@@ -64,6 +64,9 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     let plan = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: sheffieldSite, fov: dwarfMini, rule: GoRule())
     #expect(!plan.qualifies)
     #expect(plan.primary == nil)
-    #expect(plan.targets.isEmpty)
+    // No clear window: nothing is "best", but the browser still ranks what is up during darkness
+    // (the catalogue is empty here, so only the Moon and planets can appear; the 91 % Moon is up that evening).
+    #expect(plan.best.isEmpty)
+    #expect(plan.targets.contains { $0.id == "moon" })
     #expect(plan.score < 30)
 }

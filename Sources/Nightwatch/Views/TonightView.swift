@@ -34,8 +34,15 @@ struct TonightView: View {
                 }
             }
             Spacer()
-            Button { openWindow(id: "settings") } label: { Image(systemName: "gearshape") }.buttonStyle(.plain).foregroundStyle(Theme.dim)
+            Button { open("settings") } label: { Image(systemName: "gearshape") }.buttonStyle(.plain).foregroundStyle(Theme.dim)
         }
+    }
+
+    /// A menu-bar agent app is never the active app, so a window opened from the popover would land behind
+    /// whatever the user is working in. Activate first so the window comes to the front.
+    private func open(_ id: String) {
+        openWindow(id: id)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func verdict(_ plan: NightPlan, _ site: Site) -> some View {
@@ -107,8 +114,9 @@ struct TonightView: View {
         let frost = plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false
         let transp = plan.darkHours.compactMap(\.transparency)
         let transpText = transp.isEmpty ? "n/a" : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
+        let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-            tile("Dark", dark); tile("Moon", moon); tile("Seeing", seeingText)
+            tile("Dark", dark); MoonTile(label: "Moon", value: moon, at: moonAt); tile("Seeing", seeingText)
             tile("Wind", windText); tile(frost ? "Frost likely" : "Dew risk", dewText); tile("Transparency", transpText)
         }
     }
@@ -116,9 +124,13 @@ struct TonightView: View {
     private func best(_ plan: NightPlan) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("BEST TONIGHT").font(.caption).foregroundStyle(Theme.dim)
+                Text(plan.best.isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.caption).foregroundStyle(Theme.dim)
                 Spacer()
-                Button("All targets →") { openWindow(id: "targets") }.buttonStyle(.plain).font(.caption).foregroundStyle(Theme.accent)
+                Button("All targets →") { open("targets") }.buttonStyle(.plain).font(.caption).foregroundStyle(Theme.accent)
+            }
+            if plan.best.isEmpty {
+                Text("\(plan.targets.count) objects above the horizon during darkness. No clear window, so nothing is recommended.")
+                    .font(.caption).foregroundStyle(Theme.dim)
             }
             HStack(spacing: 8) {
                 ForEach(plan.best) { t in

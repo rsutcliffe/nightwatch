@@ -58,6 +58,8 @@ struct TargetsView: View {
                 Text(ui.group.displayName).font(.title2.weight(.semibold))
                 if let w = store.plan?.primary, let s = store.site {
                     Text("Sorted by fit and altitude during tonight's clear window · \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s))").font(.caption).foregroundStyle(Theme.dim)
+                } else if let n = store.plan?.night, let ds = n.darkStart, let de = n.darkEnd, let s = store.site {
+                    Text("\(store.copy.noWindow) Showing what is up during darkness · \(Copy.hhmm(ds, site: s))–\(Copy.hhmm(de, site: s))").font(.caption).foregroundStyle(Theme.dim)
                 } else {
                     Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
                 }

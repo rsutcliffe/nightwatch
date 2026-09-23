@@ -237,9 +237,13 @@ extension Planner {
         let darkness: (Date, Date)? = (night.darkStart != nil && night.darkEnd != nil) ? (night.darkStart!, night.darkEnd!) : nil
         let score = Planner.score(ScoreInputs(darkHours: dark, windows: windows, darkness: darkness,
                                               moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct))
-        let targets = primary.map { rank(catalog: catalog, constellations: constellations, window: $0, site: site, fov: fov, rule: rule) } ?? []
+        // Rank against the clear window when there is one, else against the whole of darkness so the browser
+        // still shows what is up on a cloudy night. "Best tonight" only exists when a clear window exists.
+        let rankingWindow = primary ?? darkness.map { ClearWindow(start: $0.0, end: $0.1) }
+        let targets = rankingWindow.map { rank(catalog: catalog, constellations: constellations, window: $0, site: site, fov: fov, rule: rule) } ?? []
         return NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
                          moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
-                         darkHours: dark, targets: targets, best: best(from: targets), seeingAvailable: dark.contains { $0.seeing != nil })
+                         darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets),
+                         seeingAvailable: dark.contains { $0.seeing != nil })
     }
 }
