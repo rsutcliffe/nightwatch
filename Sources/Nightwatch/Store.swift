@@ -15,24 +15,35 @@ final class Store: ObservableObject {
     @Published var refreshing = false
     /// config.json exists but would not decode: saves are refused so the user's file is never overwritten.
     @Published var configLoadFailed = false
+    @Published var darkSites: [DarkSite] = []
+    @Published var sitePlans: [SitePlan] = []
+    @Published var bestAway: SitePlan?
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
 
     nonisolated static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
+    static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
     private let fetcher: Fetcher = URLSessionFetcher()
     private let catalog: Catalog
     private let constellations: [Constellation]
     private let showers: [MeteorShower]
+    private let certified: [CertifiedSite]
+    private let grids: [LPGrid]
     private var comets: [CometElements] = []
     private var tle: TLE?
     private var configModDate: Date?
     private var auxAttempts: [String: Date] = [:]   // last download ATTEMPT per aux feed, keyed "comets"/"iss"
 
+    var distanceUnit: DistanceUnit { config.darkSites.unit }
+
     init() {
         catalog = (try? Catalog.bundled()) ?? Catalog(objects: [])
         constellations = (try? Constellations.bundled()) ?? []
         showers = (try? MeteorShowers.bundled()) ?? []
+        certified = (try? DarkSites.bundledCertified()) ?? []
+        grids = LPGrids.bundled()
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
         forecast = Store.read("forecast.json")
         plan = Store.read("plan.json")             // content in the popover before the first fetch
         alertState = Store.read("alerts-state.json")
@@ -168,6 +179,39 @@ final class Store: ObservableObject {
             Store.write(r.state, "alerts-state.json")
             if let n = r.notification { Notifier.post(n) }
         }
+        await recomputeDarkSites(now: now, site: site, night: night)
+    }
+
+    /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
+    private func recomputeDarkSites(now: Date, site: Site, night: Night) async {
+        guard config.darkSites.enabled else { darkSites = []; sitePlans = []; bestAway = nil; return }
+        let home = Coordinate(latitude: site.latitude, longitude: site.longitude)
+        let sites = DarkSites.sites(near: home, radiusKm: config.darkSites.radiusKm, certified: certified, grids: grids, maxSpots: 5)
+        darkSites = sites
+        var plans: [SitePlan] = []
+        for s in sites.prefix(8) {
+            let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
+            var fc: Forecast? = Store.readFile(cacheURL)
+            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true {
+                let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
+                if let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now) { fc = fresh; Store.writeFile(fresh, cacheURL) }
+            }
+            guard let fc else { plans.append(SitePlan(id: s.id, site: s, score: 0, primary: nil, qualifies: false, forecastMissing: true)); continue }
+            let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: DarkSites.toSite(s, timeZoneID: site.timeZoneID), fov: config.fov, rule: config.goRule)
+            plans.append(SitePlan(id: s.id, site: s, score: p.score, primary: p.primary, qualifies: p.qualifies, forecastMissing: false))
+        }
+        sitePlans = SiteComparison.sorted(plans)
+        bestAway = plan.map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil
+    }
+
+    /// Adds `s` as a saved site (disambiguated by name if needed) and makes it the active one.
+    func adoptAsBeat(_ s: DarkSite) {
+        let tz = site?.timeZoneID ?? TimeZone.current.identifier
+        var new = DarkSites.toSite(s, timeZoneID: tz)
+        if config.sites.contains(where: { $0.name == new.name }) { new.name += " (dark site)" }
+        config.sites.append(new)
+        config.activeSiteName = new.name
+        saveConfig()
     }
 
     private func buildEvents(night: Night, site: Site, now: Date) -> [SkyEvent] {
@@ -193,15 +237,17 @@ final class Store: ObservableObject {
 
     // MARK: cache helpers
     static func url(_ name: String) -> URL { cacheDir.appendingPathComponent(name) }
-    static func read<T: Decodable>(_ name: String) -> T? {
-        guard let data = try? Data(contentsOf: url(name)) else { return nil }
+    static func read<T: Decodable>(_ name: String) -> T? { readFile(url(name)) }
+    static func write<T: Encodable>(_ value: T?, _ name: String) { writeFile(value, url(name)) }
+    static func readFile<T: Decodable>(_ url: URL) -> T? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
         let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
         return try? d.decode(T.self, from: data)
     }
-    static func write<T: Encodable>(_ value: T?, _ name: String) {
+    static func writeFile<T: Encodable>(_ value: T?, _ url: URL) {
         guard let value else { return }
         let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
-        try? e.encode(value).write(to: url(name), options: .atomic)
+        try? e.encode(value).write(to: url, options: .atomic)
     }
     /// gzip via Foundation is unavailable; shell out to the system gunzip for the MPC file.
     /// `nonisolated` so this can run off the main actor (see `refreshAuxiliary`): the blocking
