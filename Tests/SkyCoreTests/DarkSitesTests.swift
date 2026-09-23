@@ -1,0 +1,42 @@
+import Testing
+import Foundation
+@testable import SkyCore
+
+@Test func certifiedListLoadsAndHasSources() throws {
+    let all = try DarkSites.bundledCertified()
+    #expect(all.count >= 40)
+    #expect(all.allSatisfy { $0.source.hasPrefix("http") })
+    #expect(Set(all.map(\.id)).count == all.count)
+    #expect(all.contains { $0.id == "gb-northumberland" })
+}
+
+@Test func sitesNearSheffieldWithinRadius() throws {
+    let all = try DarkSites.bundledCertified()
+    let home = Coordinate(latitude: 53.381, longitude: -1.470)
+    let near = DarkSites.sites(near: home, radiusKm: 120, certified: all, grids: [], maxSpots: 0)
+    #expect(near.allSatisfy { $0.distanceKm <= 120 })
+    #expect(near.contains { $0.id == "gb-yorkshire-dales" })
+    #expect(!near.contains { $0.id == "gb-northumberland" })     // 220 km away
+    #expect(near == near.sorted { $0.distanceKm < $1.distanceKm })
+}
+
+@Test func computedSpotsAreMergedAndNamed() {
+    let values: [Float] = [5, 3, 0.1, 20, .nan, 0.5, 0.2, 8, 40]
+    let g = LPGrid(south: 53.0, west: -2.0, cellDeg: 0.1, rows: 3, cols: 3, values: values)
+    let home = Coordinate(latitude: 53.15, longitude: -1.85)
+    let sites = DarkSites.sites(near: home, radiusKm: 30, certified: [], grids: [g], maxSpots: 2)
+    #expect(sites.count == 2)
+    #expect(sites.allSatisfy { $0.isComputed })
+    #expect(sites.allSatisfy { $0.kind == "spot" })
+    #expect(sites.allSatisfy { $0.band != nil })
+    #expect(sites.allSatisfy { $0.bortle == nil })
+    #expect(sites[0].name.hasPrefix("Dark spot "))
+    #expect(sites[0].id.hasPrefix("spot-"))
+}
+
+@Test func toSiteCarriesCoordinatesAndName() throws {
+    let s = DarkSite(id: "x", name: "Elan Valley", kind: "park", coordinate: Coordinate(latitude: 52.27, longitude: -3.6),
+                     distanceKm: 100, bearingDeg: 250, band: nil, bortle: 2, source: nil, isComputed: false)
+    let site = DarkSites.toSite(s, timeZoneID: "Europe/London")
+    #expect(site.name == "Elan Valley" && site.latitude == 52.27 && site.bortle == 2)
+}
