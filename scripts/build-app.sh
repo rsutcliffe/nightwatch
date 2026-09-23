@@ -9,6 +9,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Sources/Nightwatch/Info.plist "$APP/Contents/Info.plist"
 cp .build/release/Nightwatch "$APP/Contents/MacOS/Nightwatch"
 cp -R .build/release/Nightwatch_SkyCore.bundle "$APP/Contents/Resources/"
+cp NOTICE "$APP/Contents/Resources/NOTICE"
 codesign --force --sign - "$APP"
 if [[ "${1:-}" == "--no-install" ]]; then echo "Built $APP"; exit 0; fi
 pkill -x Nightwatch || true
