@@ -36,6 +36,8 @@ final class Store: ObservableObject {
         if catalog.objects.isEmpty { lastError = "Catalogue missing: run scripts/fetch-data.sh and rebuild." }
     }
 
+    func constellation(_ id: String) -> Constellation? { constellations.first { $0.id == id } }
+
     var copy: Copy { Copy(flavour: config.flavour) }
     var site: Site? { config.activeSite(auto: autoSite) }
     var isStale: Bool { (forecast?.fetchedAt).map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true }
