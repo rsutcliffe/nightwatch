@@ -159,7 +159,7 @@ final class Store: ObservableObject {
     func recompute(now: Date) async {
         guard let site, let fc = forecast else { return }
         guard forecastMatches(site) else {
-            plan = nil; tomorrow = nil; events = []
+            plan = nil; tomorrow = nil; events = []; darkSites = []; sitePlans = []; bestAway = nil
             lastError = "Forecast is for a different site; refreshing"
             return
         }
