@@ -120,7 +120,7 @@ The popover always renders from `Store.plan`. It never waits on network.
 - Clear window: maximal run of consecutive forecast hours within darkness where total cloud ≤ `maxCloudPct`. Windows shorter than `minHours` are discarded. Multiple windows allowed; the longest is primary.
 - Score 0–100: 60 % from clear fraction of darkness weighted by window contiguity, 15 % Moon (illumination × above-horizon fraction inverted), 15 % seeing and transparency when present (else redistributed to cloud), 10 % wind and dew spread penalties.
 - Target eligibility: altitude ≥ `minAltitudeDeg` (default 30°) for at least half the primary window; Moon separation ≥ 30° or flagged "Moon-washed"; magnitude ≤ 12 for deep sky.
-- Fits frame: major axis ≤ min(FOV width, FOV height) → "fits"; ≤ 3 × FOV → "mosaic"; < 5′ → "small".
+- Fits frame: < 5′ → "small"; major axis ≤ max(FOV width, FOV height) → "fits" (an elongated object is framed along the longer side); otherwise "mosaic". Amended 2026-09-23 during implementation: the original min() rule contradicted the NGC 7000 expectation.
 - Ranking: eligible targets sorted by (fits frame, peak altitude in window, brightness), one list per group. "Best tonight" is the top three across groups with at most one per group.
 - Suggested stack length: min(window length, 3 h), shown as guidance only.
 
