@@ -1,8 +1,8 @@
 import CAstronomyEngine
 import Foundation
 
-/// When `hasDarkness` is false because the Sun never set (polar day), `sunset` and
-/// `sunrise` are not real events — they bracket the local day (noon to noon + 24h).
+/// When the Sun neither sets nor rises within 24 h of local noon, `sunset` and `sunrise` are not real
+/// events: they bracket the local day (noon to noon + 24 h). Polar day has no darkness; polar night does.
 public struct Night: Codable, Equatable, Sendable {
     public let key: String
     public let localDate: Date
@@ -64,9 +64,18 @@ public enum Ephemeris {
         let key = f.string(from: noon)
         let sunset = Astronomy_SearchRiseSetEx(BODY_SUN, obs, DIRECTION_SET, astro_time_t(noon), 1.0, 0)
         guard sunset.status == ASTRO_SUCCESS else {
-            // Polar day: the sun does not set within 24h of local noon, so there is no night.
-            return Night(key: key, localDate: noon, sunset: noon, sunrise: noon.addingTimeInterval(86_400),
-                         darkStart: nil, darkEnd: nil)
+            let end = noon.addingTimeInterval(86_400)
+            guard sunAltitude(at: noon, site: site) < 0 else {
+                // Polar day: the sun does not set within 24h of local noon, so there is no night.
+                return Night(key: key, localDate: noon, sunset: noon, sunrise: end, darkStart: nil, darkEnd: nil)
+            }
+            // Polar night: the Sun stays down all day. Darkness is the stretch below −18°; near the pole the Sun
+            // never climbs to −18° and the whole span is dark. (At Tromsø's latitude noon is still twilight.)
+            let ds = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_SET, astro_time_t(noon), 1.0, -18)
+            let de = ds.status == ASTRO_SUCCESS ? Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_RISE, ds.time, 1.0, -18) : ds
+            let found = ds.status == ASTRO_SUCCESS && de.status == ASTRO_SUCCESS && de.time.date <= end
+            return Night(key: key, localDate: noon, sunset: noon, sunrise: end,
+                         darkStart: found ? ds.time.date : noon, darkEnd: found ? de.time.date : end)
         }
         let sunrise = Astronomy_SearchRiseSetEx(BODY_SUN, obs, DIRECTION_RISE, sunset.time, 1.0, 0)
         guard sunrise.status == ASTRO_SUCCESS else { throw EphemerisError.noSunEvent }

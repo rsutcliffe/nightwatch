@@ -43,6 +43,16 @@ func close(_ a: Date, _ b: Date, minutes: Double) -> Bool { abs(a.timeIntervalSi
     #expect(!night.hasDarkness)
 }
 
+@Test func polarNightHasDarkness() throws {
+    let tromso = Site(name: "Tromsø", latitude: 69.65, longitude: 18.96, elevationM: 10, timeZoneID: "Europe/Oslo", bortle: 4)
+    let night = try Ephemeris.night(localDate: utc(2026, 12, 21, 10, 0), site: tromso)
+    #expect(night.hasDarkness)
+    let ds = try #require(night.darkStart), de = try #require(night.darkEnd)
+    #expect(ds >= night.sunset && de <= night.sunrise && de > ds)
+    #expect(Ephemeris.sunAltitude(at: ds.addingTimeInterval(3600), site: tromso) < -18)
+    #expect(de.timeIntervalSince(ds) > 12 * 3600)   // most of the polar night is astronomically dark
+}
+
 @Test func polarisIsHighFromSheffield() {
     let p = Ephemeris.altAz(raHours: 2.53, decDeg: 89.26, at: utc(2026, 9, 23, 22, 0), site: sheffield)
     #expect(abs(p.alt - 53.4) < 1.5)
