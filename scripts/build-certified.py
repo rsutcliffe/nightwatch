@@ -25,11 +25,23 @@ def wikidata():
         if not m: continue
         lon, lat = float(m.group(1)), float(m.group(2))
         out.setdefault(qid, {
-            'id': 'wd-' + qid.lower(), 'name': r.get('label', {}).get('value', qid), 'kind': KIND[r['type']['value'].rsplit('/', 1)[1]],
+            'id': 'wd-' + qid.lower(), 'name': r.get('label', {}).get('value'), 'kind': KIND[r['type']['value'].rsplit('/', 1)[1]],
             'country': r.get('iso', {}).get('value') or None,
             'latitude': round(lat, 4), 'longitude': round(lon, 4), 'designated': None, 'bortle': None,
             'source': 'https://www.wikidata.org/wiki/' + qid, 'wikidata': qid})
-    return list(out.values())
+    # No English label: take a label in any language (lowest language code, so reruns agree); none at all: drop the item
+    # rather than show its QID as a name.
+    unlabelled = sorted(q for q, e in out.items() if not e['name'])
+    if unlabelled:
+        api = 'https://www.wikidata.org/w/api.php?' + urllib.parse.urlencode(
+            {'action': 'wbgetentities', 'ids': '|'.join(unlabelled), 'props': 'labels', 'format': 'json'})
+        entities = json.load(urllib.request.urlopen(urllib.request.Request(api, headers=UA), timeout=60))['entities']
+        for qid in unlabelled:
+            labels = entities.get(qid, {}).get('labels', {})
+            if labels: out[qid]['name'] = labels[min(labels)]['value']
+    dropped = [q for q, e in out.items() if not e['name']]
+    if dropped: print(f'dropped {len(dropped)} unlabelled Wikidata items: {", ".join(sorted(dropped))}')
+    return [e for e in out.values() if e['name']]
 
 def main():
     curated = json.load(open('data/certified-curated.json'))
