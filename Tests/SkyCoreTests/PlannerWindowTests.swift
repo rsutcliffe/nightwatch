@@ -76,3 +76,16 @@ private let rule = GoRule()
 @Test func noDarknessScoresZero() {
     #expect(Planner.score(ScoreInputs(darkHours: [], windows: [], darkness: nil, moonIllumination: 0, moonAboveFraction: 0)) == 0)
 }
+
+@Test func maxCloudPctOverrideAffectsScore() {
+    let dark = (t0, t0.addingTimeInterval(8 * 3600))
+    let hazy = (0..<8).map { hour(t0, $0, cloud: 35) }
+    let strictWindows = Planner.windows(hours: hazy, darkStart: dark.0, darkEnd: dark.1, rule: GoRule(maxCloudPct: 25))
+    let looseWindows = Planner.windows(hours: hazy, darkStart: dark.0, darkEnd: dark.1, rule: GoRule(maxCloudPct: 40))
+    #expect(strictWindows.isEmpty)   // 35% cloud fails the default 25% rule -> no window
+    let strict = Planner.score(ScoreInputs(darkHours: hazy, windows: strictWindows, darkness: dark, moonIllumination: 0, moonAboveFraction: 0, maxCloudPct: 25))
+    let loose = Planner.score(ScoreInputs(darkHours: hazy, windows: looseWindows, darkness: dark, moonIllumination: 0, moonAboveFraction: 0, maxCloudPct: 40))
+    #expect(strict == 25)   // 0 clear hours -> cloud component 0; moon(15) + baseline(10) still apply
+    #expect(loose == 100)   // all 8 hours clear and contiguous under the 40% rule
+    #expect(loose - strict >= 75)
+}

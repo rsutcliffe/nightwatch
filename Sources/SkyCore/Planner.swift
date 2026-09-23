@@ -23,9 +23,11 @@ public struct ScoreInputs {
     public var darkness: (Date, Date)?
     public var moonIllumination: Double
     public var moonAboveFraction: Double
-    public init(darkHours: [HourlyConditions], windows: [ClearWindow], darkness: (Date, Date)?, moonIllumination: Double, moonAboveFraction: Double) {
+    public var maxCloudPct: Int
+    public init(darkHours: [HourlyConditions], windows: [ClearWindow], darkness: (Date, Date)?, moonIllumination: Double, moonAboveFraction: Double, maxCloudPct: Int = 25) {
         self.darkHours = darkHours; self.windows = windows; self.darkness = darkness
         self.moonIllumination = moonIllumination; self.moonAboveFraction = moonAboveFraction
+        self.maxCloudPct = maxCloudPct
     }
 }
 
@@ -59,7 +61,7 @@ public enum Planner {
     /// 0–100. Cloud 60 (75 without seeing data), Moon 15, seeing + transparency 15, wind and dew 10.
     public static func score(_ s: ScoreInputs) -> Int {
         guard let (ds, de) = s.darkness, de > ds, !s.darkHours.isEmpty else { return 0 }
-        let clearHours = Double(s.darkHours.filter { $0.cloudTotal <= 25 }.count)
+        let clearHours = Double(s.darkHours.filter { $0.cloudTotal <= s.maxCloudPct }.count)
         let totalHours = Double(s.darkHours.count)
         let clearFraction = min(1, clearHours / totalHours)
         let primaryHours = s.windows.map(\.hours).max() ?? 0
