@@ -57,7 +57,7 @@ Array of:
 
 ### 4.2 `Sources/SkyCore/Resources/lightpollution/gb.lpgrid`
 
-A little-endian binary: 20-byte header (magic `LPG1`, float32 south latitude, float32 west longitude, float32 cell size in degrees, uint16 rows, uint16 cols), then rows × cols float32 upward radiance in nW/cm²/sr, NaN for no data; row 0 is the southernmost row. Produced by `scripts/build-lp-grid.py <viirs.tif> --bbox 49.8,-8.7,60.9,1.8 --cell 0.01 --out gb.lpgrid` from the VIIRS annual "average masked" GeoTIFF. At 0.01° (about 1 km) the UK grid is about 1,110 × 1,050 cells, 4.7 MB. Attribution: "Light-pollution grid derived from NOAA/NASA Earth Observation Group VIIRS Nighttime Lights annual composite, CC BY 4.0." Other regions: run the script; the app loads every `.lpgrid` in the folder.
+A little-endian binary: 20-byte header (magic `LPG1`, float32 south latitude, float32 west longitude, float32 cell size in degrees, uint16 rows, uint16 cols), then rows × cols float32 upward radiance in nW/cm²/sr, NaN for no data; row 0 is the southernmost row. Produced by `scripts/build-lp-grid.py <viirs.tif> --bbox 49.8,-8.7,60.9,1.8 --cell 0.01 --out gb.lpgrid` from the VIIRS annual "average masked" GeoTIFF. `--cell 0.01` snaps to a whole multiple of the source's 15-arc-second pixels, so the built UK grid is 1,332 × 1,260 cells at 0.00833° (about 0.9 km), 6.4 MB. Attribution: "Light-pollution grid derived from NOAA/NASA Earth Observation Group VIIRS Nighttime Lights annual composite, CC BY 4.0." Other regions: run the script; the app loads every `.lpgrid` in the folder.
 
 ### 4.3 Darkness bands (heuristic, documented in the About window)
 
