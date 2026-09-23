@@ -64,7 +64,8 @@ final class Store: ObservableObject {
         try? FileManager.default.attributesOfItem(atPath: ConfigStore.defaultURL.resolvingSymlinksInPath().path)[.modificationDate] as? Date
     }
 
-    /// The only way to clear `configLoadFailed`: an explicit reset from Settings.
+    /// Clears `configLoadFailed` by writing defaults. (A later load that decodes, e.g. after the user fixes the file
+    /// by hand, also clears it: memory then matches the file, so saving can no longer lose anything.)
     func resetConfig() {
         configLoadFailed = false
         config = .default
