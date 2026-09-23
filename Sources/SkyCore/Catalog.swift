@@ -1,0 +1,179 @@
+import Foundation
+
+public enum TargetGroup: String, Codable, CaseIterable, Sendable {
+    case nebulae, galaxies, clusters, planets, events, constellations
+    public var displayName: String {
+        switch self {
+        case .nebulae: "Nebulae"
+        case .galaxies: "Galaxies"
+        case .clusters: "Star clusters"
+        case .planets: "Planets and Moon"
+        case .events: "Events"
+        case .constellations: "Constellations"
+        }
+    }
+}
+
+public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
+    public let id: String
+    public let commonName: String?
+    public let messier: Int?
+    public let typeCode: String
+    public let group: TargetGroup
+    public let raHours: Double
+    public let decDeg: Double
+    public let majAxisArcmin: Double?
+    public let minAxisArcmin: Double?
+    public let magnitude: Double?
+    public let constellation: String
+
+    public var displayName: String {
+        var parts: [String] = []
+        if let m = messier { parts.append("M\(m)") }
+        parts.append(id.replacingOccurrences(of: "NGC0", with: "NGC ").replacingOccurrences(of: "IC0", with: "IC ")
+            .replacingOccurrences(of: "NGC", with: "NGC ").replacingOccurrences(of: "  ", with: " "))
+        if let c = commonName { parts.append(c) }
+        return parts.joined(separator: " · ")
+    }
+}
+
+public enum CatalogError: Error { case missingResource(String), badHeader }
+
+public struct Catalog: Sendable {
+    public let objects: [DeepSkyObject]
+
+    static let groupByType: [String: TargetGroup] = [
+        "G": .galaxies, "GPair": .galaxies, "GTrpl": .galaxies, "GGroup": .galaxies,
+        "OCl": .clusters, "GCl": .clusters, "Cl+N": .clusters, "*Ass": .clusters,
+        "PN": .nebulae, "HII": .nebulae, "EmN": .nebulae, "Neb": .nebulae, "RfN": .nebulae, "SNR": .nebulae, "DrkN": .nebulae
+    ]
+
+    static func hours(_ s: String) -> Double? {
+        let p = s.split(separator: ":").compactMap { Double($0) }
+        guard p.count == 3 else { return nil }
+        return p[0] + p[1] / 60 + p[2] / 3600
+    }
+
+    static func degrees(_ s: String) -> Double? {
+        guard let first = s.first else { return nil }
+        let sign: Double = first == "-" ? -1 : 1
+        let body = (first == "-" || first == "+") ? String(s.dropFirst()) : s
+        let p = body.split(separator: ":").compactMap { Double($0) }
+        guard p.count == 3 else { return nil }
+        return sign * (p[0] + p[1] / 60 + p[2] / 3600)
+    }
+
+    public static func parse(csv: String) throws -> [DeepSkyObject] {
+        var lines = csv.split(whereSeparator: \.isNewline).map(String.init)
+        guard !lines.isEmpty else { return [] }
+        let header = lines.removeFirst().split(separator: ";").map(String.init)
+        guard header.count > 28 else { throw CatalogError.badHeader }
+        let col = Dictionary(uniqueKeysWithValues: header.enumerated().map { ($1, $0) })
+        func field(_ row: [String], _ name: String) -> String {
+            guard let i = col[name], i < row.count else { return "" }
+            return row[i]
+        }
+        var out: [DeepSkyObject] = []
+        for line in lines {
+            let row = line.components(separatedBy: ";")
+            let type = field(row, "Type")
+            guard let group = groupByType[type],
+                  let ra = hours(field(row, "RA")), let dec = degrees(field(row, "Dec")) else { continue }
+            let v = Double(field(row, "V-Mag")), b = Double(field(row, "B-Mag"))
+            let names = field(row, "Common names")
+            out.append(DeepSkyObject(
+                id: field(row, "Name"),
+                commonName: names.isEmpty ? nil : names.split(separator: ",").first.map { String($0).trimmingCharacters(in: .whitespaces) },
+                messier: Int(field(row, "M")),
+                typeCode: type, group: group, raHours: ra, decDeg: dec,
+                majAxisArcmin: Double(field(row, "MajAx")), minAxisArcmin: Double(field(row, "MinAx")),
+                magnitude: v ?? b, constellation: field(row, "Const")))
+        }
+        return out
+    }
+
+    public static func bundled() throws -> Catalog {
+        var all: [DeepSkyObject] = []
+        for name in ["NGC", "addendum"] {
+            guard let url = Bundle.module.url(forResource: name, withExtension: "csv", subdirectory: "Resources/catalog") else {
+                throw CatalogError.missingResource(name)
+            }
+            all += try parse(csv: String(contentsOf: url, encoding: .utf8))
+        }
+        return Catalog(objects: all)
+    }
+}
+
+public struct Constellation: Codable, Equatable, Sendable, Identifiable {
+    public let id: String
+    public let name: String
+    public let raHours: Double
+    public let decDeg: Double
+    /// Stick-figure polylines, each point [raHours, decDeg].
+    public let lines: [[[Double]]]
+}
+
+public enum Constellations {
+    private struct Collection: Decodable { let features: [Feature] }
+    private struct Feature: Decodable {
+        let id: String
+        let properties: [String: AnyCodableValue]?
+        let geometry: Geometry
+        struct Geometry: Decodable { let type: String; let coordinates: AnyCodableValue }
+    }
+
+    /// d3-celestial stores RA in degrees from -180 to 180; convert to hours 0..24.
+    static func hours(fromDegrees d: Double) -> Double {
+        var h = d / 15
+        if h < 0 { h += 24 }
+        return h
+    }
+
+    public static func bundled() throws -> [Constellation] {
+        guard let cUrl = Bundle.module.url(forResource: "constellations", withExtension: "json", subdirectory: "Resources/catalog"),
+              let lUrl = Bundle.module.url(forResource: "constellations.lines", withExtension: "json", subdirectory: "Resources/catalog") else {
+            throw CatalogError.missingResource("constellations")
+        }
+        let centres = try JSONDecoder().decode(Collection.self, from: Data(contentsOf: cUrl))
+        let figures = try JSONDecoder().decode(Collection.self, from: Data(contentsOf: lUrl))
+        // Some ids (e.g. "Ser" for Serpens Caput/Cauda) appear as two features; merge their lines.
+        let linesByID: [String: [[[Double]]]] = figures.features.reduce(into: [:]) { dict, f in
+            let raw = f.geometry.coordinates.doubleArrays3
+            let converted = raw.map { line in line.map { [hours(fromDegrees: $0[0]), $0[1]] } }
+            dict[f.id, default: []] += converted
+        }
+        return centres.features.compactMap { f in
+            guard let pt = f.geometry.coordinates.doubleArray, pt.count == 2 else { return nil }
+            let name = f.properties?["name"]?.string ?? f.id
+            return Constellation(id: f.id, name: name, raHours: hours(fromDegrees: pt[0]), decDeg: pt[1], lines: linesByID[f.id] ?? [])
+        }
+    }
+}
+
+/// Minimal JSON value for the loosely typed GeoJSON files.
+public enum AnyCodableValue: Decodable, Sendable {
+    case string(String), number(Double), bool(Bool), array([AnyCodableValue]), object([String: AnyCodableValue]), null
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if c.decodeNil() { self = .null }
+        else if let b = try? c.decode(Bool.self) { self = .bool(b) }
+        else if let n = try? c.decode(Double.self) { self = .number(n) }
+        else if let s = try? c.decode(String.self) { self = .string(s) }
+        else if let a = try? c.decode([AnyCodableValue].self) { self = .array(a) }
+        else { self = .object(try c.decode([String: AnyCodableValue].self)) }
+    }
+
+    var string: String? { if case .string(let s) = self { return s }; return nil }
+    var double: Double? { if case .number(let n) = self { return n }; return nil }
+    var doubleArray: [Double]? { if case .array(let a) = self { return a.compactMap(\.double) }; return nil }
+    var doubleArrays3: [[[Double]]] {
+        if case .array(let lines) = self {
+            return lines.compactMap { line -> [[Double]]? in
+                if case .array(let pts) = line { return pts.compactMap(\.doubleArray) }
+                return nil
+            }
+        }
+        return []
+    }
+}
