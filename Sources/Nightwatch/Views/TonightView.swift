@@ -77,7 +77,7 @@ struct TonightView: View {
                 Button {
                     open("targets")
                 } label: {
-                    Text("Darker sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
+                    Text("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
                         .font(.caption).foregroundStyle(Theme.accent).multilineTextAlignment(.leading)
                 }.buttonStyle(.plain)
             }

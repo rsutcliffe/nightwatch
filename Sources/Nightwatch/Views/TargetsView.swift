@@ -73,7 +73,9 @@ struct TargetsView: View {
                 Text("Dark sites").font(.title2.weight(.semibold))
                 Text("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)) of \(store.site?.name ?? "home") · sorted by tonight's score").font(.caption).foregroundStyle(Theme.dim)
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
-            if store.darkSites.isEmpty {
+            if !store.config.darkSites.enabled {
+                Text("Dark sites are off. Turn them on in Settings › Dark sites.").foregroundStyle(Theme.dim).padding(20)
+            } else if store.darkSites.isEmpty {
                 Text("No dark sites within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)). Widen the radius in Settings.")
                     .foregroundStyle(Theme.dim).padding(20)
             }
@@ -169,7 +171,7 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
-                Button("Use as beat") { store.adoptAsBeat(s) }.font(.caption)
+                Button("Use as \(store.copy.siteNoun.lowercased())") { store.adoptAsBeat(s) }.font(.caption)
             }
         }
         .padding(12).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
