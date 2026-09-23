@@ -16,10 +16,11 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section(store.copy.siteNoun + "s") {
-                Picker("Active", selection: Binding(get: { store.config.activeSiteName ?? "" }, set: { store.config.activeSiteName = $0.isEmpty ? nil : $0; store.saveConfig() })) {
-                    Text("Automatic (location)").tag("")
+                Picker("Observe from", selection: Binding(get: { store.config.activeSiteName ?? "" }, set: { store.config.activeSiteName = $0.isEmpty ? nil : $0; store.saveConfig() })) {
+                    Text("Automatic (this Mac's location)").tag("")
                     ForEach(store.config.sites, id: \.name) { Text($0.name).tag($0.name) }
                 }
+                Text(automaticStatus).font(.caption).foregroundStyle(Theme.dim)
                 ForEach(store.config.sites, id: \.name) { s in
                     HStack {
                         Text(s.name); Spacer()
@@ -32,15 +33,28 @@ struct SettingsView: View {
                         .buttonStyle(.plain).foregroundStyle(Theme.dim).help("Remove \(s.name)")
                     }
                 }
-                HStack {
-                    TextField("Name", text: $ui.newSite.name)
-                    TextField("Lat", value: $ui.newSite.latitude, format: .number).frame(width: 70)
-                    TextField("Lon", value: $ui.newSite.longitude, format: .number).frame(width: 70)
-                    Stepper("Bortle \(ui.newSite.bortle)", value: $ui.newSite.bortle, in: 1...9).frame(width: 110)
-                    Button("Add") {
-                        ui.newSite.name = ui.newSite.name.trimmingCharacters(in: .whitespaces)
-                        store.config.sites.append(ui.newSite); store.saveConfig(); ui.newSite.name = ""
-                    }.disabled(ui.newSite.name.trimmingCharacters(in: .whitespaces).isEmpty || nameTaken)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Add a place to observe from. Latitude and longitude in decimal degrees, north and east positive; Sheffield is 53.381, −1.470. Then choose it under Observe from.")
+                        .font(.caption).foregroundStyle(Theme.dim)
+                    HStack {
+                        TextField("Name (e.g. Back garden)", text: $ui.newSite.name)
+                        TextField("Latitude", value: $ui.newSite.latitude, format: .number.precision(.fractionLength(0...4))).frame(width: 90)
+                        TextField("Longitude", value: $ui.newSite.longitude, format: .number.precision(.fractionLength(0...4))).frame(width: 90)
+                        Button("Use this Mac's location") {
+                            if let a = store.autoSite { ui.newSite.latitude = a.latitude; ui.newSite.longitude = a.longitude; ui.newSite.elevationM = a.elevationM }
+                        }.disabled(store.autoSite == nil).help(store.autoSite == nil ? "Location Services has not given Nightwatch a fix yet" : "Copy the current coordinates into the fields")
+                    }
+                    HStack {
+                        Text("Sky darkness (Bortle class)")
+                        Spacer()
+                        Stepper("\(ui.newSite.bortle)", value: $ui.newSite.bortle, in: 1...9).frame(width: 64)
+                        Button("Add") {
+                            ui.newSite.name = ui.newSite.name.trimmingCharacters(in: .whitespaces)
+                            store.config.sites.append(ui.newSite); store.saveConfig(); ui.newSite.name = ""
+                        }.disabled(ui.newSite.name.trimmingCharacters(in: .whitespaces).isEmpty || nameTaken)
+                    }
+                    Text("Bortle class grades light pollution from 1 (pristine dark sky) through 4 (rural or suburban) to 9 (inner city). It is shown in the popover header; it does not change the forecast.")
+                        .font(.caption).foregroundStyle(Theme.dim)
                 }
             }
             Section("Field of view") {
@@ -58,19 +72,26 @@ struct SettingsView: View {
                 }
             }
             Section("Go rule") {
-                Stepper("At least \(String(format: "%.0f", store.config.goRule.minHours)) h clear", value: Binding(get: { store.config.goRule.minHours }, set: { store.config.goRule.minHours = $0; store.saveConfig() }), in: 1...8)
-                Stepper("Cloud at most \(store.config.goRule.maxCloudPct)%", value: Binding(get: { store.config.goRule.maxCloudPct }, set: { store.config.goRule.maxCloudPct = $0; store.saveConfig() }), in: 5...60, step: 5)
-                Stepper("Targets above \(Int(store.config.goRule.minAltitudeDeg))°", value: Binding(get: { store.config.goRule.minAltitudeDeg }, set: { store.config.goRule.minAltitudeDeg = $0; store.saveConfig() }), in: 10...60, step: 5)
+                Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")
+                    .font(.caption).foregroundStyle(Theme.dim)
+                stepperRow("Clear for at least", value: String(format: "%.0f h", store.config.goRule.minHours),
+                           binding: Binding(get: { store.config.goRule.minHours }, set: { store.config.goRule.minHours = $0; store.saveConfig() }), range: 1...8, step: 1)
+                stepperRow("Cloud cover at most", value: "\(store.config.goRule.maxCloudPct) %",
+                           binding: Binding(get: { store.config.goRule.maxCloudPct }, set: { store.config.goRule.maxCloudPct = $0; store.saveConfig() }), range: 5...60, step: 5)
+                stepperRow("Targets must reach", value: "\(Int(store.config.goRule.minAltitudeDeg))° altitude",
+                           binding: Binding(get: { store.config.goRule.minAltitudeDeg }, set: { store.config.goRule.minAltitudeDeg = $0; store.saveConfig() }), range: 10...60, step: 5)
             }
             Section("Alerts") {
                 Toggle("Evening heads-up (one hour before sunset)", isOn: bind(\.alerts.headsUp))
                 Toggle("Tomorrow preview when tonight is out", isOn: bind(\.alerts.tomorrowPreview))
-                Stepper("Nudge \(store.config.alerts.preWindowMinutes) min before the window", value: bind(\.alerts.preWindowMinutes), in: 0...120, step: 15)
+                stepperRow("Nudge before the window opens", value: "\(store.config.alerts.preWindowMinutes) min",
+                           binding: bind(\.alerts.preWindowMinutes), range: 0...120, step: 15)
                 Toggle("Cancel notice if the forecast turns", isOn: bind(\.alerts.cancelOnDowngrade))
-                HStack {
-                    Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: bind(\.alerts.quietStartHour), in: 0...23)
-                    Stepper("to \(store.config.alerts.quietEndHour):00", value: bind(\.alerts.quietEndHour), in: 0...23)
-                }
+                stepperRow("Quiet hours start", value: String(format: "%02d:00", store.config.alerts.quietStartHour),
+                           binding: bind(\.alerts.quietStartHour), range: 0...23, step: 1)
+                stepperRow("Quiet hours end", value: String(format: "%02d:00", store.config.alerts.quietEndHour),
+                           binding: bind(\.alerts.quietEndHour), range: 0...23, step: 1)
+                Text("No banners between those hours; the popover still shows what was missed.").font(.caption).foregroundStyle(Theme.dim)
             }
             Section("App") {
                 Picker("Wording", selection: bind(\.flavour)) { Text("Nightwatch").tag(Flavour.watch); Text("Plain").tag(Flavour.plain) }
@@ -94,6 +115,22 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .preferredColorScheme(.dark)
+    }
+
+    /// Label on the left, the current value right beside the up/down buttons so it is obvious what they change.
+    private func stepperRow<V: Strideable>(_ label: String, value: String, binding: Binding<V>, range: ClosedRange<V>, step: V.Stride) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Stepper(value: binding, in: range, step: step) { Text(value).font(.body.weight(.semibold)).monospacedDigit() }
+        }
+    }
+
+    private var automaticStatus: String {
+        if let a = store.autoSite {
+            return String(format: "Automatic is using this Mac's location: %.3f, %.3f.", a.latitude, a.longitude)
+        }
+        return "Automatic needs Location Services permission for Nightwatch (System Settings › Privacy & Security › Location Services). Until then, add a place below and choose it."
     }
 
     private var nameTaken: Bool {
