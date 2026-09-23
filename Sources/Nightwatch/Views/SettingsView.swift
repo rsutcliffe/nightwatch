@@ -20,15 +20,26 @@ struct SettingsView: View {
                     ForEach(store.config.sites, id: \.name) { Text($0.name).tag($0.name) }
                 }
                 ForEach(store.config.sites, id: \.name) { s in
-                    HStack { Text(s.name); Spacer(); Text(String(format: "%.3f, %.3f · Bortle %d", s.latitude, s.longitude, s.bortle)).foregroundStyle(Theme.dim).font(.caption) }
+                    HStack {
+                        Text(s.name); Spacer()
+                        Text(String(format: "%.3f, %.3f · Bortle %d", s.latitude, s.longitude, s.bortle)).foregroundStyle(Theme.dim).font(.caption)
+                        Button(role: .destructive) {
+                            store.config.sites.removeAll { $0.name == s.name }
+                            if store.config.activeSiteName == s.name { store.config.activeSiteName = nil }
+                            store.saveConfig()
+                        } label: { Image(systemName: "trash") }
+                        .buttonStyle(.plain).foregroundStyle(Theme.dim).help("Remove \(s.name)")
+                    }
                 }
-                .onDelete { store.config.sites.remove(atOffsets: $0); store.saveConfig() }
                 HStack {
                     TextField("Name", text: $ui.newSite.name)
                     TextField("Lat", value: $ui.newSite.latitude, format: .number).frame(width: 70)
                     TextField("Lon", value: $ui.newSite.longitude, format: .number).frame(width: 70)
                     Stepper("Bortle \(ui.newSite.bortle)", value: $ui.newSite.bortle, in: 1...9).frame(width: 110)
-                    Button("Add") { store.config.sites.append(ui.newSite); store.saveConfig(); ui.newSite.name = "" }.disabled(ui.newSite.name.isEmpty)
+                    Button("Add") {
+                        ui.newSite.name = ui.newSite.name.trimmingCharacters(in: .whitespaces)
+                        store.config.sites.append(ui.newSite); store.saveConfig(); ui.newSite.name = ""
+                    }.disabled(ui.newSite.name.trimmingCharacters(in: .whitespaces).isEmpty || nameTaken)
                 }
             }
             Section("Field of view") {
@@ -74,6 +85,10 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .preferredColorScheme(.dark)
+    }
+
+    private var nameTaken: Bool {
+        store.config.sites.contains { $0.name.caseInsensitiveCompare(ui.newSite.name) == .orderedSame }
     }
 
     private func bind<T>(_ path: WritableKeyPath<Config, T>) -> Binding<T> {
