@@ -1,7 +1,8 @@
 import CoreLocation
 import SkyCore
 
-final class LocationProvider: NSObject, CLLocationManagerDelegate {
+/// @unchecked: created on the main thread, and CoreLocation delivers delegate calls on that thread.
+final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<Site?, Never>?
     /// A fix that arrives with no `requestOnce` waiting: authorisation granted after the 15 s timeout.

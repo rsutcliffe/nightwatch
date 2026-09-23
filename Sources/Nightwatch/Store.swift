@@ -18,7 +18,7 @@ final class Store: ObservableObject {
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
 
-    static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
+    nonisolated static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
     private let fetcher: Fetcher = URLSessionFetcher()
     private let catalog: Catalog
     private let constellations: [Constellation]
