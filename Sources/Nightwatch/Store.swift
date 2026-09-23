@@ -43,7 +43,10 @@ final class Store: ObservableObject {
 
     func saveConfig() {
         try? ConfigStore.save(config, to: ConfigStore.defaultURL)
-        Task { await recompute(now: Date()) }
+        let siteChanged = site.map { s in
+            forecast.map { abs($0.latitude - s.latitude) > 0.01 || abs($0.longitude - s.longitude) > 0.01 } ?? true
+        } ?? false
+        Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()) } }
     }
 
     /// Fetch when the cache is older than 30 minutes (or forced), then recompute everything.
@@ -67,8 +70,9 @@ final class Store: ObservableObject {
 
     /// Comet elements daily, ISS elements every 2 hours (CelesTrak asks for no more). The MPC file is gzip, so it goes through gunzip.
     private func refreshAuxiliary(now: Date) async {
-        if Store.age("comets.json") > 86_400, let data = try? await fetcher.get(Comets.url), let c = try? Comets.decode(Store.gunzip(data)) {
-            comets = c; Store.write(c, "comets.json")
+        if Store.age("comets.json") > 86_400, let data = try? await fetcher.get(Comets.url) {
+            let unzipped = await Task.detached { Store.gunzip(data) }.value
+            if let c = try? Comets.decode(unzipped) { comets = c; Store.write(c, "comets.json") }
         }
         if Store.age("iss-tle.json") > 2 * 3600, let data = try? await fetcher.get(Satellites.issURL),
            let t = try? Satellites.parseTLE(String(decoding: data, as: UTF8.self)) {
@@ -136,12 +140,15 @@ final class Store: ObservableObject {
         try? e.encode(value).write(to: url(name), options: .atomic)
     }
     /// gzip via Foundation is unavailable; shell out to the system gunzip for the MPC file.
-    static func gunzip(_ data: Data) -> Data {
+    /// `nonisolated` so this can run off the main actor (see `refreshAuxiliary`): the blocking
+    /// `readDataToEndOfFile`/`waitUntilExit` pair would otherwise freeze the UI on `Store`.
+    nonisolated static func gunzip(_ data: Data) -> Data {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("cometels.json.gz")
         try? data.write(to: tmp)
         let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/gunzip"); p.arguments = ["-c", tmp.path]
         let pipe = Pipe(); p.standardOutput = pipe
         try? p.run(); let out = pipe.fileHandleForReading.readDataToEndOfFile(); p.waitUntilExit()
+        guard p.terminationStatus == 0 else { return Data() }
         return out
     }
 }
