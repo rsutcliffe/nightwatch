@@ -33,6 +33,7 @@ final class Store: ObservableObject {
     private var tle: TLE?
     private var configModDate: Date?
     private var auxAttempts: [String: Date] = [:]   // last download ATTEMPT per aux feed, keyed "comets"/"iss"
+    private var darkSitesGeneration = 0             // bumped per recomputeDarkSites run; a superseded run stops and never publishes
 
     var distanceUnit: DistanceUnit { config.darkSites.unit }
 
@@ -183,32 +184,56 @@ final class Store: ObservableObject {
     }
 
     /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
+    /// Each run takes a generation number; after every await it checks it is still the newest run, so a run superseded by a
+    /// settings change stops fetching and never publishes over the newer one.
     private func recomputeDarkSites(now: Date, site: Site, night: Night) async {
+        darkSitesGeneration += 1
+        let gen = darkSitesGeneration
         guard config.darkSites.enabled else { darkSites = []; sitePlans = []; bestAway = nil; return }
         let home = Coordinate(latitude: site.latitude, longitude: site.longitude)
-        let sites = DarkSites.sites(near: home, radiusKm: config.darkSites.radiusKm, certified: certified, grids: grids, maxSpots: 5)
+        let radiusKm = config.darkSites.radiusKm, certified = certified, grids = grids
+        // Up to ~700k distance checks at 300 km: off the main actor.
+        let sites = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
+        guard gen == darkSitesGeneration else { return }
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
             var fc: Forecast? = Store.readFile(cacheURL)
             if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true {
                 let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
-                if let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now) { fc = fresh; Store.writeFile(fresh, cacheURL) }
+                let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now)
+                guard gen == darkSitesGeneration else { return }
+                if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) }
             }
+            // A cache over 24 h old that could not be refreshed no longer describes tonight: show "no forecast", not a plan.
+            if let f = fc, now.timeIntervalSince(f.fetchedAt) > 24 * 3600 { fc = nil }
             guard let fc else { plans.append(SitePlan.missing(s)); continue }
             let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: DarkSites.toSite(s, timeZoneID: site.timeZoneID), fov: config.fov, rule: config.goRule)
             plans.append(SitePlan(id: s.id, site: s, score: p.score, primary: p.primary, qualifies: p.qualifies, forecastMissing: false))
         }
+        guard gen == darkSitesGeneration else { return }
         darkSites = sites   // set with sitePlans so the Targets grid never sees a new list beside old plans
         sitePlans = SiteComparison.sorted(plans)
         bestAway = plan.map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil
     }
 
-    /// Adds `s` as a saved site (disambiguated by name if needed) and makes it the active one.
+    /// Makes `s` the active site. A saved site at the same place (within 0.001° in latitude and longitude) is reused;
+    /// otherwise `s` is saved under a name no other saved site has: "X", then "X (dark site)", "X (dark site 2)", …
     func adoptAsBeat(_ s: DarkSite) {
+        if let existing = config.sites.first(where: { abs($0.latitude - s.coordinate.latitude) <= 0.001 && abs($0.longitude - s.coordinate.longitude) <= 0.001 }) {
+            config.activeSiteName = existing.name
+            saveConfig()
+            return
+        }
         let tz = site?.timeZoneID ?? TimeZone.current.identifier
         var new = DarkSites.toSite(s, timeZoneID: tz)
-        if config.sites.contains(where: { $0.name == new.name }) { new.name += " (dark site)" }
+        let taken = Set(config.sites.map(\.name))
+        var name = s.name, n = 1
+        while taken.contains(name) {
+            name = n == 1 ? "\(s.name) (dark site)" : "\(s.name) (dark site \(n))"
+            n += 1
+        }
+        new.name = name
         config.sites.append(new)
         config.activeSiteName = new.name
         saveConfig()
