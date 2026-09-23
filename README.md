@@ -1,5 +1,9 @@
 # Nightwatch
 
+![The Moon, first quarter, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
+
+*The Moon, DWARF Mini, Richard Sutcliffe.*
+
 Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
 ## Build and install (any Mac, macOS 14+, no Xcode needed)
