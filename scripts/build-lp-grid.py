@@ -13,6 +13,16 @@ and unlit cells as 0 (no NaN), which reads as very dark; the 2025 file is 33601 
 import argparse, struct, sys
 import numpy as np, tifffile
 
+MAX_WINDOW_BYTES = 2 * 1024 ** 3  # 2 GiB; the crop happens before downsampling, so this guards the raw window.
+
+def check_limits(window_rows, window_cols, rows, cols):
+    window_bytes = window_rows * window_cols * 4
+    if window_bytes > MAX_WINDOW_BYTES:
+        sys.exit(f'crop window {window_rows} x {window_cols} pixels ({window_bytes / 1024**3:.2f} GiB) exceeds the '
+                  '2 GiB limit; use a smaller bbox or a larger --cell')
+    if rows > 65535 or cols > 65535:
+        sys.exit(f'grid {rows} x {cols} exceeds the 65535-cell limit of the lpgrid header; use a larger --cell or a smaller bbox')
+
 def geo(tif):
     p = tif.pages[0]
     scale = p.tags['ModelPixelScaleTag'].value
@@ -38,11 +48,13 @@ def main():
         r0 = max(0, int((lat0 - north) / sy)); r1 = min(h, int(np.ceil((lat0 - south) / sy)))
         c0 = max(0, int((west - lon0) / sx)); c1 = min(w, int(np.ceil((east - lon0) / sx)))
         if r0 >= r1 or c0 >= c1: sys.exit('bbox does not intersect the raster')
+    f = max(1, int(round(a.cell / sx)))
+    window_rows, window_cols = r1 - r0, c1 - c0
+    rows, cols = window_rows // f, window_cols // f
+    check_limits(window_rows, window_cols, rows, cols)
     # The global file is 11.6 GB uncompressed; read only the window through a memory map (verified memmappable 2026-09-23).
     m = tifffile.memmap(a.tif)
     arr = np.array(m[r0:r1, c0:c1], dtype=np.float32)               # north-up window
-    f = max(1, int(round(a.cell / sx)))
-    rows, cols = arr.shape[0] // f, arr.shape[1] // f
     arr = arr[:rows * f, :cols * f].reshape(rows, f, cols, f)
     with np.errstate(invalid='ignore'):
         out = np.nanmean(arr, axis=(1, 3)).astype(np.float32)        # mean of valid cells, NaN where none

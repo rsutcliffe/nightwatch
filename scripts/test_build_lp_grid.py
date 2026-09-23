@@ -1,7 +1,15 @@
-import os, struct, subprocess, sys, tempfile, unittest
+import importlib.util, os, struct, subprocess, sys, tempfile, unittest
 import numpy as np, tifffile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+def _load_build_lp_grid():
+    spec = importlib.util.spec_from_file_location('build_lp_grid', os.path.join(HERE, 'build-lp-grid.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+build_lp_grid = _load_build_lp_grid()
 
 def make_tiff(path):
     # 20 rows x 30 cols, 0.5 degree cells, north-up, top-left corner at lat 60, lon -10 (GeoTIFF tie point)
@@ -38,6 +46,13 @@ class BuildLPGrid(unittest.TestCase):
             self.assertEqual((rows, cols), (10, 15))
             vals = np.frombuffer(b[20:], dtype='<f4').reshape(rows, cols)
             self.assertAlmostEqual(float(vals[rows - 1, 0]), 10.0, 5)   # 40 + 0 + 0 + 0 over 4 cells
+
+    def test_rejects_grids_over_uint16(self):
+        with self.assertRaises(SystemExit):
+            build_lp_grid.check_limits(1, 1, 70000, 10)           # grid dimension over the uint16 header field
+        with self.assertRaises(SystemExit):
+            build_lp_grid.check_limits(30000, 30000, 1, 1)        # crop window over the 2 GiB float32 read limit
+        build_lp_grid.check_limits(100, 100, 100, 100)            # within both limits, must not raise
 
 if __name__ == '__main__':
     unittest.main()
