@@ -8,7 +8,7 @@ enum Thumbnails {
 
     static func fovDeg(for t: RankedTarget, fov: FieldOfView) -> Double {
         let objectDeg = (t.sizeArcmin ?? 0) / 60
-        return max(fov.widthDeg, objectDeg * 1.5)
+        return max(fov.widthDeg, objectDeg * 1.5, 0.05)
     }
 
     static func url(for t: RankedTarget, fov: FieldOfView) -> URL {
@@ -20,7 +20,7 @@ enum Thumbnails {
             .init(name: "dec", value: String(format: "%.5f", t.decDeg)),
             .init(name: "fov", value: String(format: "%.3f", f)),
             .init(name: "width", value: "480"),
-            .init(name: "height", value: String(Int(480 * fov.heightDeg / fov.widthDeg))),
+            .init(name: "height", value: String(Int(480 * max(0.05, fov.heightDeg) / max(0.05, fov.widthDeg)))),
             .init(name: "projection", value: "TAN"),
             .init(name: "format", value: "jpg")
         ]
@@ -69,11 +69,12 @@ struct ConstellationFigure: View {
     let constellation: Constellation
     var body: some View {
         GeometryReader { g in
-            let pts = constellation.lines.flatMap { $0 }
+            let lines = constellation.unwrappedLines
+            let pts = lines.flatMap { $0 }
             let ras = pts.map { $0[0] }, decs = pts.map { $0[1] }
             if let minRA = ras.min(), let maxRA = ras.max(), let minDec = decs.min(), let maxDec = decs.max(), maxRA > minRA, maxDec > minDec {
                 Path { p in
-                    for line in constellation.lines {
+                    for line in lines {
                         for (i, pt) in line.enumerated() {
                             let x = g.size.width * (1 - (pt[0] - minRA) / (maxRA - minRA))   // RA increases to the left
                             let y = g.size.height * (1 - (pt[1] - minDec) / (maxDec - minDec))

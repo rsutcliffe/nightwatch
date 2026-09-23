@@ -42,3 +42,13 @@ import Foundation
     #expect(ser.name == "Serpens")
     #expect(ser.lines.count >= 2)
 }
+
+@Test func figureCrossingZeroHoursIsUnwrapped() throws {
+    let and = try #require(try Constellations.bundled().first { $0.id == "And" })
+    let raw = and.lines.flatMap { $0.map { $0[0] } }
+    #expect(raw.max()! - raw.min()! > 12)            // straddles 0 h in the stored 0..24 form
+    let ras = and.unwrappedLines.flatMap { $0.map { $0[0] } }
+    #expect(ras.max()! - ras.min()! < 6)
+    let cyg = try #require(try Constellations.bundled().first { $0.id == "Cyg" })
+    #expect(cyg.unwrappedLines == cyg.lines)          // nowhere near 0 h: untouched
+}

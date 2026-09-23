@@ -10,7 +10,7 @@ struct DetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack { Button(action: onBack) { Image(systemName: "chevron.left") }; Text(target.group.displayName).font(.caption).foregroundStyle(Theme.dim) }
-                let fov = store.config.fov
+                let fov = FieldOfView(widthDeg: max(0.05, store.config.fov.widthDeg), heightDeg: max(0.05, store.config.fov.heightDeg))   // hand-edited config can hold 0
                 let thumbH: CGFloat = 260
                 let thumbW: CGFloat = thumbH * fov.widthDeg / fov.heightDeg
                 ZStack {

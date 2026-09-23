@@ -114,6 +114,16 @@ public struct Constellation: Codable, Equatable, Sendable, Identifiable {
     public let lines: [[[Double]]]
 }
 
+extension Constellation {
+    /// `lines` with RA unwrapped for drawing: when the points span more than 12 h the figure straddles 0 h,
+    /// so points below 12 h move up by 24 h and the figure stays in one piece instead of spanning the card.
+    public var unwrappedLines: [[[Double]]] {
+        let ras = lines.flatMap { $0.map { $0[0] } }
+        guard let lo = ras.min(), let hi = ras.max(), hi - lo > 12 else { return lines }
+        return lines.map { $0.map { $0[0] < 12 ? [$0[0] + 24, $0[1]] : $0 } }
+    }
+}
+
 public enum Constellations {
     private struct Collection: Decodable { let features: [Feature] }
     private struct Feature: Decodable {
