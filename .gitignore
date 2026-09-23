@@ -5,3 +5,5 @@
 .superpowers/
 Nightwatch.app/
 build/
+.venv/
+__pycache__/

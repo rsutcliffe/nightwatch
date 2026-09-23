@@ -71,3 +71,10 @@ private func sampleGrid() -> LPGrid {
     let spaced = g.darkestSpots(center: centre, radiusKm: 30, count: 3, minSpacingKm: 26)
     #expect(spaced.count == 1)         // spacing larger than the grid
 }
+
+@Test func loadsScriptOutput() throws {
+    let g = try LPGrid(data: try fixture("synthetic.lpgrid"))
+    #expect(g.rows == 20 && g.cols == 30)
+    #expect(g.radiance(at: Coordinate(latitude: 59.75, longitude: -9.75)) == 40)
+    #expect(g.radiance(at: Coordinate(latitude: 50.25, longitude: 4.75))! < 0.11)
+}
