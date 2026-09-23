@@ -85,17 +85,18 @@ public enum Events {
     public static func conjunctions(at date: Date, site: Site, maxSeparationDeg: Double) -> [SkyEvent] {
         var bodies: [(String, BodyPosition)] = Planet.allCases.map { ($0.displayName, Ephemeris.planet($0, at: date, site: site)) }
         bodies.append(("Moon", Ephemeris.moon(at: date, site: site).position))
-        var out: [SkyEvent] = []
+        var out: [(sep: Double, event: SkyEvent)] = []
         for i in 0..<bodies.count {
             for j in (i + 1)..<bodies.count {
                 let (a, pa) = bodies[i], (b, pb) = bodies[j]
                 let sep = Ephemeris.separationDeg(ra1Hours: pa.raHours, dec1Deg: pa.decDeg, ra2Hours: pb.raHours, dec2Deg: pb.decDeg)
                 guard sep <= maxSeparationDeg else { continue }
-                out.append(SkyEvent(id: "conj-\(a)-\(b)", kind: .conjunction, title: "\(a) near \(b)",
-                                    detail: String(format: "%.1f° apart", sep), time: date, endTime: nil,
-                                    raHours: pa.raHours, decDeg: pa.decDeg))
+                let event = SkyEvent(id: "conj-\(a)-\(b)", kind: .conjunction, title: "\(a) near \(b)",
+                                     detail: String(format: "%.1f° apart", sep), time: date, endTime: nil,
+                                     raHours: pa.raHours, decDeg: pa.decDeg)
+                out.append((sep, event))
             }
         }
-        return out.sorted { $0.detail < $1.detail }
+        return out.sorted { $0.sep < $1.sep }.map(\.event)
     }
 }

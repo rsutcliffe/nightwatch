@@ -51,4 +51,6 @@ private let site = Site(name: "Sheffield", latitude: 53.38, longitude: -1.47, el
     let tight = Events.conjunctions(at: utc(2026, 9, 23, 23, 0), site: site, maxSeparationDeg: 3)
     #expect(tight.count <= 28)
     #expect(tight.allSatisfy { $0.kind == .conjunction })
+    let seps = ev.map { Double($0.detail.split(separator: "°")[0])! }
+    #expect(zip(seps, seps.dropFirst()).allSatisfy { $0 <= $1 })
 }
