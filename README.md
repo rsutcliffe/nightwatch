@@ -31,7 +31,7 @@ Any. Pick a preset (DWARF Mini, DWARF 3, Seestar S50, APS-C at 200 mm) or type y
 
 ## Dark-sky sites
 
-The Targets window's "Dark sites" group lists two kinds of place: certified sites (DarkSky International parks, reserves, sanctuaries and communities, plus the UK Dark Sky Discovery Sites) from a bundled list of 51 places compiled from Wikidata and hand-verified UK and Ireland entries, and up to five computed "dark spots" from a bundled light-pollution grid. Each card shows distance, bearing, a darkness band or Bortle class, tonight's clear window and a score. Forecasts are fetched for the nearest eight sites. "Use as beat" makes a site the active site. When a listed site scores 20 or more above home, the popover shows one line naming it.
+The Targets window's "Dark sites" group lists two kinds of place: certified sites (DarkSky International parks, reserves, sanctuaries and communities, plus the UK Dark Sky Discovery Sites) from a bundled list of 51 places compiled from Wikidata and hand-verified UK and Ireland entries, and up to five computed "dark spots" from a bundled light-pollution grid. Each card shows distance, bearing, a darkness band or Bortle class, tonight's clear window and a score. Forecasts are fetched for the nearest eight sites. "Use as beat" saves the site under Beats and makes it the active site. When a listed site scores 20 or more above home, the popover shows one line naming it.
 
 Settings › Dark sites turns the group on or off and sets the search radius, 5 to 300 km (default 50), in kilometres or miles.
 
@@ -42,7 +42,7 @@ To build a grid for another region, register for a free account at https://eogda
     python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements-data.txt
     .venv/bin/python scripts/build-lp-grid.py /path/to/VNL_*average_masked*.tif --bbox SOUTH,WEST,NORTH,EAST --cell 0.01 --out Sources/SkyCore/Resources/lightpollution/<region>.lpgrid
 
-The app loads every `.lpgrid` file in that folder. Keep rows and columns under 65,535 — use a larger `--cell` for big regions.
+The bundled UK grid (`gb.lpgrid`, bbox 49.8,-8.7,60.9,1.8) is 1,332 × 1,260 cells at 0.00833° (about 0.9 km), 6.4 MB. The script rounds `--cell` to a whole multiple of the source's 15-arc-second pixels, so `--cell 0.01` produces 0.00833° cells. The app loads every `.lpgrid` file in that folder. Keep rows and columns under 65,535: use a larger `--cell` for big regions.
 
 Certified by DarkSky International or the UK Dark Sky Discovery Sites programme; coordinates from Wikidata (CC0). Light-pollution grid derived from the NOAA/NASA Earth Observation Group VIIRS Nighttime Lights annual composite, CC BY 4.0.
 
