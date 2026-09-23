@@ -29,7 +29,7 @@ Data sources selected (all keyless, attribution-only):
 | Seeing, transparency, 72 h at 3 h steps | 7Timer ASTRO | Free for non-commercial use, author asks to be notified |
 | Sun/Moon rise-set, twilight, planets, Moon phase, eclipses, conjunctions, alt/az | Astronomy Engine (C source) | MIT, no data files |
 | Deep-sky catalogue | OpenNGC + addendum | CC BY-SA 4.0 |
-| Stars and constellation lines | HYG v4.4 derived subset | CC BY-SA 4.0 |
+| Constellation names, centres and stick figures | d3-celestial `constellations.json` and `constellations.lines.json` (GeoJSON, RA in degrees −180..180) | BSD-3-Clause; data derived from IAU pages |
 | Thumbnails | CDS hips2fits, DSS2 colour | CDS acknowledgement; DSS copyright notice displayed |
 | Comet elements | Minor Planet Center cometels.json.gz | MPC acknowledgement |
 | ISS orbital elements | CelesTrak GP JSON, CATNR 25544 | Poll at most every 2 h; stop on non-200 |
@@ -38,7 +38,9 @@ Data sources selected (all keyless, attribution-only):
 
 Excluded: Met Office DataPoint (decommissioned), Met Office DataHub, OpenWeatherMap, Meteoblue API, Astrospheric API (all keyed or paid), World Atlas 2015 (CC BY-NC, 2.9 GB).
 
-Telescope calibration reference (not a dependency): DwarfLab DWARF Mini, 30 mm f/5, 150 mm focal length, frame about 2.1° × 1.2°. Presets are data, not code paths.
+Telescope calibration reference (not a dependency): DwarfLab DWARF Mini, 30 mm f/5, 150 mm focal length, frame about 2.1° × 1.2°. Presets are data, not code paths. Verified preset fields of view: DWARF Mini 2.1° × 1.2° (telescopicwatch.com review), DWARF 3 2.93° × 1.65° (skiesandscopes.com), Seestar S50 1.29° × 0.73° (seestar.com FAQ), APS-C DSLR at 200 mm 6.7° × 4.5° (computed from 23.5 × 15.6 mm).
+
+Toolchain facts verified on the owner's Mac (macOS 27, Command Line Tools only, Swift 6.4): SwiftPM builds a SwiftUI `MenuBarExtra` executable plus the vendored Astronomy Engine C target; Swift Testing runs when the macro plugin path is passed (`-Xswiftc -plugin-path -Xswiftc /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing`); XCTest is not available. SwiftPM resource bundles resolve through `Bundle.module`.
 
 ## 3. Decisions taken with the owner
 
