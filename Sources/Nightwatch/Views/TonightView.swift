@@ -90,7 +90,12 @@ struct TonightView: View {
     }
 
     private func tiles(_ plan: NightPlan, _ site: Site) -> some View {
-        let dark = plan.night.darkStart.map { "\(Copy.hhmm($0, site: site))–\(Copy.hhmm(plan.night.darkEnd!, site: site))" } ?? "none"
+        let dark: String = {
+            if let ds = plan.night.darkStart, let de = plan.night.darkEnd {
+                return "\(Copy.hhmm(ds, site: site))–\(Copy.hhmm(de, site: site))"
+            }
+            return "none"
+        }()
         let moon = "\(Int((plan.moonIllumination * 100).rounded()))%" + (plan.moonSet.map { " · sets \(Copy.hhmm($0, site: site))" } ?? "")
         let seeing = plan.darkHours.compactMap(\.seeing)
         let seeingText = seeing.isEmpty ? "n/a" : ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][min(8, seeing.reduce(0, +) / seeing.count)]
