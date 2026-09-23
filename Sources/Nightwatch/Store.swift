@@ -187,7 +187,6 @@ final class Store: ObservableObject {
         guard config.darkSites.enabled else { darkSites = []; sitePlans = []; bestAway = nil; return }
         let home = Coordinate(latitude: site.latitude, longitude: site.longitude)
         let sites = DarkSites.sites(near: home, radiusKm: config.darkSites.radiusKm, certified: certified, grids: grids, maxSpots: 5)
-        darkSites = sites
         var plans: [SitePlan] = []
         for s in sites.prefix(8) {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
@@ -196,10 +195,11 @@ final class Store: ObservableObject {
                 let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
                 if let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now) { fc = fresh; Store.writeFile(fresh, cacheURL) }
             }
-            guard let fc else { plans.append(SitePlan(id: s.id, site: s, score: 0, primary: nil, qualifies: false, forecastMissing: true)); continue }
+            guard let fc else { plans.append(SitePlan.missing(s)); continue }
             let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: DarkSites.toSite(s, timeZoneID: site.timeZoneID), fov: config.fov, rule: config.goRule)
             plans.append(SitePlan(id: s.id, site: s, score: p.score, primary: p.primary, qualifies: p.qualifies, forecastMissing: false))
         }
+        darkSites = sites   // set with sitePlans so the Targets grid never sees a new list beside old plans
         sitePlans = SiteComparison.sorted(plans)
         bestAway = plan.map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil
     }

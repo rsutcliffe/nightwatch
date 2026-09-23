@@ -79,7 +79,7 @@ struct TargetsView: View {
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
                 ForEach(store.sitePlans) { DarkSiteCard(plan: $0) }
-                ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan(id: $0.id, site: $0, score: 0, primary: nil, qualifies: false, forecastMissing: true)) }
+                ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)) }
             }.padding(20)
         }
     }

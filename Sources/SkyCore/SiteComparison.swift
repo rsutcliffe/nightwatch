@@ -10,6 +10,10 @@ public struct SitePlan: Codable, Equatable, Sendable, Identifiable {
     public init(id: String, site: DarkSite, score: Int, primary: ClearWindow?, qualifies: Bool, forecastMissing: Bool) {
         self.id = id; self.site = site; self.score = score; self.primary = primary; self.qualifies = qualifies; self.forecastMissing = forecastMissing
     }
+    /// A site with no forecast: sorts last, never qualifies, never recommended.
+    public static func missing(_ site: DarkSite) -> SitePlan {
+        SitePlan(id: site.id, site: site, score: 0, primary: nil, qualifies: false, forecastMissing: true)
+    }
 }
 
 public enum SiteComparison {
