@@ -32,9 +32,13 @@ import Foundation
 
 @Test func bundledConstellationsLoad() throws {
     let cs = try Constellations.bundled()
-    #expect(cs.count == 88 || cs.count == 89)
+    #expect(cs.count == 88)
+    #expect(Set(cs.map(\.id)).count == cs.count)
     let ori = try #require(cs.first { $0.id == "Ori" })
     #expect(ori.name == "Orion")
     #expect(!ori.lines.isEmpty)
     #expect(ori.raHours >= 0 && ori.raHours < 24)
+    let ser = try #require(cs.first { $0.id == "Ser" })
+    #expect(ser.name == "Serpens")
+    #expect(ser.lines.count >= 2)
 }

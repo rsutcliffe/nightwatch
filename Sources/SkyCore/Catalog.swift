@@ -142,10 +142,33 @@ public enum Constellations {
             let converted = raw.map { line in line.map { [hours(fromDegrees: $0[0]), $0[1]] } }
             dict[f.id, default: []] += converted
         }
-        return centres.features.compactMap { f in
-            guard let pt = f.geometry.coordinates.doubleArray, pt.count == 2 else { return nil }
-            let name = f.properties?["name"]?.string ?? f.id
-            return Constellation(id: f.id, name: name, raHours: hours(fromDegrees: pt[0]), decDeg: pt[1], lines: linesByID[f.id] ?? [])
+
+        // Group centre features by id (preserving first-occurrence order) so a
+        // split constellation like Serpens Caput/Cauda still yields one Constellation.
+        var order: [String] = []
+        var groups: [String: [Feature]] = [:]
+        for f in centres.features {
+            if groups[f.id] == nil { order.append(f.id) }
+            groups[f.id, default: []].append(f)
+        }
+
+        return order.compactMap { id -> Constellation? in
+            let points: [(name: String, raDeg: Double, dec: Double)] = (groups[id] ?? []).compactMap { f in
+                guard let pt = f.geometry.coordinates.doubleArray, pt.count == 2 else { return nil }
+                return (f.properties?["name"]?.string ?? f.id, pt[0], pt[1])
+            }
+            guard !points.isEmpty else { return nil }
+            let raDeg = points.map(\.raDeg).reduce(0, +) / Double(points.count)
+            let dec = points.map(\.dec).reduce(0, +) / Double(points.count)
+            let name: String
+            if points.count == 2 {
+                let word0 = points[0].name.prefix { $0 != " " }
+                let word1 = points[1].name.prefix { $0 != " " }
+                name = word0 == word1 ? String(word0) : points[0].name
+            } else {
+                name = points[0].name
+            }
+            return Constellation(id: id, name: name, raHours: hours(fromDegrees: raDeg), decDeg: dec, lines: linesByID[id] ?? [])
         }
     }
 }
