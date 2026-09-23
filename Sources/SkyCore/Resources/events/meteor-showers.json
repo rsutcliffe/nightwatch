@@ -1,0 +1,14 @@
+[
+  {"id":"qua","name":"Quadrantids","startMonth":12,"startDay":28,"endMonth":1,"endDay":12,"peakMonth":1,"peakDay":3,"zhr":80,"raHours":15.3,"decDeg":49,"parent":"(196256) 2003 EH1","velocityKms":41},
+  {"id":"lyr","name":"Lyrids","startMonth":4,"startDay":14,"endMonth":4,"endDay":30,"peakMonth":4,"peakDay":22,"zhr":18,"raHours":18.1,"decDeg":34,"parent":"C/1861 G1 (Thatcher)","velocityKms":49},
+  {"id":"eta","name":"Eta Aquariids","startMonth":4,"startDay":19,"endMonth":5,"endDay":28,"peakMonth":5,"peakDay":6,"zhr":50,"raHours":22.5,"decDeg":-1,"parent":"1P/Halley","velocityKms":66},
+  {"id":"sda","name":"Southern Delta Aquariids","startMonth":7,"startDay":12,"endMonth":8,"endDay":23,"peakMonth":7,"peakDay":31,"zhr":25,"raHours":22.7,"decDeg":-16,"parent":"P/2008 Y12 (SOHO)","velocityKms":41},
+  {"id":"per","name":"Perseids","startMonth":7,"startDay":17,"endMonth":8,"endDay":24,"peakMonth":8,"peakDay":13,"zhr":100,"raHours":3.2,"decDeg":58,"parent":"109P/Swift-Tuttle","velocityKms":59},
+  {"id":"dra","name":"October Draconids","startMonth":10,"startDay":6,"endMonth":10,"endDay":10,"peakMonth":10,"peakDay":9,"zhr":5,"raHours":17.5,"decDeg":54,"parent":"21P/Giacobini-Zinner","velocityKms":20},
+  {"id":"ori","name":"Orionids","startMonth":10,"startDay":2,"endMonth":11,"endDay":7,"peakMonth":10,"peakDay":21,"zhr":20,"raHours":6.3,"decDeg":16,"parent":"1P/Halley","velocityKms":66},
+  {"id":"sta","name":"Southern Taurids","startMonth":9,"startDay":20,"endMonth":11,"endDay":20,"peakMonth":11,"peakDay":5,"zhr":7,"raHours":3.5,"decDeg":15,"parent":"2P/Encke","velocityKms":27},
+  {"id":"nta","name":"Northern Taurids","startMonth":10,"startDay":20,"endMonth":12,"endDay":10,"peakMonth":11,"peakDay":12,"zhr":5,"raHours":3.9,"decDeg":22,"parent":"2004 TG10","velocityKms":29},
+  {"id":"leo","name":"Leonids","startMonth":11,"startDay":6,"endMonth":11,"endDay":30,"peakMonth":11,"peakDay":17,"zhr":15,"raHours":10.1,"decDeg":22,"parent":"55P/Tempel-Tuttle","velocityKms":71},
+  {"id":"gem","name":"Geminids","startMonth":12,"startDay":4,"endMonth":12,"endDay":20,"peakMonth":12,"peakDay":14,"zhr":150,"raHours":7.5,"decDeg":33,"parent":"3200 Phaethon","velocityKms":35},
+  {"id":"urs","name":"Ursids","startMonth":12,"startDay":17,"endMonth":12,"endDay":26,"peakMonth":12,"peakDay":22,"zhr":10,"raHours":14.5,"decDeg":76,"parent":"8P/Tuttle","velocityKms":33}
+]
