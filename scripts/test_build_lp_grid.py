@@ -1,4 +1,4 @@
-import importlib.util, os, struct, subprocess, sys, tempfile, unittest
+import importlib.util, json, os, struct, subprocess, sys, tempfile, unittest
 import numpy as np, tifffile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +26,7 @@ class BuildLPGrid(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             tif = os.path.join(d, 'viirs.tif'); out = os.path.join(d, 'x.lpgrid')
             make_tiff(tif)
-            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--bbox', '50,-10,60,5', '--cell', '0.5', '--out', out])
+            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--bbox', '50,-10,60,5', '--cell', '0.5', '--smooth', '1', '--out', out])
             b = open(out, 'rb').read()
             self.assertEqual(b[:4], b'LPG1')
             south, west, cell = struct.unpack('<fff', b[4:16]); rows, cols = struct.unpack('<HH', b[16:20])
@@ -41,7 +41,7 @@ class BuildLPGrid(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             tif = os.path.join(d, 'viirs.tif'); out = os.path.join(d, 'x.lpgrid')
             make_tiff(tif)
-            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--bbox', '50,-10,60,5', '--cell', '1.0', '--out', out])
+            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--bbox', '50,-10,60,5', '--cell', '1.0', '--smooth', '1', '--out', out])
             b = open(out, 'rb').read(); rows, cols = struct.unpack('<HH', b[16:20])
             self.assertEqual((rows, cols), (10, 15))
             vals = np.frombuffer(b[20:], dtype='<f4').reshape(rows, cols)
@@ -53,6 +53,33 @@ class BuildLPGrid(unittest.TestCase):
         with self.assertRaises(SystemExit):
             build_lp_grid.check_limits(30000, 30000, 1, 1)        # crop window over the 2 GiB float32 read limit
         build_lp_grid.check_limits(100, 100, 100, 100)            # within both limits, must not raise
+
+    def test_smooth_spreads_a_bright_cell_and_ignores_nan(self):
+        a = np.zeros((5, 5), dtype=np.float32)
+        a[2, 2] = 9.0
+        a[1, 1] = np.nan
+        out = build_lp_grid.smooth(a, 3)
+        self.assertAlmostEqual(float(out[2, 2]), 9.0 / 8, 5)        # 3 x 3 window, one NaN neighbour ignored: 9 / 8 valid cells
+        self.assertAlmostEqual(float(out[2, 3]), 9.0 / 9, 5)        # neighbour without NaN in its window: 9 / 9
+        self.assertAlmostEqual(float(out[3, 3]), 9.0 / 9, 5)        # diagonal neighbour receives the glow too
+        self.assertEqual(float(out[0, 4]), 0.0)                    # outside the window: untouched
+        self.assertTrue(np.isnan(out[1, 1]))                       # NaN stays NaN
+        self.assertTrue(np.array_equal(build_lp_grid.smooth(a, 1), a, equal_nan=True))   # 1 disables
+
+    def test_land_mask_turns_sea_into_nan(self):
+        with tempfile.TemporaryDirectory() as d:
+            tif = os.path.join(d, 'viirs.tif'); out = os.path.join(d, 'x.lpgrid'); land = os.path.join(d, 'land.geojson')
+            make_tiff(tif)
+            # Land is the western half of the bbox only: lon -10 .. -2.5, lat 50 .. 60
+            poly = {'type': 'Polygon', 'coordinates': [[[-10, 50], [-2.5, 50], [-2.5, 60], [-10, 60], [-10, 50]]]}
+            json.dump({'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': poly}]}, open(land, 'w'))
+            subprocess.check_call([sys.executable, os.path.join(HERE, 'build-lp-grid.py'), tif, '--bbox', '50,-10,60,5', '--cell', '0.5',
+                                   '--smooth', '1', '--land', land, '--out', out])
+            b = open(out, 'rb').read(); rows, cols = struct.unpack('<HH', b[16:20])
+            vals = np.frombuffer(b[20:], dtype='<f4').reshape(rows, cols)
+            self.assertEqual(vals[rows - 1, 0], 40.0)                 # NW cell centre (-9.75, 59.75) is on land: kept
+            self.assertTrue(np.isnan(vals[:, 15:]).all())             # every cell centre east of -2.5 is sea: NaN
+            self.assertEqual(int(np.isnan(vals[:, :15]).sum()), 1)    # on land only the source NaN remains
 
 if __name__ == '__main__':
     unittest.main()
