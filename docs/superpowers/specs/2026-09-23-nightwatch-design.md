@@ -166,7 +166,7 @@ App layer: launch smoke test in `build-app.sh` (process starts, menu item presen
 
 ## 5. UI
 
-Dark by default, follows system appearance otherwise. System font. Accent green `#6ee7b7` on `#14171e` surfaces. Mockups: https://claude.ai/artifact/QeNuUku7pexFvPusu271Ye
+Dark by default, follows system appearance otherwise. System font. Accent red `#ff453a` on `#14171e` surfaces (owner decision 2026-09-23: red preserves dark adaptation at the telescope; the earlier green accent is retired). Secondary badge colour `#8fb4ff`. Mockups: https://claude.ai/artifact/QeNuUku7pexFvPusu271Ye
 
 1. Popover "Tonight": site and date, score ring, verdict line, clear window, cloud strip for the night, six tiles (dark, Moon, seeing, wind, dew risk, transparency), best three targets, notify toggle, updated time.
 2. Targets window: sidebar of groups with counts and glyphs; grid of cards (thumbnail, name, magnitude, altitude bar, best time, badge); filters (fits FOV, above 30°, include Moon-washed); search.
