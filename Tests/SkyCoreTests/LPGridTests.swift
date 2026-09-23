@@ -15,7 +15,8 @@ private func sampleGrid() -> LPGrid {
 @Test func roundTripsThroughBinary() throws {
     let g = sampleGrid()
     let back = try LPGrid(data: g.encoded())
-    #expect(back.rows == 3 && back.cols == 3 && back.cellDeg == 0.1)
+    #expect(back.rows == 3 && back.cols == 3)
+    #expect(abs(back.cellDeg - 0.1) < 1e-6)
     #expect(back.values[0] == 5 && back.values[8] == 40 && back.values[4].isNaN)
     #expect(g.encoded().count == 20 + 9 * 4)
     #expect(String(decoding: g.encoded().prefix(4), as: UTF8.self) == "LPG1")
@@ -24,6 +25,10 @@ private func sampleGrid() -> LPGrid {
 @Test func rejectsBadData() {
     #expect(throws: LPGridError.self) { try LPGrid(data: Data("nope".utf8)) }
     #expect(throws: LPGridError.self) { try LPGrid(data: sampleGrid().encoded().prefix(20)) }
+}
+
+@Test func rejectsHeaderOnlyInput() {
+    #expect(throws: LPGridError.self) { try LPGrid(data: sampleGrid().encoded().prefix(17)) }
 }
 
 @Test func lookupUsesCellCentresAndEdges() {
@@ -51,9 +56,9 @@ private func sampleGrid() -> LPGrid {
     let centre = Coordinate(latitude: 53.15, longitude: -1.85)   // middle cell
     let spots = g.darkestSpots(center: centre, radiusKm: 30, count: 3, minSpacingKm: 5)
     #expect(spots.count == 3)
-    #expect(spots[0].radiance == 0.1)   // darkest first
-    #expect(spots[1].radiance == 0.2)
-    #expect(spots[2].radiance == 0.5)
+    #expect(abs(spots[0].radiance - 0.1) < 1e-6)   // darkest first
+    #expect(abs(spots[1].radiance - 0.2) < 1e-6)
+    #expect(abs(spots[2].radiance - 0.5) < 1e-6)
     #expect(spots.allSatisfy { Geo.distanceKm(centre, $0.coordinate) <= 30 })
     for i in 0..<spots.count { for j in (i + 1)..<spots.count { #expect(Geo.distanceKm(spots[i].coordinate, spots[j].coordinate) >= 5) } }
     let tight = g.darkestSpots(center: centre, radiusKm: 8, count: 3, minSpacingKm: 5)

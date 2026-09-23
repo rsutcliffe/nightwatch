@@ -27,14 +27,13 @@ public struct DarkSpot: Equatable, Sendable {
     public let coordinate: Coordinate
     public let radiance: Double
     public let band: DarknessBand
+
+    public init(coordinate: Coordinate, radiance: Double, band: DarknessBand) {
+        self.coordinate = coordinate; self.radiance = radiance; self.band = band
+    }
 }
 
 public enum LPGridError: Error { case badMagic, truncated }
-
-/// Widen a stored Float32 to Double via its shortest round-trip decimal string rather than
-/// plain binary widening — `Double(Float(0.1))` is 0.10000000149011612, not 0.1, and callers
-/// (and tests) compare against the Double literal a human actually typed.
-private func preciseDouble(_ f: Float) -> Double { Double(f.description) ?? Double(f) }
 
 /// Row 0 is the southernmost row; column 0 the westernmost. Cell (r, c) covers
 /// [south + r·cell, south + (r+1)·cell) × [west + c·cell, west + (c+1)·cell).
@@ -54,17 +53,24 @@ public struct LPGrid: Sendable {
         // Data slices (e.g. a `.prefix(n)`) keep the parent's indices; copy to a
         // fresh, zero-indexed buffer before doing any offset-based access.
         let data = Data(data)
-        guard data.count >= 16, String(decoding: data.prefix(4), as: UTF8.self) == "LPG1" else { throw LPGridError.badMagic }
-        let s = preciseDouble(data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: 4, as: Float.self) })
-        let w = preciseDouble(data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: 8, as: Float.self) })
-        let c = preciseDouble(data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: 12, as: Float.self) })
-        let r = Int(data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: 16, as: UInt16.self) })
-        let k = Int(data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: 18, as: UInt16.self) })
+        guard String(decoding: data.prefix(4), as: UTF8.self) == "LPG1" else { throw LPGridError.badMagic }
+        guard data.count >= 20 else { throw LPGridError.truncated }
+        func f32(_ o: Int) -> Float {
+            let bits = data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: o, as: UInt32.self) }
+            return Float(bitPattern: UInt32(littleEndian: bits))
+        }
+        func u16(_ o: Int) -> Int {
+            let bits = data.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: o, as: UInt16.self) }
+            return Int(UInt16(littleEndian: bits))
+        }
+        let s = Double(f32(4))
+        let w = Double(f32(8))
+        let c = Double(f32(12))
+        let r = u16(16)
+        let k = u16(18)
         guard data.count == 20 + r * k * 4 else { throw LPGridError.truncated }
         var vals = [Float](repeating: .nan, count: r * k)
-        data.withUnsafeBytes { raw in
-            for i in 0..<(r * k) { vals[i] = raw.loadUnaligned(fromByteOffset: 20 + i * 4, as: Float.self) }
-        }
+        for i in 0..<(r * k) { vals[i] = f32(20 + i * 4) }
         self.init(south: s, west: w, cellDeg: c, rows: r, cols: k, values: vals)
     }
 
@@ -84,7 +90,7 @@ public struct LPGrid: Sendable {
         let r = Int(floor((c.latitude - south) / cellDeg)), k = Int(floor((c.longitude - west) / cellDeg))
         guard r >= 0, r < rows, k >= 0, k < cols else { return nil }
         let v = values[r * cols + k]
-        return v.isNaN ? nil : preciseDouble(v)
+        return v.isNaN ? nil : Double(v)
     }
 
     func centre(row: Int, col: Int) -> Coordinate {
@@ -102,7 +108,7 @@ public struct LPGrid: Sendable {
             let v = values[r * cols + k]
             guard !v.isNaN else { continue }
             let p = centre(row: r, col: k)
-            if Geo.distanceKm(center, p) <= radiusKm { candidates.append((p, preciseDouble(v))) }
+            if Geo.distanceKm(center, p) <= radiusKm { candidates.append((p, Double(v))) }
         } }
         candidates.sort { $0.1 < $1.1 }
         var picked: [DarkSpot] = []
