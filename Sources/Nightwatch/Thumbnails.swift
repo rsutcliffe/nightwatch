@@ -32,6 +32,9 @@ enum Thumbnails {
     }
 
     static func image(for t: RankedTarget, fov: FieldOfView) async -> NSImage? {
+        // Planets and the Moon get real photographs, not a survey cutout.
+        if t.id == "moon" { return await MoonImages.image(at: t.peakTime) }
+        if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap { NSImage(contentsOf: $0) } }
         guard t.group != .constellations, t.group != .planets else { return nil }
         let f = file(for: t, fov: fov)
         if let img = NSImage(contentsOf: f) { return img }

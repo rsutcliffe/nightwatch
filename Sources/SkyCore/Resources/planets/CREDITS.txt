@@ -1,0 +1,9 @@
+Planet photographs bundled with Nightwatch. All public domain (NASA); obtained from Wikimedia Commons.
+
+mercury.jpg  File:Mercury in color - Prockter07-edit1.jpg  credit: Nation  https://commons.wikimedia.org/wiki/File%3AMercury_in_color_-_Prockter07-edit1.jpg
+venus.jpg  File:Venus-real color.jpg  credit: NASA or Ricardo Nunes  https://commons.wikimedia.org/wiki/File%3AVenus-real_color.jpg
+mars.jpg  File:Mars 23 aug 2003 hubble.jpg  credit: NASA, ESA, and The Hubble Heritage Team (STScI/AURA)  https://commons.wikimedia.org/wiki/File%3AMars_23_aug_2003_hubble.jpg
+jupiter.jpg  File:Jupiter and its shrunken Great Red Spot.jpg  credit: NASA, ESA, and A. Simon (Goddard Space Flight Center)  https://commons.wikimedia.org/wiki/File%3AJupiter_and_its_shrunken_Great_Red_Spot.jpg
+saturn.jpg  File:Saturn during Equinox.jpg  credit: <a href="https://en.wikipedia.org/wiki/National_Aeronautics_and_Space_Administra  https://commons.wikimedia.org/wiki/File%3ASaturn_during_Equinox.jpg
+uranus.jpg  File:Uranus2.jpg  credit: NASA/JPL-Caltech  https://commons.wikimedia.org/wiki/File%3AUranus2.jpg
+neptune.jpg  File:Neptune Full.jpg  credit: NASA  https://commons.wikimedia.org/wiki/File%3ANeptune_Full.jpg

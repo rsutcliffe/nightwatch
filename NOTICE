@@ -10,4 +10,5 @@ Thumbnails via hips2fits, a service provided by CDS, Strasbourg. DSS images copy
 Comet elements from the IAU Minor Planet Center. https://minorplanetcenter.net
 ISS orbital elements from CelesTrak. https://celestrak.org
 Meteor shower dates compiled from the International Meteor Organization calendar. https://www.imo.net
+Planet photographs are public-domain NASA mission images (MESSENGER, Mariner 10, Hubble, Cassini, Voyager 2) obtained via Wikimedia Commons; file names and credits in Sources/SkyCore/Resources/planets/CREDITS.txt.
 Moon phase images from NASA's Scientific Visualization Studio "Moon Phase and Libration" (Dial-a-Moon), public domain. https://svs.gsfc.nasa.gov/5587
