@@ -40,7 +40,7 @@ Excluded: Met Office DataPoint (decommissioned), Met Office DataHub, OpenWeather
 
 Telescope calibration reference (not a dependency): DwarfLab DWARF Mini, 30 mm f/5, 150 mm focal length, frame about 2.1° × 1.2°. Presets are data, not code paths. Verified preset fields of view: DWARF Mini 2.1° × 1.2° (telescopicwatch.com review), DWARF 3 2.93° × 1.65° (skiesandscopes.com), Seestar S50 1.29° × 0.73° (seestar.com FAQ), APS-C DSLR at 200 mm 6.7° × 4.5° (computed from 23.5 × 15.6 mm).
 
-Toolchain facts verified on the owner's Mac (macOS 27, Command Line Tools only, Swift 6.4): SwiftPM builds a SwiftUI `MenuBarExtra` executable plus the vendored Astronomy Engine C target; Swift Testing runs when the macro plugin path is passed (`-Xswiftc -plugin-path -Xswiftc /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing`); XCTest is not available. SwiftPM resource bundles resolve through `Bundle.module`.
+Toolchain facts verified on the owner's Mac (macOS 27, Command Line Tools only, Swift 6.4): SwiftPM builds a SwiftUI `MenuBarExtra` executable plus the vendored Astronomy Engine C target; Swift Testing runs when the macro plugin path is passed (`-Xswiftc -plugin-path -Xswiftc /Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing`); XCTest is not available. SwiftPM resource bundles resolve through `Bundle.module`. On this SDK `@State` is a macro whose plugin (SwiftUIMacros) does not ship with the Command Line Tools, so views hold local state in `ObservableObject` view models via `@StateObject`; `@Published`, `@EnvironmentObject`, `@ObservedObject`, `@Environment` and `.task` all compile (verified 2026-09-23).
 
 ## 3. Decisions taken with the owner
 
