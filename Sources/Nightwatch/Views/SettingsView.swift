@@ -6,6 +6,7 @@ final class SettingsViewState: ObservableObject {
     @Published var presets: [TelescopePreset] = (try? TelescopePresets.bundled()) ?? []
     @Published var newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
     @Published var loginStatus = ""
+    @Published var confirmReset = false
 }
 
 struct SettingsView: View {
@@ -52,8 +53,8 @@ struct SettingsView: View {
                     Text("Custom").tag("custom")
                 }
                 HStack {
-                    TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { store.config.fov.widthDeg = $0; store.config.fovPresetID = nil; store.saveConfig() }), format: .number)
-                    TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { store.config.fov.heightDeg = $0; store.config.fovPresetID = nil; store.saveConfig() }), format: .number)
+                    TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { store.config.fov.widthDeg = max(0.05, $0); store.config.fovPresetID = nil; store.saveConfig() }), format: .number)
+                    TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { store.config.fov.heightDeg = max(0.05, $0); store.config.fovPresetID = nil; store.saveConfig() }), format: .number)
                 }
             }
             Section("Go rule") {
@@ -73,7 +74,8 @@ struct SettingsView: View {
             }
             Section("App") {
                 Picker("Wording", selection: bind(\.flavour)) { Text("Nightwatch").tag(Flavour.watch); Text("Plain").tag(Flavour.plain) }
-                Toggle("Start at login", isOn: Binding(get: { store.config.loginItem }, set: { on in
+                // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
+                Toggle("Start at login", isOn: Binding(get: { SMAppService.mainApp.status == .enabled }, set: { on in
                     do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; store.config.loginItem = on; store.saveConfig() }
                     catch { ui.loginStatus = error.localizedDescription }
                     if SMAppService.mainApp.status == .requiresApproval { ui.loginStatus = "Approve Nightwatch under System Settings › General › Login Items." }
@@ -81,6 +83,13 @@ struct SettingsView: View {
                 if !ui.loginStatus.isEmpty { Text(ui.loginStatus).font(.caption).foregroundStyle(Theme.warn) }
                 LabeledContent("Config file") { Text(ConfigStore.defaultURL.path).font(.caption).textSelection(.enabled) }
                 Text("Symlink that file into iCloud Drive or any synced folder to share settings across Macs.").font(.caption).foregroundStyle(Theme.dim)
+                if store.configLoadFailed {
+                    Text("The config file could not be read, so changes are not being saved. A copy is at config.json.bad. Fix the file, or reset to defaults.").font(.caption).foregroundStyle(Theme.warn)
+                }
+                Button("Reset config", role: .destructive) { ui.confirmReset = true }
+                    .confirmationDialog("Replace the config file with defaults? Sites and settings will be lost.", isPresented: $ui.confirmReset) {
+                        Button("Reset config", role: .destructive) { store.resetConfig() }
+                    }
             }
         }
         .formStyle(.grouped)

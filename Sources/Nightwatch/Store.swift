@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 final class Store: ObservableObject {
-    @Published var config: Config
+    @Published var config: Config = .default
     @Published var plan: NightPlan?
     @Published var tomorrow: NightPlan?
     @Published var events: [SkyEvent] = []
@@ -13,6 +13,9 @@ final class Store: ObservableObject {
     @Published var autoSite: Site?
     @Published var lastError: String?
     @Published var refreshing = false
+    /// config.json exists but would not decode: saves are refused so the user's file is never overwritten.
+    @Published var configLoadFailed = false
+    var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
 
     static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
@@ -22,18 +25,54 @@ final class Store: ObservableObject {
     private let showers: [MeteorShower]
     private var comets: [CometElements] = []
     private var tle: TLE?
+    private var configModDate: Date?
+    private var auxAttempts: [String: Date] = [:]   // last download ATTEMPT per aux feed, keyed "comets"/"iss"
 
     init() {
-        config = (try? ConfigStore.load(from: ConfigStore.defaultURL)) ?? .default
         catalog = (try? Catalog.bundled()) ?? Catalog(objects: [])
         constellations = (try? Constellations.bundled()) ?? []
         showers = (try? MeteorShowers.bundled()) ?? []
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         forecast = Store.read("forecast.json")
+        plan = Store.read("plan.json")             // content in the popover before the first fetch
         alertState = Store.read("alerts-state.json")
         comets = Store.read("comets.json") ?? []
         tle = Store.read("iss-tle.json")
+        auxAttempts = Store.read("aux-attempts.json") ?? [:]
         if catalog.objects.isEmpty { lastError = "Catalogue missing: run scripts/fetch-data.sh and rebuild." }
+        loadConfig()
+    }
+
+    /// Loads config.json. A file that exists but will not decode (or a dangling symlink) is never overwritten:
+    /// it is copied to config.json.bad beside it and saves are refused until Reset config in Settings.
+    /// On failure the in-memory config is kept (the default at launch, the last good one on a reload).
+    private func loadConfig() {
+        let url = ConfigStore.defaultURL
+        configModDate = Store.configModDate()
+        do {
+            config = try ConfigStore.load(from: url)
+            configLoadFailed = false
+        } catch {
+            configLoadFailed = true
+            if let d = try? Data(contentsOf: url) { try? d.write(to: url.appendingPathExtension("bad"), options: .atomic) }
+            lastError = "Could not read \(url.path): \(error.localizedDescription) A copy is at config.json.bad. Settings will not be saved until you fix the file or use Reset config in Settings."
+        }
+    }
+
+    /// Modification time of the file the config path resolves to (through a synced-folder symlink).
+    private static func configModDate() -> Date? {
+        try? FileManager.default.attributesOfItem(atPath: ConfigStore.defaultURL.resolvingSymlinksInPath().path)[.modificationDate] as? Date
+    }
+
+    /// The only way to clear `configLoadFailed`: an explicit reset from Settings.
+    func resetConfig() {
+        configLoadFailed = false
+        config = .default
+        saveConfig()
+    }
+
+    private func forecastMatches(_ s: Site) -> Bool {
+        forecast.map { abs($0.latitude - s.latitude) <= 0.01 && abs($0.longitude - s.longitude) <= 0.01 } ?? false
     }
 
     func constellation(_ id: String) -> Constellation? { constellations.first { $0.id == id } }
@@ -44,20 +83,29 @@ final class Store: ObservableObject {
     var iconName: String { Theme.icon(for: plan, stale: isStale, now: Date()) }
 
     func saveConfig() {
-        try? ConfigStore.save(config, to: ConfigStore.defaultURL)
-        let siteChanged = site.map { s in
-            forecast.map { abs($0.latitude - s.latitude) > 0.01 || abs($0.longitude - s.longitude) > 0.01 } ?? true
-        } ?? false
+        if configLoadFailed {
+            lastError = "Not saved: \(ConfigStore.defaultURL.lastPathComponent) could not be read. Fix it, or use Reset config in Settings."
+        } else {
+            try? ConfigStore.save(config, to: ConfigStore.defaultURL)
+            configModDate = Store.configModDate()
+        }
+        let siteChanged = site.map { !forecastMatches($0) } ?? false
         Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()) } }
     }
 
     /// Fetch when the cache is older than 30 minutes (or forced), then recompute everything.
+    /// Also reloads config.json first when it changed on disk (another Mac editing it through a synced symlink),
+    /// and treats a forecast for other coordinates as stale.
     func refresh(force: Bool) async {
-        guard let site else { lastError = "No site. Add one in Settings or allow location access."; return }
+        if let m = Store.configModDate(), m > (configModDate ?? .distantPast) { loadConfig() }
+        guard !refreshing else { return }
+        guard let site else {
+            if !configLoadFailed { lastError = "No site. Add one in Settings or allow location access." }
+            return
+        }
         refreshing = true
-        defer { refreshing = false }
         let now = Date()
-        if force || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > 30 * 60 }) ?? true {
+        if force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > 30 * 60 }) ?? true {
             do {
                 forecast = try await ForecastService.fetch(site: site, fetcher: fetcher, now: now)
                 Store.write(forecast, "forecast.json")
@@ -68,24 +116,41 @@ final class Store: ObservableObject {
         }
         await refreshAuxiliary(now: now)
         await recompute(now: now)
+        refreshing = false
+        // The site changed while this ran (location fix, Settings, config reload) and its own refresh hit the guard above.
+        if self.site != site { await refresh(force: false) }
     }
 
     /// Comet elements daily, ISS elements every 2 hours (CelesTrak asks for no more). The MPC file is gzip, so it goes through gunzip.
+    /// Gated on the last attempt, not the last success, so a failing server is not hammered every tick.
     private func refreshAuxiliary(now: Date) async {
-        if Store.age("comets.json") > 86_400, let data = try? await fetcher.get(Comets.url) {
+        if attemptDue("comets", every: 86_400, now: now), let data = try? await fetcher.get(Comets.url) {
             let unzipped = await Task.detached { Store.gunzip(data) }.value
             if let c = try? Comets.decode(unzipped) { comets = c; Store.write(c, "comets.json") }
         }
-        if Store.age("iss-tle.json") > 2 * 3600, let data = try? await fetcher.get(Satellites.issURL),
+        if attemptDue("iss", every: 2 * 3600, now: now), let data = try? await fetcher.get(Satellites.issURL),
            let t = try? Satellites.parseTLE(String(decoding: data, as: UTF8.self)) {
             tle = t; Store.write(t, "iss-tle.json")
         }
+    }
+
+    /// True (and the attempt recorded) when `interval` has passed since the last attempt for `key`.
+    private func attemptDue(_ key: String, every interval: TimeInterval, now: Date) -> Bool {
+        guard now.timeIntervalSince(auxAttempts[key] ?? .distantPast) >= interval else { return false }
+        auxAttempts[key] = now
+        Store.write(auxAttempts, "aux-attempts.json")
+        return true
     }
 
     /// The night whose sunset is coming up, or the one in progress: local date of (now − 9 h). ponytail: a fixed 9 h
     /// offset means the previous night stays "tonight" until 09:00 local; sunrise-based switching if anyone minds.
     func recompute(now: Date) async {
         guard let site, let fc = forecast else { return }
+        guard forecastMatches(site) else {
+            plan = nil; tomorrow = nil; events = []
+            lastError = "Forecast is for a different site; refreshing"
+            return
+        }
         let cal = site.calendar
         guard let night = try? Ephemeris.night(localDate: now.addingTimeInterval(-9 * 3600), site: site),
               let next = try? Ephemeris.night(localDate: cal.date(byAdding: .day, value: 1, to: night.localDate)!, site: site) else { return }
@@ -127,10 +192,6 @@ final class Store: ObservableObject {
 
     // MARK: cache helpers
     static func url(_ name: String) -> URL { cacheDir.appendingPathComponent(name) }
-    static func age(_ name: String) -> TimeInterval {
-        guard let d = try? FileManager.default.attributesOfItem(atPath: url(name).path)[.modificationDate] as? Date else { return .infinity }
-        return Date().timeIntervalSince(d)
-    }
     static func read<T: Decodable>(_ name: String) -> T? {
         guard let data = try? Data(contentsOf: url(name)) else { return nil }
         let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
@@ -149,7 +210,8 @@ final class Store: ObservableObject {
         try? data.write(to: tmp)
         let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/gunzip"); p.arguments = ["-c", tmp.path]
         let pipe = Pipe(); p.standardOutput = pipe
-        try? p.run(); let out = pipe.fileHandleForReading.readDataToEndOfFile(); p.waitUntilExit()
+        do { try p.run() } catch { return Data() }
+        let out = pipe.fileHandleForReading.readDataToEndOfFile(); p.waitUntilExit()
         guard p.terminationStatus == 0 else { return Data() }
         return out
     }

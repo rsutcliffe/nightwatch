@@ -22,6 +22,7 @@ struct TonightView: View {
         .background(Theme.bg)
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
+        .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
     }
 
     private var header: some View {

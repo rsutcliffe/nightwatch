@@ -72,3 +72,19 @@ import Foundation
     expected.goRule = GoRule(minHours: 2, maxCloudPct: 40, minAltitudeDeg: 30)
     #expect(c == expected)
 }
+
+@Test func malformedFileThrows() throws {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("config.json")
+    try "{not json".write(to: url, atomically: true, encoding: .utf8)
+    #expect(throws: (any Error).self) { try ConfigStore.load(from: url) }
+}
+
+@Test func danglingSymlinkThrows() throws {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let link = dir.appendingPathComponent("config.json")
+    try FileManager.default.createSymbolicLink(at: link, withDestinationURL: dir.appendingPathComponent("gone/config.json"))
+    #expect(throws: (any Error).self) { try ConfigStore.load(from: link) }
+}

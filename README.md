@@ -6,7 +6,7 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 
     xcode-select --install        # Command Line Tools, once
     git clone https://github.com/rsutcliffe/nightwatch.git && cd nightwatch
-    scripts/fetch-data.sh         # catalogue and constellation data, once
+    scripts/fetch-data.sh         # optional: only to refresh the bundled catalogue; the data is committed
     scripts/build-app.sh          # builds, signs ad hoc, installs to /Applications, launches
 
 ## Tests

@@ -64,8 +64,10 @@ public enum ConfigStore {
             .appendingPathComponent("Nightwatch", isDirectory: true).appendingPathComponent("config.json")
     }
 
+    /// Missing path: defaults. Anything at the path (attributesOfItem does not follow the final symlink, so a
+    /// dangling symlink counts) must decode or this throws, so the caller never mistakes it for "no config yet".
     public static func load(from url: URL) throws -> Config {
-        guard FileManager.default.fileExists(atPath: url.path) else { return .default }
+        guard (try? FileManager.default.attributesOfItem(atPath: url.path)) != nil else { return .default }
         let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
         return try d.decode(Config.self, from: Data(contentsOf: url))
     }
