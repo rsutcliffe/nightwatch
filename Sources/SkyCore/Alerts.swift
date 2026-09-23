@@ -49,6 +49,9 @@ public enum AlertEngine {
 
         switch s.stage {
         case .idle:
+            // If the first tick already lands at or after goAt, go fires straight from idle and heads-up
+            // is skipped: the go notification carries the same window and targets, so a heads-up a minute
+            // earlier would just be a second banner for no new information.
             if let g = goAt, tonight.qualifies, now >= g {
                 let (start, _) = window(tonight)
                 note = AlertNotification(kind: .go, title: copy.goTitle(windowStart: start), body: copy.notificationBody(plan: tonight, site: site))
@@ -66,6 +69,7 @@ public enum AlertEngine {
                 }
             }
         case .headsUpSent, .cancelled:
+            // cancelled recovers straight to go when the forecast clears again; no second heads-up
             if !tonight.qualifies, s.stage == .headsUpSent, settings.cancelOnDowngrade {
                 note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: copy.noWindow)
                 s.stage = .cancelled
@@ -78,7 +82,7 @@ public enum AlertEngine {
             if !tonight.qualifies, settings.cancelOnDowngrade {
                 note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: copy.noWindow)
                 s.stage = .cancelled
-            } else if let end = tonight.primary?.end, now >= end {
+            } else if now >= (tonight.primary?.end ?? tonight.night.sunrise) {
                 s.stage = .done
             }
         case .done:

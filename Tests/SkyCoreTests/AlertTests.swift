@@ -100,3 +100,28 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     #expect(c.noWindow == "No clear window tonight.")
     #expect(!c.cancelTitle.contains("Stand down"))
 }
+
+@Test func cancelledRecoversToGoWhenForecastClears() throws {
+    let (_, good, _, _) = try fixtures()
+    let state = AlertState(nightKey: good.night.key, stage: .cancelled)
+    let due = good.primary!.start.addingTimeInterval(-20 * 60)
+    let r = AlertEngine.step(now: due, tonight: good, tomorrow: nil, state: state, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(r.notification?.kind == .go)
+    #expect(r.state.stage == .goSent)
+}
+
+@Test func goSentFinishesAtSunriseWhenDowngradedWithoutCancel() throws {
+    let (night, _, bad, _) = try fixtures()
+    var noCancel = settings
+    noCancel.cancelOnDowngrade = false
+    let state = AlertState(nightKey: bad.night.key, stage: .goSent)
+
+    let afterSunrise = night.sunrise.addingTimeInterval(60)
+    let r1 = AlertEngine.step(now: afterSunrise, tonight: bad, tomorrow: nil, state: state, settings: noCancel, forecastFetchedAt: afterSunrise, site: site, copy: copy)
+    #expect(r1.notification == nil)
+    #expect(r1.state.stage == .done)
+
+    let stillInWindow = night.sunset.addingTimeInterval(2 * 3600)
+    let r2 = AlertEngine.step(now: stillInWindow, tonight: bad, tomorrow: nil, state: state, settings: noCancel, forecastFetchedAt: stillInWindow, site: site, copy: copy)
+    #expect(r2.state.stage == .goSent)
+}
