@@ -99,3 +99,15 @@ import Foundation
     try FileManager.default.createSymbolicLink(at: link, withDestinationURL: dir.appendingPathComponent("gone/config.json"))
     #expect(throws: (any Error).self) { try ConfigStore.load(from: link) }
 }
+
+@Test func darkSiteRadiusIsClampedOnDecode() throws {
+    let low = try JSONDecoder().decode(DarkSiteSettings.self, from: Data(#"{"radiusKm":0}"#.utf8))
+    let high = try JSONDecoder().decode(DarkSiteSettings.self, from: Data(#"{"radiusKm":5000}"#.utf8))
+    let ok = try JSONDecoder().decode(DarkSiteSettings.self, from: Data(#"{"radiusKm":120}"#.utf8))
+    #expect(low.radiusKm == 5 && high.radiusKm == 300 && ok.radiusKm == 120)
+}
+
+@Test func unknownDistanceUnitDecodesAsKm() throws {
+    let c = try JSONDecoder().decode(Config.self, from: Data(#"{"flavour":"plain","darkSites":{"unit":"furlongs","radiusKm":80}}"#.utf8))
+    #expect(c.darkSites.unit == .km && c.darkSites.radiusKm == 80 && c.flavour == .plain)
+}

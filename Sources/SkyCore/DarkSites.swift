@@ -55,10 +55,10 @@ public enum DarkSites {
         }
         if maxSpots > 0 {
             let spots = grids.flatMap { $0.darkestSpots(center: home, radiusKm: radiusKm, count: maxSpots, minSpacingKm: 10) }
-                .sorted { $0.radiance < $1.radiance }.prefix(maxSpots)
+                .sorted { ($0.radiance, Geo.distanceKm(home, $0.coordinate)) < ($1.radiance, Geo.distanceKm(home, $1.coordinate)) }.prefix(maxSpots)
             for s in spots {
                 let d = Geo.distanceKm(home, s.coordinate), b = Geo.bearingDeg(from: home, to: s.coordinate)
-                let name = "Dark spot \(Geo.compass(b)) \(Int(d.rounded())) km"
+                let name = String(format: "Dark spot %.3f, %.3f", s.coordinate.latitude, s.coordinate.longitude)
                 out.append(DarkSite(id: String(format: "spot-%.3f-%.3f", s.coordinate.latitude, s.coordinate.longitude), name: name, kind: "spot",
                                     coordinate: s.coordinate, distanceKm: d, bearingDeg: b, band: s.band, bortle: nil, source: nil, isComputed: true))
             }

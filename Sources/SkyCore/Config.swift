@@ -68,8 +68,9 @@ public struct DarkSiteSettings: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
-        radiusKm = try c.decodeIfPresent(Double.self, forKey: .radiusKm) ?? 50
-        unit = try c.decodeIfPresent(DistanceUnit.self, forKey: .unit) ?? .km
+        radiusKm = min(max(try c.decodeIfPresent(Double.self, forKey: .radiusKm) ?? 50, 5), 300)
+        // An unknown unit (hand edit, newer version) reads as km rather than failing the whole config.
+        unit = (try c.decodeIfPresent(String.self, forKey: .unit)).flatMap(DistanceUnit.init(rawValue:)) ?? .km
     }
     enum CodingKeys: String, CodingKey { case enabled, radiusKm, unit }
 }

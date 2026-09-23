@@ -78,3 +78,15 @@ private func sampleGrid() -> LPGrid {
     #expect(g.radiance(at: Coordinate(latitude: 59.75, longitude: -9.75)) == 40)
     #expect(g.radiance(at: Coordinate(latitude: 50.25, longitude: 4.75))! < 0.11)
 }
+
+@Test func equalZeroCellsTieToTheNearest() {
+    // 21 × 21 cells of exactly 0 (VIIRS masked zeros), 0.01° cells; home at the centre cell (10, 10).
+    let g = LPGrid(south: 53.0, west: -2.0, cellDeg: 0.01, rows: 21, cols: 21, values: [Float](repeating: 0, count: 21 * 21))
+    let home = Coordinate(latitude: 53.105, longitude: -1.895)
+    let spots = g.darkestSpots(center: home, radiusKm: 15, count: 3, minSpacingKm: 1)
+    #expect(spots.count == 3)
+    #expect(Geo.distanceKm(home, spots[0].coordinate) < 0.01)   // the home cell itself, not the southern rim
+    let d = spots.map { Geo.distanceKm(home, $0.coordinate) }
+    #expect(d == d.sorted())                                    // nearest first among equals
+    #expect(d.allSatisfy { $0 < 2 })
+}

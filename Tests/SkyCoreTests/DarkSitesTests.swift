@@ -31,7 +31,8 @@ import Foundation
     #expect(sites.allSatisfy { $0.kind == "spot" })
     #expect(sites.allSatisfy { $0.band != nil })
     #expect(sites.allSatisfy { $0.bortle == nil })
-    #expect(sites[0].name.hasPrefix("Dark spot "))
+    #expect(sites.allSatisfy { $0.name == String(format: "Dark spot %.3f, %.3f", $0.coordinate.latitude, $0.coordinate.longitude) })
+    #expect(sites.allSatisfy { !$0.name.contains("km") })
     #expect(sites[0].id.hasPrefix("spot-"))
 }
 

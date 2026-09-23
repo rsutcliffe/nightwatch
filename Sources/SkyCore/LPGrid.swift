@@ -97,22 +97,23 @@ public struct LPGrid: Sendable {
         Coordinate(latitude: south + (Double(row) + 0.5) * cellDeg, longitude: west + (Double(col) + 0.5) * cellDeg)
     }
 
-    /// Lowest-radiance cells within `radiusKm`, greedy from darkest, each at least `minSpacingKm` from the ones already picked.
+    /// Lowest-radiance cells within `radiusKm` (ties to the nearest), greedy from darkest, each at least `minSpacingKm` from the ones already picked.
     public func darkestSpots(center: Coordinate, radiusKm: Double, count: Int, minSpacingKm: Double) -> [DarkSpot] {
         let latSpan = radiusKm / 111.2, lonSpan = radiusKm / (111.2 * max(0.1, cos(center.latitude * .pi / 180)))
         let r0 = max(0, Int(floor((center.latitude - latSpan - south) / cellDeg))), r1 = min(rows - 1, Int(floor((center.latitude + latSpan - south) / cellDeg)))
         let c0 = max(0, Int(floor((center.longitude - lonSpan - west) / cellDeg))), c1 = min(cols - 1, Int(floor((center.longitude + lonSpan - west) / cellDeg)))
         guard r0 <= r1, c0 <= c1 else { return [] }
-        var candidates: [(Coordinate, Double)] = []
+        var candidates: [(p: Coordinate, v: Double, d: Double)] = []
         for r in r0...r1 { for k in c0...c1 {
             let v = values[r * cols + k]
             guard !v.isNaN else { continue }
-            let p = centre(row: r, col: k)
-            if Geo.distanceKm(center, p) <= radiusKm { candidates.append((p, Double(v))) }
+            let p = centre(row: r, col: k), d = Geo.distanceKm(center, p)
+            if d <= radiusKm { candidates.append((p, Double(v), d)) }
         } }
-        candidates.sort { $0.1 < $1.1 }
+        // Much of the grid is exactly 0 (VIIRS masks unlit land to 0), so ties are common: the nearest wins.
+        candidates.sort { ($0.v, $0.d) < ($1.v, $1.d) }
         var picked: [DarkSpot] = []
-        for (p, v) in candidates where picked.count < count {
+        for (p, v, _) in candidates where picked.count < count {
             if picked.allSatisfy({ Geo.distanceKm($0.coordinate, p) >= minSpacingKm }) {
                 picked.append(DarkSpot(coordinate: p, radiance: v, band: DarknessBand.from(radiance: v)))
             }
