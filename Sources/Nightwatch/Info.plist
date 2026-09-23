@@ -12,6 +12,7 @@
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSLocationUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
+  <key>NSLocationWhenInUseUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
   <key>NSHumanReadableCopyright</key><string>MIT licence. Data attributions in About.</string>
 </dict>
 </plist>

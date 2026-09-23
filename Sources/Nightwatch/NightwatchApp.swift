@@ -29,11 +29,18 @@ struct NightwatchApp: App {
 
     @MainActor
     private func boot() async {
-        guard store.scheduler == nil else { return }
+        guard store.scheduler == nil, !store.booting else { return }
+        store.booting = true
+        location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
         await Notifier.requestAuthorisation()
         if store.config.activeSiteName == nil { store.autoSite = await location.requestOnce() }
         await store.refresh(force: false)
-        let s = Scheduler { Task { await store.refresh(force: false) } }
+        let s = Scheduler { [location] in
+            Task { @MainActor in
+                if store.site == nil, let fix = await location.requestOnce() { store.autoSite = fix }   // retry location until we have a site
+                await store.refresh(force: false)
+            }
+        }
         s.start()
         store.scheduler = s
     }
