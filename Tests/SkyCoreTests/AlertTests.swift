@@ -62,7 +62,9 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     let due = night.sunset.addingTimeInterval(-3000)
     let r = AlertEngine.step(now: due, tonight: bad, tomorrow: tomorrowGood, state: nil, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
     #expect(r.notification?.kind == .tomorrowPreview)
-    #expect(r.state.stage == .done)
+    #expect(r.state.stage == .previewSent)
+    let again = AlertEngine.step(now: due.addingTimeInterval(600), tonight: bad, tomorrow: tomorrowGood, state: r.state, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(again.notification == nil && again.state.stage == .previewSent)   // never resent
 }
 
 @Test func quietHoursDropButAdvance() throws {
@@ -124,4 +126,28 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     let stillInWindow = night.sunset.addingTimeInterval(2 * 3600)
     let r2 = AlertEngine.step(now: stillInWindow, tonight: bad, tomorrow: nil, state: state, settings: noCancel, forecastFetchedAt: stillInWindow, site: site, copy: copy)
     #expect(r2.state.stage == .goSent)
+}
+
+@Test func lateClearanceAfterSunsetFiresGo() throws {
+    let (night, _, bad, _) = try fixtures()
+    let r0 = AlertEngine.step(now: night.sunset, tonight: bad, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: night.sunset, site: site, copy: copy)
+    #expect(r0.notification == nil)
+    #expect(r0.state.stage == .idle)
+
+    let now = night.sunset.addingTimeInterval(3600)
+    let late = plan(night: night, window: ClearWindow(start: now.addingTimeInterval(20 * 60), end: now.addingTimeInterval(5 * 3600)))
+    let r1 = AlertEngine.step(now: now, tonight: late, tomorrow: nil, state: r0.state, settings: settings, forecastFetchedAt: now, site: site, copy: copy)
+    #expect(r1.notification?.kind == .go)
+    #expect(r1.state.stage == .goSent)
+}
+
+@Test func lateClearanceAfterPreviewFiresGo() throws {
+    let (_, good, _, tomorrowGood) = try fixtures()
+    let state = AlertState(nightKey: good.night.key, stage: .previewSent)
+    let due = good.primary!.start.addingTimeInterval(-20 * 60)
+    let r1 = AlertEngine.step(now: due, tonight: good, tomorrow: tomorrowGood, state: state, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(r1.notification?.kind == .go)
+    #expect(r1.state.stage == .goSent)
+    let r2 = AlertEngine.step(now: due, tonight: good, tomorrow: tomorrowGood, state: r1.state, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(r2.notification == nil)
 }

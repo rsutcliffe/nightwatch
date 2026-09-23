@@ -11,7 +11,7 @@ public struct AlertSettings: Codable, Equatable, Sendable {
 }
 
 public struct AlertState: Codable, Equatable, Sendable {
-    public enum Stage: String, Codable, Sendable { case idle, headsUpSent, goSent, cancelled, done }
+    public enum Stage: String, Codable, Sendable { case idle, previewSent, headsUpSent, goSent, cancelled, done }
     public var nightKey: String
     public var stage: Stage
     public init(nightKey: String, stage: Stage) { self.nightKey = nightKey; self.stage = stage }
@@ -46,37 +46,40 @@ public enum AlertEngine {
         func window(_ p: NightPlan) -> (String, Double) {
             (Copy.hhmm(p.primary!.start, site: site), p.primary!.hours)
         }
+        /// Fires go when tonight qualifies and the nudge time has passed; true when it fired.
+        func goIfDue() -> Bool {
+            guard let g = goAt, tonight.qualifies, now >= g else { return false }
+            note = AlertNotification(kind: .go, title: copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site))
+            s.stage = .goSent
+            return true
+        }
 
         switch s.stage {
         case .idle:
             // If the first tick already lands at or after goAt, go fires straight from idle and heads-up
             // is skipped: the go notification carries the same window and targets, so a heads-up a minute
             // earlier would just be a second banner for no new information.
-            if let g = goAt, tonight.qualifies, now >= g {
-                let (start, _) = window(tonight)
-                note = AlertNotification(kind: .go, title: copy.goTitle(windowStart: start), body: copy.notificationBody(plan: tonight, site: site))
-                s.stage = .goSent
-            } else if now >= headsUpAt {
+            if !goIfDue(), now >= headsUpAt {
                 if tonight.qualifies, settings.headsUp {
                     let (start, hours) = window(tonight)
                     note = AlertNotification(kind: .headsUp, title: copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site))
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
                     note = AlertNotification(kind: .tomorrowPreview, title: copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site))
-                    s.stage = .done
-                } else if !tonight.qualifies, now >= tonight.night.sunset {
-                    s.stage = .done
+                    s.stage = .previewSent
                 }
+                // A night that fails at sunset stays idle: the forecast can still clear later and fire go.
             }
+        case .previewSent:
+            // Preview already sent for tomorrow; tonight can still clear late. Go only, never a second preview or heads-up.
+            _ = goIfDue()
         case .headsUpSent, .cancelled:
             // cancelled recovers straight to go when the forecast clears again; no second heads-up
             if !tonight.qualifies, s.stage == .headsUpSent, settings.cancelOnDowngrade {
                 note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: copy.noWindow)
                 s.stage = .cancelled
-            } else if let g = goAt, tonight.qualifies, now >= g {
-                let (start, _) = window(tonight)
-                note = AlertNotification(kind: .go, title: copy.goTitle(windowStart: start), body: copy.notificationBody(plan: tonight, site: site))
-                s.stage = .goSent
+            } else {
+                _ = goIfDue()
             }
         case .goSent:
             if !tonight.qualifies, settings.cancelOnDowngrade {
