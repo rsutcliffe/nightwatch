@@ -28,6 +28,7 @@ public struct Config: Codable, Equatable, Sendable {
     public var flavour: Flavour = .watch
     public var loginItem = false
     public var notifyEnabled = true
+    public var darkSites = DarkSiteSettings()
 
     public init() {}
     public static let `default` = Config()
@@ -39,7 +40,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled
+        case sites, activeSiteName, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -55,7 +56,22 @@ public struct Config: Codable, Equatable, Sendable {
         flavour = try c.decodeIfPresent(Flavour.self, forKey: .flavour) ?? .watch
         loginItem = try c.decodeIfPresent(Bool.self, forKey: .loginItem) ?? false
         notifyEnabled = try c.decodeIfPresent(Bool.self, forKey: .notifyEnabled) ?? true
+        darkSites = try c.decodeIfPresent(DarkSiteSettings.self, forKey: .darkSites) ?? DarkSiteSettings()
     }
+}
+
+public struct DarkSiteSettings: Codable, Equatable, Sendable {
+    public var enabled = true
+    public var radiusKm: Double = 50
+    public var unit: DistanceUnit = .km
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        radiusKm = try c.decodeIfPresent(Double.self, forKey: .radiusKm) ?? 50
+        unit = try c.decodeIfPresent(DistanceUnit.self, forKey: .unit) ?? .km
+    }
+    enum CodingKeys: String, CodingKey { case enabled, radiusKm, unit }
 }
 
 public enum ConfigStore {

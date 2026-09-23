@@ -81,6 +81,17 @@ import Foundation
     #expect(throws: (any Error).self) { try ConfigStore.load(from: url) }
 }
 
+@Test func darkSiteSettingsDefaultAndDecode() throws {
+    #expect(Config.default.darkSites == DarkSiteSettings())
+    #expect(DarkSiteSettings().radiusKm == 50 && DarkSiteSettings().unit == .km && DarkSiteSettings().enabled)
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("config.json")
+    try Data(#"{"darkSites":{"radiusKm":80,"unit":"mi"}}"#.utf8).write(to: url)
+    let c = try ConfigStore.load(from: url)
+    #expect(c.darkSites.radiusKm == 80 && c.darkSites.unit == .mi && c.darkSites.enabled)
+}
+
 @Test func danglingSymlinkThrows() throws {
     let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
