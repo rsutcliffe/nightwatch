@@ -1,0 +1,5 @@
+[
+  {"Comet_num": 2, "Orbit_type": "P", "Year_of_perihelion": 2027, "Month_of_perihelion": 2, "Day_of_perihelion": 10.2278, "Perihelion_dist": 0.338612, "e": 0.847316, "Peri": 187.2869, "Node": 334.0195, "i": 11.3479, "Epoch_year": 2026, "Epoch_month": 9, "Epoch_day": 23, "H": 14.3, "G": 4.0, "Designation_and_name": "2P/Encke", "Ref": "MPC xxxxx"},
+  {"Comet_num": 2, "Orbit_type": "I", "Year_of_perihelion": 2019, "Month_of_perihelion": 12, "Day_of_perihelion": 9.0572, "Perihelion_dist": 1.997724, "e": 3.345952, "Peri": 209.2911, "Node": 307.8024, "i": 44.2624, "Epoch_year": 2025, "Epoch_month": 11, "Epoch_day": 21, "H": 11.0, "G": 4.0, "Designation_and_name": "2I/Borisov", "Ref": "MPEC 2025"},
+  {"Orbit_type": "C", "Provisional_packed_desig": "J42E00A", "Year_of_perihelion": 2028, "Month_of_perihelion": 9, "Day_of_perihelion": 13.9706, "Perihelion_dist": 1.277687, "e": 0.934892, "Peri": 335.558, "Node": 172.3208, "i": 37.8738, "Epoch_year": 2026, "Epoch_month": 9, "Epoch_day": 23, "H": 13.5, "G": 4.0, "Designation_and_name": "C/1942 EA (Vaisala)", "Ref": "MPEC 2026"}
+]
