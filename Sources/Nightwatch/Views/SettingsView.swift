@@ -88,7 +88,8 @@ struct SettingsView: View {
     }
 
     private var nameTaken: Bool {
-        store.config.sites.contains { $0.name.caseInsensitiveCompare(ui.newSite.name) == .orderedSame }
+        let trimmed = ui.newSite.name.trimmingCharacters(in: .whitespaces)
+        return store.config.sites.contains { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }
     }
 
     private func bind<T>(_ path: WritableKeyPath<Config, T>) -> Binding<T> {
