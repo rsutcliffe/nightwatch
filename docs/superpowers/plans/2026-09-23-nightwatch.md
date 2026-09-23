@@ -1346,7 +1346,7 @@ public enum Planner {
         }
         let winds = s.darkHours.compactMap(\.windKmh)
         let avgWind = winds.isEmpty ? 0 : winds.reduce(0, +) / Double(winds.count)
-        let windPenalty = min(1, avgWind / 40) * 5
+        let windPenalty = min(1, max(0, (avgWind - 10) / 30)) * 5      // no penalty under 10 km/h, full at 40
         let spreads = s.darkHours.compactMap { h -> Double? in
             guard let t = h.tempC, let d = h.dewPointC else { return nil }
             return t - d
