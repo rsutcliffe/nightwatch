@@ -29,6 +29,10 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     let nebulae = ranked.filter { $0.group == .nebulae }
     #expect(nebulae.count > 3)
     #expect(nebulae.allSatisfy { $0.visibleFraction >= 0.5 })
+    // No magnitude in OpenNGC, still ranked. IC1396 is typed Cl+N, which the catalogue groups as a cluster.
+    #expect(ranked.contains { $0.id == "IC1396" && $0.group == .clusters && $0.magnitude == nil && $0.peakAltDeg > 30 })
+    #expect(nebulae.contains { $0.id == "NGC0281" && $0.magnitude == nil && $0.peakAltDeg > 30 })   // Pacman Nebula
+    #expect(!ranked.contains { $0.group == .galaxies && $0.magnitude == nil })
 }
 
 @Test func planQualifiesWhenForecastIsClear() throws {

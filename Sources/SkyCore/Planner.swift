@@ -161,12 +161,14 @@ extension Planner {
         var out: [RankedTarget] = []
 
         for o in catalog.objects {
-            guard let mag = o.magnitude, mag <= 12 else { continue }
+            // OpenNGC has no magnitude for many large nebulae and cluster-plus-nebula regions (IC1396): keep those.
+            // A galaxy or plain cluster with no magnitude is almost always faint, so those still need one.
+            if let m = o.magnitude { if m > 12 { continue } } else if o.group != .nebulae, o.typeCode != "Cl+N" { continue }
             let tr = track(raHours: o.raHours, decDeg: o.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
             guard tr.fraction >= 0.5 else { continue }
             let sep = Ephemeris.separationDeg(ra1Hours: o.raHours, dec1Deg: o.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
             out.append(RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group,
-                                    raHours: o.raHours, decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: mag,
+                                    raHours: o.raHours, decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude,
                                     fit: frameFit(sizeArcmin: o.majAxisArcmin, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
                                     moonSepDeg: sep, moonWashed: moonUp && sep < 30, visibleFraction: tr.fraction))
         }
