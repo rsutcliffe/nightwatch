@@ -174,23 +174,20 @@ Dark by default, follows system appearance otherwise. System font. Accent green 
 
 ## 6. Discworld flavour
 
-Nightwatch takes its name from the City Watch. References are naming and copy only: no quoted passages beyond a few words, no official artwork, no character likenesses. All flavoured strings live in one strings table; `flavour: "plain"` swaps in literal wording. Defaults:
+Nightwatch takes its name from the City Watch. Owner's brief: subtle, in key with a quiet astronomy tool, there if the reader gets it and invisible if they do not. Rules: naming and short copy only; every flavoured string must also read as ordinary English; no quoted passages beyond a few words; no official artwork; no character names in the UI. All flavoured strings live in one strings table; `flavour: "plain"` swaps in literal wording. Defaults:
 
 | Concept | Watch flavour | Plain |
 |---|---|---|
-| Background refresh | Patrol | Refresh |
+| Background refresh (menu item, logs) | Patrol | Refresh |
 | Saved site | Beat | Site |
-| Settings window | The Watch House | Settings |
-| Evening heads-up | Six o'clock report (fires at sunset − 1 h, name only) | Evening report |
-| Go alert title | All's well: clear from 22:40 | Clear from 22:40 |
-| Cancel alert title | Stand down: clouds moving in | Cancelled: clouds moving in |
+| Go alert title | All's well. Clear from 22:40 | Clear from 22:40 |
+| Cancel alert title | Stand down. Clouds moving in | Cancelled. Clouds moving in |
 | No-window empty state | Nothing to see here. Move along. | No clear window tonight. |
 | Stale / offline | Off the beat since 19:32 | Offline since 19:32 |
-| Best targets header | Persons of interest | Best tonight |
-| Score bands | 80–100 Clear as the Hub · 50–79 Fair · 20–49 Murky · 0–19 Fog off the Ankh | Excellent · Fair · Poor · Overcast |
-| Frost warning (dew point ≤ 0 °C) | Detritus weather | Frost likely |
-| About window | A small original turtle glyph, credits, attribution | Same |
-| Release names | 0.1 Guards! Guards! · 0.2 Men at Arms · 0.3 Feet of Clay · 0.4 Jingo · 0.5 The Fifth Elephant · 1.0 Night Watch | Semver only |
+| About window | A small original turtle glyph beneath the credits, unlabelled | Credits only |
+| Release names (git tags and changelog only) | 0.1 Guards! Guards! · 0.2 Men at Arms · 0.3 Feet of Clay · 0.4 Jingo · 0.5 The Fifth Elephant · 1.0 Night Watch | Semver only |
+
+Everything else uses plain wording in both modes: Settings, Refresh, Best tonight, score bands Excellent / Fair / Poor / Overcast, Frost likely.
 
 ## 7. Repository layout
 
