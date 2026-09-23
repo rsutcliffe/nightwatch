@@ -10,15 +10,19 @@ struct DetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack { Button(action: onBack) { Image(systemName: "chevron.left") }; Text(target.group.displayName).font(.caption).foregroundStyle(Theme.dim) }
+                let fov = store.config.fov
+                let thumbH: CGFloat = 260
+                let thumbW: CGFloat = thumbH * fov.widthDeg / fov.heightDeg
                 ZStack {
-                    ThumbnailView(target: target).frame(height: 260)
+                    ThumbnailView(target: target).frame(width: thumbW, height: thumbH)
                     if target.group != .constellations {
-                        let fovDeg = Thumbnails.fovDeg(for: target, fov: store.config.fov)
-                        let w = 360 * store.config.fov.widthDeg / fovDeg
+                        let fovDeg = Thumbnails.fovDeg(for: target, fov: fov)
+                        let w = thumbW * fov.widthDeg / fovDeg
                         RoundedRectangle(cornerRadius: 4).stroke(Theme.accent, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                            .frame(width: w, height: w * store.config.fov.heightDeg / store.config.fov.widthDeg)
+                            .frame(width: w, height: w * fov.heightDeg / fov.widthDeg)
                     }
                 }
+                .frame(maxWidth: .infinity)
                 Text("dashed = your field of view").font(.caption2).foregroundStyle(Theme.dim).frame(maxWidth: .infinity, alignment: .trailing)
                 Text(target.name).font(.title2.weight(.semibold))
                 Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? "")).foregroundStyle(Theme.dim)
