@@ -1,6 +1,8 @@
 import CAstronomyEngine
 import Foundation
 
+/// When `hasDarkness` is false because the Sun never set (polar day), `sunset` and
+/// `sunrise` are not real events — they bracket the local day (noon to noon + 24h).
 public struct Night: Equatable, Sendable {
     public let key: String
     public let localDate: Date
@@ -63,7 +65,8 @@ public enum Ephemeris {
         let sunset = Astronomy_SearchRiseSetEx(BODY_SUN, obs, DIRECTION_SET, astro_time_t(noon), 1.0, 0)
         guard sunset.status == ASTRO_SUCCESS else {
             // Polar day: the sun does not set within 24h of local noon, so there is no night.
-            return Night(key: key, localDate: noon, sunset: noon, sunrise: noon, darkStart: nil, darkEnd: nil)
+            return Night(key: key, localDate: noon, sunset: noon, sunrise: noon.addingTimeInterval(86_400),
+                         darkStart: nil, darkEnd: nil)
         }
         let sunrise = Astronomy_SearchRiseSetEx(BODY_SUN, obs, DIRECTION_RISE, sunset.time, 1.0, 0)
         guard sunrise.status == ASTRO_SUCCESS else { throw EphemerisError.noSunEvent }

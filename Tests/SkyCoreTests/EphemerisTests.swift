@@ -39,6 +39,8 @@ func close(_ a: Date, _ b: Date, minutes: Double) -> Bool { abs(a.timeIntervalSi
     let night = try Ephemeris.night(localDate: utc(2026, 7, 20, 10, 0), site: tromso)
     #expect(night.darkStart == nil)
     #expect(night.darkEnd == nil)
+    #expect(night.sunrise > night.sunset)
+    #expect(!night.hasDarkness)
 }
 
 @Test func polarisIsHighFromSheffield() {
