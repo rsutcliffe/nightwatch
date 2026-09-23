@@ -41,6 +41,7 @@ public enum CatalogError: Error { case missingResource(String), badHeader }
 
 public struct Catalog: Sendable {
     public let objects: [DeepSkyObject]
+    public init(objects: [DeepSkyObject]) { self.objects = objects }
 
     static let groupByType: [String: TargetGroup] = [
         "G": .galaxies, "GPair": .galaxies, "GTrpl": .galaxies, "GGroup": .galaxies,
