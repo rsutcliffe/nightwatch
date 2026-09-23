@@ -3,7 +3,7 @@ import Foundation
 
 /// When `hasDarkness` is false because the Sun never set (polar day), `sunset` and
 /// `sunrise` are not real events — they bracket the local day (noon to noon + 24h).
-public struct Night: Equatable, Sendable {
+public struct Night: Codable, Equatable, Sendable {
     public let key: String
     public let localDate: Date
     public let sunset: Date

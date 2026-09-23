@@ -91,3 +91,153 @@ public enum Planner {
         return max(0, min(100, Int(total.rounded())))
     }
 }
+
+public struct FieldOfView: Codable, Equatable, Sendable {
+    public var widthDeg: Double
+    public var heightDeg: Double
+    public init(widthDeg: Double, heightDeg: Double) { self.widthDeg = widthDeg; self.heightDeg = heightDeg }
+}
+
+public enum FrameFit: String, Codable, Sendable { case fits, small, mosaic }
+
+public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
+    public let id: String
+    public let name: String
+    public let subtitle: String
+    public let group: TargetGroup
+    public let raHours: Double
+    public let decDeg: Double
+    public let sizeArcmin: Double?
+    public let magnitude: Double?
+    public let fit: FrameFit
+    public let peakAltDeg: Double
+    public let peakTime: Date
+    public let moonSepDeg: Double
+    public let moonWashed: Bool
+    public let visibleFraction: Double
+}
+
+public struct NightPlan: Codable, Equatable, Sendable {
+    public let night: Night
+    public let windows: [ClearWindow]
+    public let primary: ClearWindow?
+    public let score: Int
+    public let qualifies: Bool
+    public let moonIllumination: Double
+    public let moonRise: Date?
+    public let moonSet: Date?
+    public let darkHours: [HourlyConditions]
+    public let targets: [RankedTarget]
+    public let best: [RankedTarget]
+    public let seeingAvailable: Bool
+}
+
+extension Planner {
+    public static func frameFit(sizeArcmin: Double?, fov: FieldOfView) -> FrameFit {
+        guard let s = sizeArcmin, s >= 5 else { return .small }
+        let deg = s / 60
+        if deg <= max(fov.widthDeg, fov.heightDeg) { return .fits }
+        return .mosaic
+    }
+
+    /// Sample a window every 30 minutes; returns fraction of samples at or above `minAlt`, the peak altitude and its time.
+    static func track(raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double) -> (fraction: Double, peakAlt: Double, peakTime: Date) {
+        var t = window.start
+        var above = 0, n = 0
+        var peak = -90.0, peakTime = window.start
+        while t <= window.end {
+            let alt = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site).alt
+            n += 1
+            if alt >= minAlt { above += 1 }
+            if alt > peak { peak = alt; peakTime = t }
+            t = t.addingTimeInterval(1800)
+        }
+        return (n == 0 ? 0 : Double(above) / Double(n), peak, peakTime)
+    }
+
+    public static func rank(catalog: Catalog, constellations: [Constellation], window: ClearWindow, site: Site, fov: FieldOfView, rule: GoRule) -> [RankedTarget] {
+        let moon = Ephemeris.moon(at: window.midpoint, site: site)
+        let moonUp = moon.position.altDeg > 0 && moon.illumination > 0.1
+        var out: [RankedTarget] = []
+
+        for o in catalog.objects {
+            guard let mag = o.magnitude, mag <= 12 else { continue }
+            let tr = track(raHours: o.raHours, decDeg: o.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
+            guard tr.fraction >= 0.5 else { continue }
+            let sep = Ephemeris.separationDeg(ra1Hours: o.raHours, dec1Deg: o.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
+            out.append(RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group,
+                                    raHours: o.raHours, decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: mag,
+                                    fit: frameFit(sizeArcmin: o.majAxisArcmin, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
+                                    moonSepDeg: sep, moonWashed: moonUp && sep < 30, visibleFraction: tr.fraction))
+        }
+
+        for p in Planet.allCases {
+            let pos = Ephemeris.planet(p, at: window.midpoint, site: site)
+            let tr = track(raHours: pos.raHours, decDeg: pos.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
+            guard tr.fraction >= 0.5 else { continue }
+            let sep = Ephemeris.separationDeg(ra1Hours: pos.raHours, dec1Deg: pos.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
+            out.append(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
+                                    raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
+                                    peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep, moonWashed: false, visibleFraction: tr.fraction))
+        }
+        if moon.illumination > 0.05 {
+            let tr = track(raHours: moon.position.raHours, decDeg: moon.position.decDeg, window: window, site: site, minAlt: 10)
+            if tr.fraction > 0 {
+                out.append(RankedTarget(id: "moon", name: "Moon", subtitle: "\(Int((moon.illumination * 100).rounded()))% illuminated", group: .planets,
+                                        raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil,
+                                        fit: frameFit(sizeArcmin: 31, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
+                                        moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction))
+            }
+        }
+
+        for c in constellations {
+            let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20)
+            guard tr.fraction >= 0.5 else { continue }
+            out.append(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
+                                    raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
+                                    peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction))
+        }
+
+        let fitOrder: [FrameFit: Int] = [.fits: 0, .small: 1, .mosaic: 2]
+        return out.sorted {
+            if $0.group != $1.group { return TargetGroup.allCases.firstIndex(of: $0.group)! < TargetGroup.allCases.firstIndex(of: $1.group)! }
+            if $0.moonWashed != $1.moonWashed { return !$0.moonWashed }
+            if fitOrder[$0.fit]! != fitOrder[$1.fit]! { return fitOrder[$0.fit]! < fitOrder[$1.fit]! }
+            if $0.peakAltDeg != $1.peakAltDeg { return $0.peakAltDeg > $1.peakAltDeg }
+            return ($0.magnitude ?? 99) < ($1.magnitude ?? 99)
+        }
+    }
+
+    /// Top three across groups, at most one per group, deep sky first.
+    static func best(from ranked: [RankedTarget]) -> [RankedTarget] {
+        var picked: [RankedTarget] = []
+        for g in [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
+            if let t = ranked.first(where: { $0.group == g && !$0.moonWashed }) { picked.append(t) }
+            if picked.count == 3 { break }
+        }
+        return picked
+    }
+
+    public static func plan(night: Night, forecast: Forecast, catalog: Catalog, constellations: [Constellation], site: Site, fov: FieldOfView, rule: GoRule) -> NightPlan {
+        let dark = darkHours(forecast.hours, night: night)
+        var windows: [ClearWindow] = []
+        if let ds = night.darkStart, let de = night.darkEnd {
+            windows = Planner.windows(hours: forecast.hours, darkStart: ds, darkEnd: de, rule: rule)
+        }
+        let primary = windows.max { $0.hours < $1.hours }
+        let moonMid = Ephemeris.moon(at: primary?.midpoint ?? night.darkStart ?? night.sunset, site: site)
+        var aboveFraction = 0.0
+        if let ds = night.darkStart, let de = night.darkEnd {
+            var t = ds, n = 0, up = 0
+            while t <= de { n += 1; if Ephemeris.moon(at: t, site: site).position.altDeg > 0 { up += 1 }; t = t.addingTimeInterval(3600) }
+            aboveFraction = n == 0 ? 0 : Double(up) / Double(n)
+        }
+        let darkness: (Date, Date)? = (night.darkStart != nil && night.darkEnd != nil) ? (night.darkStart!, night.darkEnd!) : nil
+        let score = Planner.score(ScoreInputs(darkHours: dark, windows: windows, darkness: darkness,
+                                              moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct))
+        let targets = primary.map { rank(catalog: catalog, constellations: constellations, window: $0, site: site, fov: fov, rule: rule) } ?? []
+        return NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
+                         moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
+                         darkHours: dark, targets: targets, best: best(from: targets), seeingAvailable: dark.contains { $0.seeing != nil })
+    }
+}
