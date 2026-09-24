@@ -29,10 +29,29 @@ public struct Forecast: Codable, Equatable, Sendable {
     public var longitude: Double
     public var hours: [HourlyConditions]
     public var seeingSource: String?
-    public init(fetchedAt: Date, latitude: Double, longitude: Double, hours: [HourlyConditions], seeingSource: String?) {
+    /// "Apple Weather" or "Open-Meteo": which service supplied the cloud, wind and dew-point hours.
+    public var cloudSource: String?
+    /// Apple's attribution mark and legal page, present only when cloudSource is Apple Weather.
+    public var attributionMarkURL: String?
+    public var attributionLegalURL: String?
+    public init(fetchedAt: Date, latitude: Double, longitude: Double, hours: [HourlyConditions], seeingSource: String?,
+                cloudSource: String? = nil, attributionMarkURL: String? = nil, attributionLegalURL: String? = nil) {
         self.fetchedAt = fetchedAt; self.latitude = latitude; self.longitude = longitude; self.hours = hours; self.seeingSource = seeingSource
+        self.cloudSource = cloudSource; self.attributionMarkURL = attributionMarkURL; self.attributionLegalURL = attributionLegalURL
     }
 }
+
+/// Hours from a primary cloud service, with the attribution it requires.
+public struct CloudResult: Sendable {
+    public var hours: [HourlyConditions]
+    public var source: String
+    public var markURL: String?
+    public var legalURL: String?
+    public init(hours: [HourlyConditions], source: String, markURL: String? = nil, legalURL: String? = nil) {
+        self.hours = hours; self.source = source; self.markURL = markURL; self.legalURL = legalURL
+    }
+}
+public typealias CloudProvider = @Sendable (Site, Date) async throws -> CloudResult
 
 public protocol Fetcher: Sendable {
     func get(_ url: URL) async throws -> Data
@@ -160,15 +179,22 @@ public enum ForecastService {
         }
     }
 
-    public static func fetch(site: Site, fetcher: Fetcher, now: Date) async throws -> Forecast {
-        let hours = try OpenMeteo.parse(try await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)))
+    /// Cloud hours from `primary` (WeatherKit by default) when it answers, else Open-Meteo; 7Timer seeing merged on top either way.
+    public static func fetch(site: Site, fetcher: Fetcher, now: Date, primary: CloudProvider? = WeatherKitSource.provider) async throws -> Forecast {
+        var hours: [HourlyConditions]
+        var cloudSource = "Open-Meteo", markURL: String? = nil, legalURL: String? = nil
+        if let primary, let r = try? await primary(site, now), !r.hours.isEmpty {
+            hours = r.hours; cloudSource = r.source; markURL = r.markURL; legalURL = r.legalURL
+        } else {
+            hours = try OpenMeteo.parse(try await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)))
+        }
         var seeingSource: String? = nil
-        var merged = hours
         if let data = try? await fetcher.get(SevenTimer.url(latitude: site.latitude, longitude: site.longitude)),
            let samples = try? SevenTimer.parse(data), !samples.isEmpty {
-            merged = merge(hours: hours, seeing: samples)
+            hours = merge(hours: hours, seeing: samples)
             seeingSource = "7Timer"
         }
-        return Forecast(fetchedAt: now, latitude: site.latitude, longitude: site.longitude, hours: merged, seeingSource: seeingSource)
+        return Forecast(fetchedAt: now, latitude: site.latitude, longitude: site.longitude, hours: hours, seeingSource: seeingSource,
+                        cloudSource: cloudSource, attributionMarkURL: markURL, attributionLegalURL: legalURL)
     }
 }

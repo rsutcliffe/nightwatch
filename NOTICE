@@ -3,6 +3,7 @@ Nightwatch bundles or fetches data from these sources. Their terms apply to that
 Astronomy Engine, Don Cross, MIT. https://github.com/cosinekitty/astronomy
 SatelliteKit, Gavin Eadie, MIT. https://github.com/gavineadie/SatelliteKit
 Weather data by Open-Meteo.com, CC BY 4.0. https://open-meteo.com
+Apple Weather via WeatherKit when the build is signed for it; attribution and legal notice per Apple's WeatherKit terms. https://weatherkit.apple.com/legal-attribution.html
 Seeing and transparency from 7Timer (Shanghai Astronomical Observatory), non-commercial use. http://www.7timer.info
 OpenNGC, Mattia Verga, CC BY-SA 4.0. https://github.com/mattiaverga/OpenNGC
 Constellation figures from d3-celestial, Olaf Frohn, BSD-3-Clause. https://github.com/ofrohn/d3-celestial

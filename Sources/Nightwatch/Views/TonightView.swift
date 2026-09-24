@@ -159,6 +159,20 @@ struct TonightView: View {
         }
     }
 
+    /// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown.
+    private func sourceBadge(_ f: Forecast) -> some View {
+        HStack(spacing: 4) {
+            if let m = f.attributionMarkURL, let url = URL(string: m) {
+                AsyncImage(url: url) { $0.resizable().scaledToFit() } placeholder: { EmptyView() }.frame(height: 10)
+            }
+            if let l = f.attributionLegalURL, let url = URL(string: l) {
+                Link("Apple Weather", destination: url).font(.caption2).foregroundStyle(Theme.dim)
+            } else {
+                Text(f.cloudSource ?? "Open-Meteo").font(.caption2).foregroundStyle(Theme.dim)
+            }
+        }
+    }
+
     private var footer: some View {
         HStack {
             Toggle(isOn: Binding(get: { store.config.notifyEnabled }, set: { store.config.notifyEnabled = $0; store.saveConfig() })) {
@@ -169,6 +183,7 @@ struct TonightView: View {
             else if let f = store.forecast, let s = store.site {
                 Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
                     .font(.caption).foregroundStyle(store.isStale ? Theme.warn : Theme.dim)
+                sourceBadge(f)
             }
             Button(store.copy.refresh) { Task { await store.refresh(force: true) } }.font(.caption)
         }.padding(.top, 4)

@@ -7,3 +7,9 @@ Nightwatch.app/
 build/
 .venv/
 __pycache__/
+# signing material never belongs in the repo
+*.provisionprofile
+*.mobileprovision
+*.p12
+*.p8
+*.cer

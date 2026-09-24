@@ -77,7 +77,7 @@ struct StubFetcher: Fetcher {
     let om = try fixture("openmeteo.json")
     let f = StubFetcher(byHost: ["api.open-meteo.com": om])
     let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
-    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date())
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: nil)
     #expect(fc.hours.count == 72)
     #expect(fc.seeingSource == nil)
 }
@@ -85,7 +85,43 @@ struct StubFetcher: Fetcher {
 @Test func fetchMergesSevenTimerWhenPresent() async throws {
     let f = StubFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json"), "www.7timer.info": try fixture("seventimer.json")])
     let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
-    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date())
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: nil)
     #expect(fc.seeingSource == "7Timer")
     #expect(fc.hours.contains { $0.seeing != nil })
+}
+
+private func fakeHours(_ n: Int, cloud: Int) -> [HourlyConditions] {
+    let t0 = Date(timeIntervalSince1970: 1_800_000_000)
+    return (0..<n).map { HourlyConditions(time: t0.addingTimeInterval(Double($0) * 3600), cloudTotal: cloud, cloudLow: nil, cloudMid: nil, cloudHigh: nil,
+                                          tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil) }
+}
+
+@Test func fetchPrefersPrimaryCloudSourceAndKeepsAttribution() async throws {
+    let f = StubFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json"), "www.7timer.info": try fixture("seventimer.json")])
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let primary: CloudProvider = { _, _ in CloudResult(hours: fakeHours(5, cloud: 7), source: "Apple Weather", markURL: "https://x/mark.png", legalURL: "https://x/legal") }
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: primary)
+    #expect(fc.cloudSource == "Apple Weather")
+    #expect(fc.hours.count == 5 && fc.hours.allSatisfy { $0.cloudTotal == 7 })
+    #expect(fc.attributionMarkURL == "https://x/mark.png" && fc.attributionLegalURL == "https://x/legal")
+}
+
+@Test func fetchFallsBackToOpenMeteoWhenPrimaryFails() async throws {
+    let f = StubFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json")])
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let failing: CloudProvider = { _, _ in throw URLError(.notConnectedToInternet) }
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: failing)
+    #expect(fc.cloudSource == "Open-Meteo")
+    #expect(fc.hours.count == 72)
+    #expect(fc.attributionMarkURL == nil)
+    let empty: CloudProvider = { _, _ in CloudResult(hours: [], source: "Apple Weather") }
+    let fc2 = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: empty)
+    #expect(fc2.cloudSource == "Open-Meteo")
+}
+
+@Test func cachedForecastWithoutSourceFieldsStillDecodes() throws {
+    let json = #"{"fetchedAt":"2026-09-24T12:00:00Z","latitude":54.0,"longitude":-1.5,"hours":[],"seeingSource":null}"#
+    let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
+    let fc = try d.decode(Forecast.self, from: Data(json.utf8))
+    #expect(fc.cloudSource == nil && fc.attributionMarkURL == nil)
 }
