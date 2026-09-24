@@ -140,18 +140,21 @@ struct TargetsView: View {
         }
     }
 
-    private func badge(_ t: RankedTarget) -> some View {
-        let (text, colour): (String, Color) = t.moonWashed ? ("Moon-washed", Theme.bad) : (t.fit == .fits ? ("Fits frame", Theme.accent) : (t.fit == .small ? ("Small", Theme.warn) : ("Mosaic", Theme.warn)))
-        return Text(text).font(.caption2).padding(.horizontal, 7).padding(.vertical, 3).background(colour.opacity(0.15)).foregroundStyle(colour).clipShape(Capsule())
+    private func chips(_ t: RankedTarget) -> some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            if !ui.fitsOnly { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
+            if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
+        }
     }
 
     private func card(_ t: RankedTarget) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            ThumbnailView(target: t).frame(height: 110).overlay(alignment: .topTrailing) { badge(t).padding(8) }
-            HStack(alignment: .firstTextBaseline) {
-                Text(t.name).font(.callout.weight(.semibold)).lineLimit(1)
-                Spacer()
-                if let m = t.magnitude { Text(String(format: "mag %.1f", m)).font(.caption2).foregroundStyle(Theme.dim) }
+            ThumbnailView(target: t).frame(height: 110).overlay(alignment: .topTrailing) { chips(t).padding(8) }
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text(t.catalogueID).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).fixedSize()
+                Text(t.commonName ?? t.typeName).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: 4)
+                Text(t.magnitude.map { String(format: "mag %.1f", $0) } ?? "mag –").font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize()
             }
             if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan {
                 ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)

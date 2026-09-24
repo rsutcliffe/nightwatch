@@ -72,6 +72,15 @@ public struct Copy: Sendable {
         return "\(name), viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"
     }
 
+    /// The neutral frame chip on a Targets card (follow-on 1).
+    public static func frameChip(_ t: RankedTarget) -> String {
+        switch t.fit {
+        case .fits: t.frameFill.map { "Fills \(max(1, Int(($0 * 100).rounded())))% of frame" } ?? "Fits frame"
+        case .small: "Small in frame"
+        case .mosaic: "Mosaic"
+        }
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)

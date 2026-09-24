@@ -42,3 +42,20 @@ struct StaleBadge: View {
             .accessibilityElement(children: .combine)
     }
 }
+
+/// A small glass chip on a card: neutral text, or amber with an icon for a warning. Never red.
+struct Chip: View {
+    let text: String
+    var icon: String? = nil
+    var warning = false
+    var body: some View {
+        HStack(spacing: 4) {
+            if let icon { Image(systemName: icon).accessibilityHidden(true) }
+            Text(text)
+        }
+        .font(.system(size: 9.5, weight: .medium))
+        .foregroundStyle(warning ? Tokens.statusWarning : Tokens.textPrimary)
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .nightwatchGlass(in: Capsule(), fill: Color.black.opacity(0.55))
+    }
+}

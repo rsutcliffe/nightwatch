@@ -10,7 +10,6 @@ enum Theme {
     // Red accent by owner decision: preserves dark adaptation at the telescope. Never green.
     static let accent = Tokens.accentClear
     static let warn = Tokens.statusWarning
-    static let bad = Color(red: 0.561, green: 0.706, blue: 1.000)         // #8fb4ff (moon-washed badge, distinct from the red accent)
 
     static func icon(for plan: NightPlan?, stale: Bool, now: Date) -> String {
         if stale { return "star.slash" }

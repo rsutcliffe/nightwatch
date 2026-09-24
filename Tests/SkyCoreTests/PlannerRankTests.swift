@@ -114,3 +114,17 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(abs(u[0] - 0.3) < 1e-9 && u[1] == 1)
     #expect(Planner.timelineStops([20, 20]) == [1, 1])
 }
+
+@Test func frameChipWording() {
+    func t(_ fit: FrameFit, _ fill: Double?) -> RankedTarget {
+        var r = RankedTarget(id: "x", name: "x", subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: nil, magnitude: nil, fit: fit,
+                             peakAltDeg: 50, peakTime: Date(), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+        r.frameFill = fill
+        return r
+    }
+    #expect(Copy.frameChip(t(.fits, 0.476)) == "Fills 48% of frame")
+    #expect(Copy.frameChip(t(.fits, 0.001)) == "Fills 1% of frame")
+    #expect(Copy.frameChip(t(.small, 0.02)) == "Small in frame")
+    #expect(Copy.frameChip(t(.mosaic, 1)) == "Mosaic")
+    #expect(Copy.frameChip(t(.fits, nil)) == "Fits frame")   // no size to measure: never invent a percentage
+}
