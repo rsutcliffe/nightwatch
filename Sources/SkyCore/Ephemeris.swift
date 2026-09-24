@@ -11,6 +11,9 @@ public struct Night: Codable, Equatable, Sendable {
     public let darkStart: Date?
     public let darkEnd: Date?
     public var hasDarkness: Bool { darkStart != nil && darkEnd != nil }
+    public var nauticalStart: Date? = nil
+    public var nauticalEnd: Date? = nil
+    public var hasNauticalDarkness: Bool { nauticalStart != nil && nauticalEnd != nil }
 }
 
 public enum Planet: String, CaseIterable, Codable, Sendable {
@@ -54,6 +57,21 @@ public struct SolarEclipse: Sendable, Equatable {
 public enum EphemerisError: Error { case noSunEvent }
 
 public enum Ephemeris {
+    /// The Sun's descent below `altDeg` after `after` and its return above it, both before `before`; nil when either is missing.
+    private static func sunCrossings(altDeg: Double, obs: astro_observer_t, after: astro_time_t, before: astro_time_t) -> (Date, Date)? {
+        let down = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_SET, after, 1.0, altDeg)
+        guard down.status == ASTRO_SUCCESS, down.time.ut < before.ut else { return nil }
+        let up = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_RISE, Astronomy_AddDays(down.time, afterCrossing), 1.0, altDeg)
+        guard up.status == ASTRO_SUCCESS, up.time.ut <= before.ut + 1e-6 else { return nil }
+        return (down.time.date, up.time.date)
+    }
+
+    /// Searching for the return crossing from the exact instant of the downward one can hand back that same
+    /// instant when the Sun barely dips below the threshold (Home at the June solstice gave a zero-length
+    /// nautical night), so the rise search starts one minute later. A window shorter than a minute is therefore
+    /// not reported, which costs nothing: a sub-minute dark window has no observing value.
+    private static let afterCrossing = 1.0 / 1440
+
     /// The night that begins on the local calendar date containing `localDate` at `site`.
     public static func night(localDate: Date, site: Site) throws -> Night {
         let cal = site.calendar
@@ -67,30 +85,26 @@ public enum Ephemeris {
             let end = noon.addingTimeInterval(86_400)
             guard sunAltitude(at: noon, site: site) < 0 else {
                 // Polar day: the sun does not set within 24h of local noon, so there is no night.
-                return Night(key: key, localDate: noon, sunset: noon, sunrise: end, darkStart: nil, darkEnd: nil)
+                return Night(key: key, localDate: noon, sunset: noon, sunrise: end, darkStart: nil, darkEnd: nil, nauticalStart: nil, nauticalEnd: nil)
             }
             // Polar night: the Sun stays down all day. Darkness is the stretch below −18°; near the pole the Sun
             // never climbs to −18° and the whole span is dark. (At Tromsø's latitude noon is still twilight.)
             let ds = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_SET, astro_time_t(noon), 1.0, -18)
-            let de = ds.status == ASTRO_SUCCESS ? Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_RISE, ds.time, 1.0, -18) : ds
+            let de = ds.status == ASTRO_SUCCESS ? Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_RISE, Astronomy_AddDays(ds.time, afterCrossing), 1.0, -18) : ds
             let found = ds.status == ASTRO_SUCCESS && de.status == ASTRO_SUCCESS && de.time.date <= end
+            let n12 = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_SET, astro_time_t(noon), 1.0, -12)
+            let n12e = n12.status == ASTRO_SUCCESS ? Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_RISE, Astronomy_AddDays(n12.time, afterCrossing), 1.0, -12) : n12
+            let foundN = n12.status == ASTRO_SUCCESS && n12e.status == ASTRO_SUCCESS && n12e.time.date <= end
             return Night(key: key, localDate: noon, sunset: noon, sunrise: end,
-                         darkStart: found ? ds.time.date : noon, darkEnd: found ? de.time.date : end)
+                         darkStart: found ? ds.time.date : noon, darkEnd: found ? de.time.date : end,
+                         nauticalStart: foundN ? n12.time.date : noon, nauticalEnd: foundN ? n12e.time.date : end)
         }
         let sunrise = Astronomy_SearchRiseSetEx(BODY_SUN, obs, DIRECTION_RISE, sunset.time, 1.0, 0)
         guard sunrise.status == ASTRO_SUCCESS else { throw EphemerisError.noSunEvent }
-        var darkStart: Date? = nil
-        var darkEnd: Date? = nil
-        let ds = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_SET, sunset.time, 1.0, -18)
-        if ds.status == ASTRO_SUCCESS, ds.time.ut < sunrise.time.ut {
-            let de = Astronomy_SearchAltitude(BODY_SUN, obs, DIRECTION_RISE, ds.time, 1.0, -18)
-            if de.status == ASTRO_SUCCESS, de.time.ut <= sunrise.time.ut + 1e-6 {
-                darkStart = ds.time.date
-                darkEnd = de.time.date
-            }
-        }
+        let dark = sunCrossings(altDeg: -18, obs: obs, after: sunset.time, before: sunrise.time)
+        let nautical = sunCrossings(altDeg: -12, obs: obs, after: sunset.time, before: sunrise.time)
         return Night(key: key, localDate: noon, sunset: sunset.time.date, sunrise: sunrise.time.date,
-                     darkStart: darkStart, darkEnd: darkEnd)
+                     darkStart: dark?.0, darkEnd: dark?.1, nauticalStart: nautical?.0, nauticalEnd: nautical?.1)
     }
 
     /// Altitude and azimuth of a J2000 RA/Dec. Catalogue coordinates are J2000; precession to date is ignored
