@@ -14,7 +14,9 @@ public struct AlertState: Codable, Equatable, Sendable {
     public enum Stage: String, Codable, Sendable { case idle, previewSent, headsUpSent, goSent, cancelled, done }
     public var nightKey: String
     public var stage: Stage
-    public init(nightKey: String, stage: Stage) { self.nightKey = nightKey; self.stage = stage }
+    /// The plan mode the current stage was reached under; nil in files from 0.3.0 and earlier.
+    public var mode: PlanMode?
+    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil) { self.nightKey = nightKey; self.stage = stage; self.mode = mode }
 }
 
 public struct AlertNotification: Equatable, Sendable {
@@ -37,6 +39,9 @@ public enum AlertEngine {
     public static func step(now: Date, tonight: NightPlan, tomorrow: NightPlan?, state: AlertState?, settings: AlertSettings,
                             forecastFetchedAt: Date, site: Site, copy: Copy) -> (notification: AlertNotification?, state: AlertState) {
         var s = (state?.nightKey == tonight.night.key) ? state! : AlertState(nightKey: tonight.night.key, stage: .idle)
+        // Switching bright nights on or off mid-evening changes the plan, not the sky: start the night's alerts afresh
+        // in the new mode rather than sending "Stand down. Clouds moving in".
+        if let m = s.mode, m != tonight.mode { s = AlertState(nightKey: tonight.night.key, stage: .idle) }
         guard now.timeIntervalSince(forecastFetchedAt) <= staleAfter else { return (nil, s) }
 
         let headsUpAt = tonight.night.sunset.addingTimeInterval(-3600)
@@ -93,6 +98,7 @@ public enum AlertEngine {
         }
 
         if note != nil, inQuietHours(now, site: site, settings: settings) { note = nil }   // dropped, not deferred
+        if s.stage != .idle, s.stage != .previewSent { s.mode = tonight.mode }
         return (note, s)
     }
 }

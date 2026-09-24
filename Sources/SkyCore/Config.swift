@@ -72,7 +72,8 @@ public struct AuroraSettings: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
-        threshold = (try? c.decodeIfPresent(AuroraLevel.self, forKey: .threshold)) ?? .amber   // an unknown level falls back, never fails the file
+        // An unknown level falls back and never fails the file; green is lifted to yellow (the picker offers yellow to red).
+        threshold = max(.yellow, (try? c.decodeIfPresent(AuroraLevel.self, forKey: .threshold)) ?? .amber)
     }
     enum CodingKeys: String, CodingKey { case enabled, threshold }
 }

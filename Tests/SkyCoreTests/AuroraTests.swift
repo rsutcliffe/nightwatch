@@ -66,3 +66,19 @@ private var on: AuroraSettings { var a = AuroraSettings(); a.enabled = true; ret
     try Data(#"{"sites":[]}"#.utf8).write(to: url)
     #expect(try ConfigStore.load(from: url).aurora == AuroraSettings())
 }
+
+@Test func auroraStatusFromAnEarlierNightNeverAlerts() {
+    let now = utc(2026, 9, 24, 22, 10)
+    let stale = AuroraStatus(level: .red, updated: now.addingTimeInterval(-15 * 3600))   // cached at dawn, Mac woke offline
+    let r = AuroraAlert.decide(status: stale, now: now, site: testSite, nightKey: "2026-09-24", hours: hours(at: utc(2026, 9, 24, 22, 0), cloud: 10),
+                               rule: GoRule(), settings: on, alerts: AlertSettings(), state: nil, copy: copy)
+    #expect(r.notification == nil)
+}
+
+@Test func auroraThresholdIsNeverBelowYellow() throws {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("config.json")
+    try Data(#"{"aurora":{"enabled":true,"threshold":"green"}}"#.utf8).write(to: url)
+    #expect(try ConfigStore.load(from: url).aurora.threshold == .yellow)
+}

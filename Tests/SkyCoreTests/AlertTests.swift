@@ -190,3 +190,32 @@ private func bright(_ p: NightPlan) -> NightPlan {
     // Same words in plain mode: no new Discworld copy for bright nights.
     #expect(Copy(flavour: .plain).brightGoTitle(windowStart: "22:30") == copy.brightGoTitle(windowStart: "22:30"))
 }
+
+@Test func switchingBrightModeMidEveningDoesNotStandDown() throws {
+    let (night, good, _, _) = try fixtures()
+    let due = night.sunset.addingTimeInterval(-3600 + 60)
+    let dark = AlertEngine.step(now: due, tonight: good, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(dark.state.stage == .headsUpSent && dark.state.mode == .dark)
+    // The same night now planned in bright mode (the owner toggled Bright nights): no "Stand down", a fresh bright heads-up instead.
+    let later = due.addingTimeInterval(600)
+    let r = AlertEngine.step(now: later, tonight: bright(good), tomorrow: nil, state: dark.state, settings: settings, forecastFetchedAt: later, site: site, copy: copy)
+    #expect(r.notification?.kind != .cancel)
+    #expect(r.notification?.title.hasPrefix("Bright night tonight") == true)
+}
+
+@Test func aBrightPlanFromThePlannerDrivesTheHeadsUp() throws {
+    // The seam: Planner.plan(bright:) straight into AlertEngine.step, no hand-built plan.
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let night = try Ephemeris.night(localDate: utc(2026, 7, 30, 12, 0), site: testSite)
+    let t0 = utc(2026, 7, 30, 18, 0)
+    let hours = (0..<14).map { HourlyConditions(time: t0.addingTimeInterval(Double($0) * 3600), cloudTotal: 5, cloudLow: nil, cloudMid: nil, cloudHigh: nil,
+                                                 tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil) }
+    var b = BrightSettings(); b.enabled = true
+    let plan = Planner.plan(night: night, forecast: Forecast(fetchedAt: t0, latitude: testSite.latitude, longitude: testSite.longitude, hours: hours, seeingSource: nil),
+                            catalog: Catalog(objects: []), constellations: [], site: testSite, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule(), bright: b)
+    let due = night.sunset.addingTimeInterval(-3600 + 60)
+    let r = AlertEngine.step(now: due, tonight: plan, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due, site: testSite, copy: copy)
+    #expect(plan.mode == .bright)
+    #expect(r.notification?.title.hasPrefix("Bright night tonight from") == true)
+    #expect(r.notification?.body.contains("Moon") == true)
+}

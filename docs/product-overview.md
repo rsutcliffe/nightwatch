@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 24 September 2026, version 0.3.0 "Feet of Clay". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 24 September 2026, version 0.3.1 "Feet of Clay". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -83,7 +83,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (123 Swift Testing tests at 0.3.0).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (129 Swift Testing tests at 0.3.1).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -109,6 +109,7 @@ Tags follow the City Watch novels.
 | 0.2.1 | Men at Arms, patch 1 | 24 September 2026 | Equatorial tilt line in the popover header; Apple Weather via WeatherKit as the primary cloud source with Open-Meteo fallback; signed build path |
 | 0.2.2 | Men at Arms, patch 2 | 24 September 2026 | Plain reason line under the no-window verdict; popover footer in two rows with the cloud source; strip caption names the real source |
 | 0.3.0 | Feet of Clay | 24 September 2026 | Bright-night mode; aurora alerts from AuroraWatch UK; best-spot completion (Clearer sky line lands on the card, cards compare with home); site-cache pruning |
+| 0.3.1 | Feet of Clay, patch 1 | 24 September 2026 | Fixes from the release review: stale aurora statuses never alert; the bright reason line matches the rule; toggling Bright nights mid-evening no longer sends a stand-down |
 
 ## Install
 

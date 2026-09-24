@@ -305,7 +305,8 @@ extension Planner {
     /// The bright-night plan: clear hours between nautical dusk and dawn that have a bright target at the floor.
     static func brightPlan(night: Night, forecast: Forecast, site: Site, rule: GoRule, bright: BrightSettings) -> NightPlan {
         guard let ns = night.nauticalStart, let ne = night.nauticalEnd else {
-            return NightPlan(night: night, windows: [], primary: nil, score: 0, qualifies: false, moonIllumination: 0, moonRise: nil, moonSet: nil,
+            let moon = Ephemeris.moon(at: night.darkStart ?? night.sunset, site: site)   // keep the Moon tile truthful
+            return NightPlan(night: night, windows: [], primary: nil, score: 0, qualifies: false, moonIllumination: moon.illumination, moonRise: moon.rise, moonSet: moon.set,
                              darkHours: [], targets: [], best: [], seeingAvailable: false, mode: .bright, brightTargets: [])
         }
         let span = forecast.hours.filter { $0.time.addingTimeInterval(3600) > ns && $0.time < ne }.sorted { $0.time < $1.time }
@@ -330,13 +331,34 @@ extension Planner {
 
 extension Planner {
     /// Why tonight has no qualifying window, in plain words, or nil when the data cannot say.
+    /// The bright no-window reason, measured the way the bright rule measures: hours clipped to nautical darkness, and an
+    /// hour counts only when it is clear and a target stands at the floor at its centre.
+    static func brightRunReason(_ hours: [HourlyConditions], from start: Date, to end: Date, rule: GoRule, site: Site) -> String {
+        var best: (start: Date, hours: Double) = (start, 0), run: (start: Date, hours: Double)? = nil, prev: Date? = nil
+        for h in hours {
+            let from = max(h.time, start), to = min(h.time.addingTimeInterval(3600), end)
+            let centre = min(max(h.time.addingTimeInterval(1800), start), end)   // sampled exactly as brightPlan samples
+            let usable = h.cloudTotal <= rule.maxCloudPct && !brightTargets(at: centre, site: site).isEmpty
+            let len = max(0, to.timeIntervalSince(from)) / 3600
+            let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
+            if usable { run = (contiguous && run != nil) ? (run!.start, run!.hours + len) : (from, len) } else { run = nil }
+            if let r = run, r.hours > best.hours { best = r }
+            prev = h.time
+        }
+        if best.hours == 0 { return "No Moon or planet \(Int(brightTargetFloorDeg))° up in the clear hours of nautical darkness." }
+        return String(format: "Longest clear run with a target up is %.1f h from %@; the bright rule needs %.1f h.",
+                      best.hours, Copy.hhmm(best.start, site: site), rule.minHours)
+    }
+
     public static func noWindowReason(darkHours: [HourlyConditions], darkStart: Date, darkEnd: Date, rule: GoRule, site: Site,
                                       mode: PlanMode = .dark, brightTargetsUp: Bool = true) -> String? {
         let spanName = mode == .bright ? "nautical darkness" : "darkness"
         let ruleName = mode == .bright ? "the bright rule" : "the rule"
         let darkLen = darkEnd.timeIntervalSince(darkStart) / 3600
         if darkLen < rule.minHours {
-            return String(format: "Only %.1f h of %@; %@ needs %.0f h.", darkLen, spanName, ruleName, rule.minHours)
+            return mode == .bright
+                ? String(format: "Only %.1f h of %@; %@ needs %.1f h.", darkLen, spanName, ruleName, rule.minHours)
+                : String(format: "Only %.1f h of %@; %@ needs %.0f h.", darkLen, spanName, ruleName, rule.minHours)
         }
         if mode == .bright, !brightTargetsUp {
             return "No Moon or planet \(Int(brightTargetFloorDeg))° up during nautical darkness."
@@ -348,6 +370,7 @@ extension Planner {
             let low = dark.map(\.cloudTotal).min() ?? 0
             return "Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%."
         }
+        if mode == .bright { return brightRunReason(dark, from: darkStart, to: darkEnd, rule: rule, site: site) }
         var best: (start: Date, hours: Int) = (dark[0].time, 0), run: (start: Date, hours: Int)? = nil, prev: Date? = nil
         for h in dark {
             let isClear = h.cloudTotal <= rule.maxCloudPct

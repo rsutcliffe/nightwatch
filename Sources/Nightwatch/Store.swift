@@ -192,9 +192,6 @@ final class Store: ObservableObject {
         await recomputeDarkSites(now: now, site: site, night: night)
     }
 
-    /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
-    /// Each run takes a generation number; after every await it checks it is still the newest run, so a run superseded by a
-    /// settings change stops fetching and never publishes over the newer one.
     /// Polls AuroraWatch UK while aurora alerts are on and the Sun is at least 12 degrees down (every 5 minutes: their
     /// terms ask for 3 or more), then notifies through the aurora rule. On a failed fetch the last status is kept.
     func pollAurora(now: Date = Date()) async {
@@ -207,14 +204,21 @@ final class Store: ObservableObject {
                 Store.write(status, "aurora.json")
             }
         }
-        guard let status = aurora, let fc = forecast, let key = plan?.night.key else { return }
+        // The same six-hour rule as every other alert, and never another site's forecast.
+        guard let status = aurora, let fc = forecast, forecastMatches(site), now.timeIntervalSince(fc.fetchedAt) <= 6 * 3600,
+              let key = plan?.night.key else { return }
         let r = AuroraAlert.decide(status: status, now: now, site: site, nightKey: key, hours: fc.hours, rule: config.goRule,
                                    settings: config.aurora, alerts: config.alerts, state: auroraState, copy: copy)
+        // Only record a level as sent when it was: turning notifications on mid-storm then alerts for the current level.
+        guard config.notifyEnabled else { return }
         auroraState = r.state
         Store.write(r.state, "aurora-state.json")
-        if config.notifyEnabled, let n = r.notification { Notifier.post(n) }
+        if let n = r.notification { Notifier.post(n) }
     }
 
+    /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
+    /// Each run takes a generation number; after every await it checks it is still the newest run, so a run superseded by a
+    /// settings change stops fetching and never publishes over the newer one.
     private func recomputeDarkSites(now: Date, site: Site, night: Night) async {
         darkSitesGeneration += 1
         let gen = darkSitesGeneration

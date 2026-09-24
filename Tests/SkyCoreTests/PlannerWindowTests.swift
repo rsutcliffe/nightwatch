@@ -186,3 +186,26 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
                                       rule: GoRule(minHours: 1), site: testSiteBright, mode: .bright, brightTargetsUp: false)
     #expect(none == "No Moon or planet 15° up during nautical darkness.")
 }
+
+@Test func brightReasonMatchesTheRule() throws {
+    // 20 June at Home: 1.56 h of nautical darkness. One clear hour that straddles a bound is not a 1 h run.
+    let night = try Ephemeris.night(localDate: utc(2026, 6, 20, 12, 0), site: testSiteBright)
+    let ns = try #require(night.nauticalStart), ne = try #require(night.nauticalEnd)
+    let t0 = Date(timeIntervalSince1970: floor(ns.timeIntervalSince1970 / 3600) * 3600)   // the hour containing nautical dusk
+    let hrs = reasonHours([5, 90, 90], from: t0)
+    let r = Planner.noWindowReason(darkHours: hrs, darkStart: ns, darkEnd: ne, rule: GoRule(minHours: 1), site: testSiteBright, mode: .bright)
+    #expect(r != nil && !(r!.contains("is 1.0 h") || r!.contains("is 1 h")))
+    #expect(r!.contains("needs 1.0 h") || r!.hasPrefix("No Moon or planet"))
+}
+
+@Test func brightFallbackKeepsTheMoon() throws {
+    // Inverness at midsummer: no nautical darkness, so the bright plan is the fallback; the Moon tile must stay truthful.
+    let inverness = Site(name: "Inverness", latitude: 57.48, longitude: -4.22, elevationM: 20, timeZoneID: "Europe/London", bortle: 4)
+    let night = try Ephemeris.night(localDate: utc(2026, 6, 27, 12, 0), site: inverness)
+    #expect(!night.hasNauticalDarkness)
+    let t0 = utc(2026, 6, 27, 18, 0)
+    let fc = Forecast(fetchedAt: t0, latitude: inverness.latitude, longitude: inverness.longitude, hours: (0..<14).map { hour(t0, $0, cloud: 5) }, seeingSource: nil)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: inverness, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    #expect(p.mode == .bright && !p.qualifies)
+    #expect(p.moonIllumination > 0.5)   // 27 June 2026 is two days before full
+}

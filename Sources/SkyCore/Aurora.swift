@@ -56,11 +56,14 @@ public enum AuroraAlert {
     public static let sunBelowDeg = -12.0
 
     /// A notification when the status is at or above the threshold, the Sun is at least 12 degrees down, the forecast
-    /// hour containing `now` is under the cloud limit, quiet hours do not apply, and this level has not fired tonight.
+    /// hour containing `now` is under the cloud limit, quiet hours do not apply, this level has not fired tonight,
+    /// and AuroraWatch UK published the status within the last hour.
     public static func decide(status: AuroraStatus, now: Date, site: Site, nightKey: String, hours: [HourlyConditions], rule: GoRule,
                               settings: AuroraSettings, alerts: AlertSettings, state: AuroraAlertState?, copy: Copy) -> (notification: AlertNotification?, state: AuroraAlertState) {
         let s = (state?.nightKey == nightKey) ? state! : AuroraAlertState(nightKey: nightKey, lastLevel: nil)
         guard settings.enabled, status.level >= settings.threshold,
+              now.timeIntervalSince(status.updated) < 3600,   // a status cached from an earlier night must never fire
+
               Ephemeris.sunAltitude(at: now, site: site) <= sunBelowDeg,
               let hour = hours.first(where: { $0.time <= now && now < $0.time.addingTimeInterval(3600) }), hour.cloudTotal <= rule.maxCloudPct,
               !AlertEngine.inQuietHours(now, site: site, settings: alerts),
