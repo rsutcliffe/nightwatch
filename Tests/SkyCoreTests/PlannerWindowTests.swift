@@ -174,7 +174,7 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
     let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: brightOn)
     let ns = try #require(night.nauticalStart), ne = try #require(night.nauticalEnd)
     let penalised = Planner.score(ScoreInputs(darkHours: p.darkHours, windows: p.windows, darkness: (ns, ne), moonIllumination: 1, moonAboveFraction: 1, maxCloudPct: 25))
-    #expect(p.score - penalised >= 14)   // the Moon is the target, so its 15-point term is not taken away
+    #expect(p.score - penalised == 15)   // the Moon is the target, so its whole 15-point term is kept
 }
 
 @Test func noWindowReasonInBrightMode() {
