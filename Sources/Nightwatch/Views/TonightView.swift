@@ -31,7 +31,8 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").font(.caption).foregroundStyle(Theme.dim)
                 if let s = store.site, let p = store.plan {
-                    Text("\(p.night.key) · Bortle \(s.bortle)").font(.caption).foregroundStyle(Theme.dim)
+                    Text("\(p.night.key) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")")
+                        .font(.caption).foregroundStyle(Theme.dim)   // wedge angle = site latitude; the vendor app does the alignment
                 }
             }
             Spacer()
