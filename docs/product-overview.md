@@ -1,12 +1,12 @@
 # Nightwatch: product overview
 
-*As of 24 September 2026, version 0.2.0 "Men at Arms". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 24 September 2026, version 0.2.1 "Men at Arms". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
-Nightwatch is a silent macOS menu-bar app for amateur astronomers and astrophotographers. It answers two questions without being opened: will tonight be clear enough for a long imaging session, and what is worth pointing at. It runs on any Mac on macOS 14 or later, builds with the Command Line Tools alone, needs no account and no API key, and keeps every calculation on the machine.
+Nightwatch is a silent macOS menu-bar app for amateur astronomers and astrophotographers. It answers two questions without being opened: will tonight be clear enough for a long imaging session, and what is worth pointing at. It runs on any Mac on macOS 14 or later, builds with the Command Line Tools alone, needs no account and no API key in its plain form, and keeps every calculation on the machine. Signed with an Apple Developer certificate, it reads Apple Weather instead of Open-Meteo.
 
-It was built for a DwarfLab DWARF Mini owner in Sheffield, but it is telescope-agnostic: any instrument is described by its field of view.
+It was built for a DwarfLab DWARF Mini owner in the UK, but it is telescope-agnostic: any instrument is described by its field of view.
 
 ## Who it is for
 
@@ -16,7 +16,7 @@ It was built for a DwarfLab DWARF Mini owner in Sheffield, but it is telescope-a
 
 ## How it decides
 
-Every 30 minutes Nightwatch fetches two forecasts for the active site: Open-Meteo for cloud, dew point, wind and visibility, and 7Timer for seeing and transparency. It computes astronomical darkness, Moon phase and position, planet positions and target visibility locally with Astronomy Engine.
+Every 30 minutes Nightwatch fetches two forecasts for the active site: cloud, dew point, wind and visibility from Apple Weather (WeatherKit) when the build is signed for it, or from Open-Meteo otherwise, and 7Timer for seeing and transparency. Apple Weather also supplies low, mid and high cloud layers directly; Open-Meteo estimates them. The popover footer names the source that drove tonight's verdict. It computes astronomical darkness, Moon phase and position, planet positions and target visibility locally with Astronomy Engine.
 
 A night qualifies under the default go rule when there is a contiguous run of at least 3 hours inside astronomical darkness with total cloud at or under 25 percent. Both figures are adjustable, as is a minimum target altitude. Each night gets a score from cloud, Moon, seeing, transparency and wind, so the app ranks nights and sites, not only passes them.
 
@@ -26,7 +26,7 @@ Nothing leaves the Mac except the two forecast requests, thumbnail fetches, and 
 
 **Menu-bar icon.** A star whose state says whether a window is coming, open, or unknown (stale forecast).
 
-**Popover.** Site name and Bortle class, tonight's score, the clear window or "Nothing to see here", an hourly cloud strip, six tiles (dark hours, Moon with a real NASA phase image, seeing, wind, dew or frost risk, transparency), the best three targets with thumbnails, one line naming a nearby dark site when it beats home by 20 points or more, the last update time, and a refresh button.
+**Popover.** Site name, Bortle class and the equatorial set-up line (wedge tilt equals the site latitude, pointed at true north or south), tonight's score, the clear window or "Nothing to see here", an hourly cloud strip, six tiles (dark hours, Moon with a real NASA phase image, seeing, wind, dew or frost risk, transparency), the best three targets with thumbnails, one line naming a nearby dark site when it beats home by 20 points or more, the last update time with the cloud source (the Apple Weather mark and legal link, or Open-Meteo), and a refresh button.
 
 **Targets window.** Everything above the horizon during tonight's window, grouped into nebulae, galaxies, star clusters, planets and Moon, events, constellations, and dark sites. Deep-sky cards carry DSS2 sky-survey thumbnails and a fits-frame badge relative to the chosen field of view (fits, mosaic, or small). Planets and the Moon use real photographs. Events cover meteor showers, eclipses, conjunctions, comets and ISS passes. Filters: fits my field of view, include Moon-washed, and search.
 
@@ -57,11 +57,12 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 
 ## Data sources
 
-All keyless. Full attributions in `NOTICE`.
+Keyless in the plain build; Apple Weather needs a signed build. Full attributions in `NOTICE`.
 
 | Purpose | Source | Licence |
 | --- | --- | --- |
-| Cloud, dew point, wind, visibility | Open-Meteo | CC BY 4.0 |
+| Cloud, dew point, wind, visibility (primary, signed builds) | Apple Weather via WeatherKit | Apple WeatherKit terms, attribution shown in the popover |
+| Cloud, dew point, wind, visibility (fallback, all builds) | Open-Meteo | CC BY 4.0 |
 | Seeing, transparency | 7Timer (Shanghai Astronomical Observatory) | Non-commercial use |
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
 | Deep-sky catalogue | OpenNGC | CC BY-SA 4.0 |
@@ -78,7 +79,7 @@ All keyless. Full attributions in `NOTICE`.
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`; tests run with `scripts/test.sh` (99 Swift Testing tests at 0.2.0).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (102 Swift Testing tests at 0.2.1).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -90,7 +91,7 @@ The app carries a light Terry Pratchett City Watch flavour in its wording (Patro
 
 - It does not control a telescope. It tells you when and what; the DwarfLab or Seestar app does the rest.
 - It is Mac-only. There is no iPhone app or widget yet.
-- It is not a forecast provider. It reads two public forecasts and applies a rule; it does not claim better accuracy than its sources.
+- It is not a forecast provider. It reads Apple Weather or Open-Meteo plus 7Timer and applies a rule; it does not claim better accuracy than its sources.
 - It is non-commercial: 7Timer's terms rule out a paid product without replacing that source.
 
 ## Releases
@@ -101,6 +102,7 @@ Tags follow the City Watch novels.
 | --- | --- | --- | --- |
 | 0.1.0 | Guards! Guards! | 23 September 2026 | Forecasts, go rule, alerts, popover, target browser, presets, Discworld flavour |
 | 0.2.0 | Men at Arms | 24 September 2026 | Dark-sky sites: certified list, light-pollution grid, per-site forecasts, use as beat |
+| 0.2.1 | Men at Arms, patch 1 | 24 September 2026 | Equatorial tilt line in the popover header; Apple Weather via WeatherKit as the primary cloud source with Open-Meteo fallback; signed build path |
 | 0.3 | Feet of Clay | under discussion | see the product direction synthesis |
 
 ## Install
