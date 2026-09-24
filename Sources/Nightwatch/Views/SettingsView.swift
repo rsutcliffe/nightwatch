@@ -135,6 +135,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .preferredColorScheme(.dark)
+        .tint(Tokens.controlOn)
     }
 
     /// Label on the left, the current value right beside the up/down buttons so it is obvious what they change.

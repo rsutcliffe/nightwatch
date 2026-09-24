@@ -45,7 +45,7 @@ struct MoonTile: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(10).frame(maxWidth: .infinity, alignment: .leading).nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
         .task(id: MoonImage.hourKey(for: at)) { loader.image = await MoonImages.image(at: at) }
     }
 }

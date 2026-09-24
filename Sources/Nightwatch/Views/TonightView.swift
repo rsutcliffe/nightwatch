@@ -21,7 +21,8 @@ struct TonightView: View {
             footer
         }
         .padding(EdgeInsets(top: 16, leading: 16, bottom: 22, trailing: 16))   // extra at the foot: the window otherwise sits tight on the footer row
-        .background(Theme.bg)
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassHairline, lineWidth: 1))
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 13))
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
@@ -147,7 +148,7 @@ struct TonightView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption2).foregroundStyle(Theme.dim)
             Text(value).font(.callout.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
-        }.padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10))
+        }.padding(10).frame(maxWidth: .infinity, alignment: .leading).nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
     }
 
     private func tiles(_ plan: NightPlan, _ site: Site) -> some View {
@@ -168,9 +169,11 @@ struct TonightView: View {
         let transp = plan.darkHours.compactMap(\.transparency)
         let transpText = transp.isEmpty ? "n/a" : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-            tile("Dark", dark); MoonTile(label: "Moon", value: moon, at: moonAt); tile("Seeing", seeingText)
-            tile("Wind", windText); tile(frost ? "Frost likely" : "Dew risk", dewText); tile("Transparency", transpText)
+        return GlassGroup(spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                tile("Dark", dark); MoonTile(label: "Moon", value: moon, at: moonAt); tile("Seeing", seeingText)
+                tile("Wind", windText); tile(frost ? "Frost likely" : "Dew risk", dewText); tile("Transparency", transpText)
+            }
         }
     }
 

@@ -2,14 +2,14 @@ import SwiftUI
 import SkyCore
 
 enum Theme {
-    static let bg = Color(red: 0.078, green: 0.090, blue: 0.118)          // #14171e
-    static let card = Color(red: 0.106, green: 0.122, blue: 0.157)        // #1b1f28
-    static let line = Color(red: 0.149, green: 0.165, blue: 0.208)        // #262a35
-    static let text = Color(red: 0.910, green: 0.918, blue: 0.941)        // #e8eaf0
-    static let dim = Color(red: 0.545, green: 0.576, blue: 0.655)         // #8b93a7
+    static let bg = Tokens.targetsBackground
+    static let card = Tokens.targetsCard
+    static let line = Tokens.targetsTrack
+    static let text = Tokens.textPrimary
+    static let dim = Tokens.textSecondary
     // Red accent by owner decision: preserves dark adaptation at the telescope. Never green.
-    static let accent = Color(red: 1.000, green: 0.271, blue: 0.227)      // #ff453a
-    static let warn = Color(red: 0.957, green: 0.722, blue: 0.376)        // #f4b860
+    static let accent = Tokens.accentClear
+    static let warn = Tokens.statusWarning
     static let bad = Color(red: 0.561, green: 0.706, blue: 1.000)         // #8fb4ff (moon-washed badge, distinct from the red accent)
 
     static func icon(for plan: NightPlan?, stale: Bool, now: Date) -> String {

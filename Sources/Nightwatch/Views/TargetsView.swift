@@ -96,10 +96,12 @@ struct TargetsView: View {
                     .foregroundStyle(Theme.dim).padding(20)
             }
             ScrollViewReader { proxy in
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
-                    ForEach(store.sitePlans) { DarkSiteCard(plan: $0).id($0.id) }
-                    ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
-                }.padding(20)
+                GlassGroup(spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                        ForEach(store.sitePlans) { DarkSiteCard(plan: $0).id($0.id) }
+                        ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
+                    }.padding(20)
+                }
                 .onAppear { scroll(proxy) }
                 .onChange(of: ui.pendingScrollID) { _, _ in scroll(proxy) }
             }
@@ -127,11 +129,13 @@ struct TargetsView: View {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Theme.dim)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                ForEach(visible) { t in
-                    Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
-                }
-            }.padding(20)
+            GlassGroup(spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                    ForEach(visible) { t in
+                        Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
+                    }
+                }.padding(20)
+            }
         }
     }
 
@@ -158,7 +162,9 @@ struct TargetsView: View {
                 if let s = store.site { Text("best \(Copy.hhmm(t.peakTime, site: s)) · \(Int(t.peakAltDeg))°").font(.caption2).foregroundStyle(Theme.text) }
             }
         }
-        .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        .padding(10)
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
 
     private var eventsList: some View {
@@ -212,6 +218,8 @@ struct DarkSiteCard: View {
                 Button("Use as \(store.copy.siteNoun.lowercased())") { store.adoptAsBeat(s) }.font(.caption)
             }
         }
-        .padding(12).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line))
+        .padding(12)
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
 }
