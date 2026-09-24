@@ -117,6 +117,9 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public let visibleFraction: Double
 }
 
+/// `.bright` when the dark rule could not be met and bright-night mode supplied the plan instead.
+public enum PlanMode: String, Codable, Sendable { case dark, bright }
+
 public struct NightPlan: Codable, Equatable, Sendable {
     public let night: Night
     public let windows: [ClearWindow]
@@ -130,6 +133,9 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public let targets: [RankedTarget]
     public let best: [RankedTarget]
     public let seeingAvailable: Bool
+    public var mode: PlanMode = .dark
+    /// Moon and planets up during the primary window on a bright night; empty in dark mode.
+    public var brightTargets: [RankedTarget] = []
 }
 
 extension Planner {
@@ -220,7 +226,8 @@ extension Planner {
         return picked
     }
 
-    public static func plan(night: Night, forecast: Forecast, catalog: Catalog, constellations: [Constellation], site: Site, fov: FieldOfView, rule: GoRule) -> NightPlan {
+    public static func plan(night: Night, forecast: Forecast, catalog: Catalog, constellations: [Constellation], site: Site, fov: FieldOfView, rule: GoRule,
+                            bright: BrightSettings? = nil) -> NightPlan {
         let dark = darkHours(forecast.hours, night: night)
         var windows: [ClearWindow] = []
         if let ds = night.darkStart, let de = night.darkEnd {
@@ -241,26 +248,105 @@ extension Planner {
         // still shows what is up on a cloudy night. "Best tonight" only exists when a clear window exists.
         let rankingWindow = primary ?? darkness.map { ClearWindow(start: $0.0, end: $0.1) }
         let targets = rankingWindow.map { rank(catalog: catalog, constellations: constellations, window: $0, site: site, fov: fov, rule: rule) } ?? []
+        let darkPlan = NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
+                                 moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
+                                 darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets),
+                                 seeingAvailable: dark.contains { $0.seeing != nil })
+        // Bright-night mode only takes over when the dark rule cannot be met at all tonight (too little darkness).
+        if let b = bright, b.enabled, !darkPlan.qualifies {
+            let darkLen = darkness.map { $0.1.timeIntervalSince($0.0) / 3600 } ?? 0
+            if darkLen < rule.minHours { return brightPlan(night: night, forecast: forecast, site: site, rule: rule, bright: b) }
+        }
+        return darkPlan
+    }
+
+    /// Bright targets must stand this high. Summer Moons and planets are low at British latitudes: at the middle of
+    /// nautical darkness nothing reached 30 degrees on any of 94 summer nights at Home in 2026 (owner ruling, 24 September 2026).
+    public static let brightTargetFloorDeg = 15.0
+    private static let brightPlanets: [Planet] = [.mercury, .venus, .mars, .jupiter, .saturn]   // the naked-eye ones
+
+    /// The Moon (10 % lit or more) and naked-eye planets at or above the bright floor at `at`, Moon first, then by altitude.
+    public static func brightTargets(at t: Date, site: Site) -> [RankedTarget] {
+        var out: [RankedTarget] = []
+        let moon = Ephemeris.moon(at: t, site: site)
+        if moon.illumination >= 0.10, moon.position.altDeg >= brightTargetFloorDeg {
+            out.append(RankedTarget(id: "moon", name: "Moon", subtitle: "\(Int((moon.illumination * 100).rounded()))% illuminated", group: .planets,
+                                    raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil, fit: .fits,
+                                    peakAltDeg: moon.position.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1))
+        }
+        let planets = brightPlanets.compactMap { p -> RankedTarget? in
+            let pos = Ephemeris.planet(p, at: t, site: site)
+            guard pos.altDeg >= brightTargetFloorDeg else { return nil }
+            return RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
+                                raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
+                                peakAltDeg: pos.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1)
+        }.sorted { $0.peakAltDeg > $1.peakAltDeg }
+        return out + planets
+    }
+
+    /// True when any bright target reaches the floor at some quarter-hour in [from, to).
+    public static func anyBrightTargetUp(from: Date, to: Date, site: Site) -> Bool {
+        var t = from
+        while t < to { if !brightTargets(at: t, site: site).isEmpty { return true }; t = t.addingTimeInterval(900) }
+        return false
+    }
+
+    /// Every bright target up during `w`, each at its highest, Moon first then by altitude.
+    static func brightTargets(during w: ClearWindow, site: Site) -> [RankedTarget] {
+        var best: [String: RankedTarget] = [:]
+        var t = w.start
+        while t <= w.end {
+            for x in brightTargets(at: t, site: site) where (best[x.id]?.peakAltDeg ?? -90) < x.peakAltDeg { best[x.id] = x }
+            t = t.addingTimeInterval(1800)
+        }
+        return best.values.sorted { ($0.id == "moon" ? 0 : 1, -$0.peakAltDeg) < ($1.id == "moon" ? 0 : 1, -$1.peakAltDeg) }
+    }
+
+    /// The bright-night plan: clear hours between nautical dusk and dawn that have a bright target at the floor.
+    static func brightPlan(night: Night, forecast: Forecast, site: Site, rule: GoRule, bright: BrightSettings) -> NightPlan {
+        guard let ns = night.nauticalStart, let ne = night.nauticalEnd else {
+            return NightPlan(night: night, windows: [], primary: nil, score: 0, qualifies: false, moonIllumination: 0, moonRise: nil, moonSet: nil,
+                             darkHours: [], targets: [], best: [], seeingAvailable: false, mode: .bright, brightTargets: [])
+        }
+        let span = forecast.hours.filter { $0.time.addingTimeInterval(3600) > ns && $0.time < ne }.sorted { $0.time < $1.time }
+        // ponytail: an hour with nothing at the floor is masked as cloudy so the existing window finder needs no second rule.
+        let usable = forecast.hours.map { h -> HourlyConditions in
+            let centre = min(max(h.time.addingTimeInterval(1800), ns), ne)
+            guard h.time.addingTimeInterval(3600) > ns, h.time < ne, brightTargets(at: centre, site: site).isEmpty else { return h }
+            var masked = h; masked.cloudTotal = Int.max; return masked
+        }
+        let brightRule = GoRule(minHours: bright.minHours, maxCloudPct: rule.maxCloudPct, minAltitudeDeg: rule.minAltitudeDeg)
+        let windows = Planner.windows(hours: usable, darkStart: ns, darkEnd: ne, rule: brightRule)
+        let primary = windows.max { $0.hours < $1.hours }
+        let moon = Ephemeris.moon(at: primary?.midpoint ?? ns, site: site)
+        // The Moon is the target on a bright night, so its score term is not taken away.
+        let score = Planner.score(ScoreInputs(darkHours: span, windows: windows, darkness: (ns, ne), moonIllumination: 0, moonAboveFraction: 0, maxCloudPct: rule.maxCloudPct))
         return NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
-                         moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
-                         darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets),
-                         seeingAvailable: dark.contains { $0.seeing != nil })
+                         moonIllumination: moon.illumination, moonRise: moon.rise, moonSet: moon.set,
+                         darkHours: span, targets: [], best: [], seeingAvailable: span.contains { $0.seeing != nil },
+                         mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site) } ?? [])
     }
 }
 
 extension Planner {
     /// Why tonight has no qualifying window, in plain words, or nil when the data cannot say.
-    public static func noWindowReason(darkHours: [HourlyConditions], darkStart: Date, darkEnd: Date, rule: GoRule, site: Site) -> String? {
+    public static func noWindowReason(darkHours: [HourlyConditions], darkStart: Date, darkEnd: Date, rule: GoRule, site: Site,
+                                      mode: PlanMode = .dark, brightTargetsUp: Bool = true) -> String? {
+        let spanName = mode == .bright ? "nautical darkness" : "darkness"
+        let ruleName = mode == .bright ? "the bright rule" : "the rule"
         let darkLen = darkEnd.timeIntervalSince(darkStart) / 3600
         if darkLen < rule.minHours {
-            return String(format: "Only %.1f h of darkness; the rule needs %.0f h.", darkLen, rule.minHours)
+            return String(format: "Only %.1f h of %@; %@ needs %.0f h.", darkLen, spanName, ruleName, rule.minHours)
+        }
+        if mode == .bright, !brightTargetsUp {
+            return "No Moon or planet \(Int(brightTargetFloorDeg))° up during nautical darkness."
         }
         let dark = darkHours.sorted { $0.time < $1.time }
         guard !dark.isEmpty else { return nil }
         let clear = dark.filter { $0.cloudTotal <= rule.maxCloudPct }
         if clear.isEmpty {
             let low = dark.map(\.cloudTotal).min() ?? 0
-            return "Cloud never below \(low)% during darkness; the rule allows \(rule.maxCloudPct)%."
+            return "Cloud never below \(low)% during \(spanName); \(ruleName) allows \(rule.maxCloudPct)%."
         }
         var best: (start: Date, hours: Int) = (dark[0].time, 0), run: (start: Date, hours: Int)? = nil, prev: Date? = nil
         for h in dark {
@@ -270,6 +356,6 @@ extension Planner {
             if let r = run, r.hours > best.hours { best = r }
             prev = h.time
         }
-        return String(format: "Longest clear run is %d h from %@; the rule needs %.0f h.", best.hours, Copy.hhmm(best.start, site: site), rule.minHours)
+        return String(format: "Longest clear run is %d h from %@; %@ needs %.0f h.", best.hours, Copy.hhmm(best.start, site: site), ruleName, rule.minHours)
     }
 }
