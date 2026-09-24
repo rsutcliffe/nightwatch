@@ -15,7 +15,8 @@ struct TargetsView: View {
     @EnvironmentObject var store: Store
     @StateObject private var ui = TargetsViewState()
 
-    private var targets: [RankedTarget] { store.plan?.targets ?? [] }
+    /// On a bright night only the Moon and planets are suggested, so they stand in for the ranked list.
+    private var targets: [RankedTarget] { store.plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
 
     private func count(_ g: TargetGroup) -> Int {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count
@@ -96,6 +97,9 @@ struct TargetsView: View {
                     Text("\(store.copy.noWindow) Showing what is up during darkness · \(Copy.hhmm(ds, site: s))–\(Copy.hhmm(de, site: s))").font(.caption).foregroundStyle(Theme.dim)
                 } else {
                     Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
+                }
+                if store.plan?.mode == .bright, selectedGroup != .planets {
+                    Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Theme.dim)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {

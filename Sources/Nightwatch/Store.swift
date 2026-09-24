@@ -168,8 +168,8 @@ final class Store: ObservableObject {
         guard let night = try? Ephemeris.night(localDate: now.addingTimeInterval(-9 * 3600), site: site),
               let next = try? Ephemeris.night(localDate: cal.date(byAdding: .day, value: 1, to: night.localDate)!, site: site) else { return }
         let fov = config.fov, rule = config.goRule
-        let p = Planner.plan(night: night, forecast: fc, catalog: catalog, constellations: constellations, site: site, fov: fov, rule: rule)
-        let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, site: site, fov: fov, rule: rule)
+        let p = Planner.plan(night: night, forecast: fc, catalog: catalog, constellations: constellations, site: site, fov: fov, rule: rule, bright: config.brightNights)
+        let t = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, site: site, fov: fov, rule: rule, bright: config.brightNights)
         plan = p; tomorrow = t
         events = buildEvents(night: night, site: site, now: now)
         Store.write(p, "plan.json")
@@ -208,7 +208,7 @@ final class Store: ObservableObject {
             // A cache over 24 h old that could not be refreshed no longer describes tonight: show "no forecast", not a plan.
             if let f = fc, now.timeIntervalSince(f.fetchedAt) > 24 * 3600 { fc = nil }
             guard let fc else { plans.append(SitePlan.missing(s)); continue }
-            let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: DarkSites.toSite(s, timeZoneID: site.timeZoneID), fov: config.fov, rule: config.goRule)
+            let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: DarkSites.toSite(s, timeZoneID: site.timeZoneID), fov: config.fov, rule: config.goRule, bright: config.brightNights)
             plans.append(SitePlan(id: s.id, site: s, score: p.score, primary: p.primary, qualifies: p.qualifies, forecastMissing: false))
         }
         guard gen == darkSitesGeneration else { return }

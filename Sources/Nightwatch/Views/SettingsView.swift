@@ -100,6 +100,12 @@ struct SettingsView: View {
                            binding: bind(\.darkSites.radiusKm), range: 5...300, step: 5)
                 Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest eight.").font(.caption).foregroundStyle(Theme.dim)
             }
+            Section("Bright nights") {
+                Toggle("Moon and planets when there is no proper darkness", isOn: bind(\.brightNights.enabled))
+                stepperRow("Minimum clear run", value: String(format: "%.1f h", store.config.brightNights.minHours),
+                           binding: bind(\.brightNights.minHours), range: 1...6, step: 0.5)
+                Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(.caption).foregroundStyle(Theme.dim)
+            }
             Section("App") {
                 Picker("Wording", selection: bind(\.flavour)) { Text("Nightwatch").tag(Flavour.watch); Text("Plain").tag(Flavour.plain) }
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
