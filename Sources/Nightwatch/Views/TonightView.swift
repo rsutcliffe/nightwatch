@@ -19,7 +19,7 @@ struct TonightView: View {
             }
             footer
         }
-        .padding(16)
+        .padding(EdgeInsets(top: 16, leading: 16, bottom: 22, trailing: 16))   // extra at the foot: the window otherwise sits tight on the footer row
         .background(Theme.bg)
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
@@ -101,7 +101,7 @@ struct TonightView: View {
                     Text(Copy.hhmm(f.time, site: s)); Spacer(); Text(Copy.hhmm(l.time, site: s))
                 }
             }.font(.caption2).foregroundStyle(Theme.dim)
-            Text("Cloud cover during darkness · bar height = % cloud · Open-Meteo").font(.caption2).foregroundStyle(Theme.dim)
+            Text("Cloud cover during darkness · bar height = % cloud · \(store.forecast?.cloudSource ?? "Open-Meteo")").font(.caption2).foregroundStyle(Theme.dim)
         }
     }
 
@@ -173,19 +173,25 @@ struct TonightView: View {
         }
     }
 
+    /// Two rows so the checkbox label never truncates: controls on the first, provenance on the second.
     private var footer: some View {
-        HStack {
-            Toggle(isOn: Binding(get: { store.config.notifyEnabled }, set: { store.config.notifyEnabled = $0; store.saveConfig() })) {
-                Text("Notify when clear").font(.callout)
-            }.toggleStyle(.checkbox)
-            Spacer()
-            if store.refreshing { ProgressView().controlSize(.small) }
-            else if let f = store.forecast, let s = store.site {
-                Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
-                    .font(.caption).foregroundStyle(store.isStale ? Theme.warn : Theme.dim)
-                sourceBadge(f)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Toggle(isOn: Binding(get: { store.config.notifyEnabled }, set: { store.config.notifyEnabled = $0; store.saveConfig() })) {
+                    Text("Notify when clear").font(.callout)
+                }.toggleStyle(.checkbox).fixedSize()
+                Spacer()
+                if store.refreshing { ProgressView().controlSize(.small) }
+                Button(store.copy.refresh) { Task { await store.refresh(force: true) } }.font(.caption)
             }
-            Button(store.copy.refresh) { Task { await store.refresh(force: true) } }.font(.caption)
+            if let f = store.forecast, let s = store.site {
+                HStack(spacing: 6) {
+                    Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
+                        .font(.caption).foregroundStyle(store.isStale ? Theme.warn : Theme.dim)
+                    Text("·").font(.caption).foregroundStyle(Theme.dim)
+                    sourceBadge(f)
+                }
+            }
         }.padding(.top, 4)
     }
 }
