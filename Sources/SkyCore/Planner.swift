@@ -239,6 +239,14 @@ extension Planner {
         }
     }
 
+    /// Gradient brightness 0…1 per altitude sample (handover: u = (alt − 30)/(alt_peak − 30), clamped). When the peak
+    /// is under 40° the floor is 10° below the peak, so low targets still grade and nothing divides by zero.
+    public static func timelineStops(_ samples: [Double]) -> [Double] {
+        guard let peak = samples.max() else { return [] }
+        let floor = min(30, peak - 10)
+        return samples.map { min(1, max(0, ($0 - floor) / (peak - floor))) }
+    }
+
     public static func frameFill(sizeArcmin: Double?, fov: FieldOfView) -> Double? {
         guard let s = sizeArcmin else { return nil }
         return min(1, s / 60 / max(fov.widthDeg, fov.heightDeg))

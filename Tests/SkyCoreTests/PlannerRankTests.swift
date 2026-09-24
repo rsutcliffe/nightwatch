@@ -102,3 +102,15 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     let moon = try #require(Planner.brightTargets(during: ClearWindow(start: t, end: t.addingTimeInterval(3600)), site: testSite, fov: dwarfMini).first { $0.id == "moon" })
     #expect(moon.frameFill == Planner.frameFill(sizeArcmin: 31, fov: dwarfMini))
 }
+
+@Test func timelineStopsFollowAltitude() {
+    #expect(Planner.timelineStops([30, 50, 70]) == [0, 0.5, 1])
+    #expect(Planner.timelineStops([]) == [])
+}
+
+@Test func timelineStopsWithALowPeak() {
+    // The Moon's 10° floor and bright targets at 15°: the floor drops to 10° below the peak, never dividing by zero.
+    let u = Planner.timelineStops([5, 12])
+    #expect(abs(u[0] - 0.3) < 1e-9 && u[1] == 1)
+    #expect(Planner.timelineStops([20, 20]) == [1, 1])
+}

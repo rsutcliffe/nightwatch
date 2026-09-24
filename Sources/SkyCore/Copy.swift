@@ -64,6 +64,14 @@ public struct Copy: Sendable {
 
     public static func hoursAgo(_ from: Date, now: Date) -> String { "\(Int(now.timeIntervalSince(from) / 3600)) h ago" }
 
+    /// "NGC 6992 Eastern Veil, viewable from 00:00 to 03:28, best at 00:00, 57 degrees up" (spec §7).
+    public static func cardLabel(_ t: RankedTarget, lit: Bool, site: Site) -> String {
+        let name = [t.catalogueID, t.commonName].compactMap { $0 }.joined(separator: " ")
+        guard lit else { return "\(name), not in clear sky tonight" }
+        guard let v = t.viewable else { return "\(name), viewable outside the clear window" }
+        return "\(name), viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)

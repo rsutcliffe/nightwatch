@@ -133,6 +133,7 @@ struct TargetsView: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                     ForEach(visible) { t in
                         Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
+                            .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, site: $0) } ?? t.name)
                     }
                 }.padding(20)
             }
@@ -152,14 +153,8 @@ struct TargetsView: View {
                 Spacer()
                 if let m = t.magnitude { Text(String(format: "mag %.1f", m)).font(.caption2).foregroundStyle(Theme.dim) }
             }
-            HStack(spacing: 8) {
-                GeometryReader { g in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Theme.line).frame(height: 4)
-                        Capsule().fill(t.moonWashed ? Theme.dim : Theme.accent).frame(width: g.size.width * t.visibleFraction, height: 4)
-                    }
-                }.frame(height: 4)
-                if let s = store.site { Text("best \(Copy.hhmm(t.peakTime, site: s)) · \(Int(t.peakAltDeg))°").font(.caption2).foregroundStyle(Theme.text) }
+            if let s = store.site, let p = store.plan, let track = p.primary ?? p.darkSpan {
+                ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
             }
         }
         .padding(10)
