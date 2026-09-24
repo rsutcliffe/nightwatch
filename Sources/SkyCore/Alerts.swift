@@ -49,7 +49,7 @@ public enum AlertEngine {
         /// Fires go when tonight qualifies and the nudge time has passed; true when it fired.
         func goIfDue() -> Bool {
             guard let g = goAt, tonight.qualifies, now >= g else { return false }
-            note = AlertNotification(kind: .go, title: copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site))
+            note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site))
             s.stage = .goSent
             return true
         }
@@ -62,10 +62,10 @@ public enum AlertEngine {
             if !goIfDue(), now >= headsUpAt {
                 if tonight.qualifies, settings.headsUp {
                     let (start, hours) = window(tonight)
-                    note = AlertNotification(kind: .headsUp, title: copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site))
+                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site))
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
-                    note = AlertNotification(kind: .tomorrowPreview, title: copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site))
+                    note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site))
                     s.stage = .previewSent
                 }
                 // A night that fails at sunset stays idle: the forecast can still clear later and fire go.
