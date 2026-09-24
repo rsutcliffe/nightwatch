@@ -247,3 +247,29 @@ extension Planner {
                          seeingAvailable: dark.contains { $0.seeing != nil })
     }
 }
+
+extension Planner {
+    /// Why tonight has no qualifying window, in plain words, or nil when the data cannot say.
+    public static func noWindowReason(darkHours: [HourlyConditions], darkStart: Date, darkEnd: Date, rule: GoRule, site: Site) -> String? {
+        let darkLen = darkEnd.timeIntervalSince(darkStart) / 3600
+        if darkLen < rule.minHours {
+            return String(format: "Only %.1f h of darkness; the rule needs %.0f h.", darkLen, rule.minHours)
+        }
+        let dark = darkHours.sorted { $0.time < $1.time }
+        guard !dark.isEmpty else { return nil }
+        let clear = dark.filter { $0.cloudTotal <= rule.maxCloudPct }
+        if clear.isEmpty {
+            let low = dark.map(\.cloudTotal).min() ?? 0
+            return "Cloud never below \(low)% during darkness; the rule allows \(rule.maxCloudPct)%."
+        }
+        var best: (start: Date, hours: Int) = (dark[0].time, 0), run: (start: Date, hours: Int)? = nil, prev: Date? = nil
+        for h in dark {
+            let isClear = h.cloudTotal <= rule.maxCloudPct
+            let contiguous = prev.map { h.time.timeIntervalSince($0) == 3600 } ?? false
+            if isClear { run = (contiguous && run != nil) ? (run!.start, run!.hours + 1) : (h.time, 1) } else { run = nil }
+            if let r = run, r.hours > best.hours { best = r }
+            prev = h.time
+        }
+        return String(format: "Longest clear run is %d h from %@; the rule needs %.0f h.", best.hours, Copy.hhmm(best.start, site: site), rule.minHours)
+    }
+}

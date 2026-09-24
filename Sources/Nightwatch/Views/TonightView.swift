@@ -64,6 +64,10 @@ struct TonightView: View {
                     Text("Too far north or south for this date.").font(.caption).foregroundStyle(Theme.dim)
                 } else {
                     Text(store.copy.noWindow).font(.title3.weight(.semibold))
+                    if let ds = plan.night.darkStart, let de = plan.night.darkEnd,
+                       let why = Planner.noWindowReason(darkHours: plan.darkHours, darkStart: ds, darkEnd: de, rule: store.config.goRule, site: site) {
+                        Text(why).font(.caption).foregroundStyle(Theme.dim)
+                    }
                     if let t = store.tomorrow, let w = t.primary {
                         Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.caption).foregroundStyle(Theme.dim)
                     }
