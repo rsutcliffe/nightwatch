@@ -79,3 +79,27 @@ func close(_ a: Date, _ b: Date, minutes: Double) -> Bool { abs(a.timeIntervalSi
     #expect(e != nil)
     #expect(e!.peak > utc(2026, 9, 23, 0, 0))
 }
+
+@Test func nauticalTwilightExistsAtTheTestSiteInJuneWhenAstronomicalDoesNot() throws {
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let n = try Ephemeris.night(localDate: utc(2026, 6, 20, 12, 0), site: testSite)
+    #expect(!n.hasDarkness)
+    #expect(n.hasNauticalDarkness)
+    let ns = try #require(n.nauticalStart), ne = try #require(n.nauticalEnd)
+    #expect(ns > n.sunset && ne < n.sunrise && ne > ns)
+    #expect(ne.timeIntervalSince(ns) > 2 * 3600)   // a usable bright window exists in June
+}
+
+@Test func nauticalTwilightBracketsAstronomicalInSeptember() throws {
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let n = try Ephemeris.night(localDate: utc(2026, 9, 24, 12, 0), site: testSite)
+    let ns = try #require(n.nauticalStart), ne = try #require(n.nauticalEnd)
+    let ds = try #require(n.darkStart), de = try #require(n.darkEnd)
+    #expect(ns < ds && ne > de)
+}
+
+@Test func noNauticalTwilightInPolarDay() throws {
+    let tromso = Site(name: "Tromsø", latitude: 69.65, longitude: 18.96, elevationM: 10, timeZoneID: "Europe/Oslo", bortle: 4)
+    let n = try Ephemeris.night(localDate: utc(2026, 6, 20, 12, 0), site: tromso)
+    #expect(!n.hasNauticalDarkness)
+}
