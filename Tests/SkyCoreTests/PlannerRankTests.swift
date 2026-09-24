@@ -128,3 +128,56 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(Copy.frameChip(t(.mosaic, 1)) == "Mosaic")
     #expect(Copy.frameChip(t(.fits, nil)) == "Fits frame")   // no size to measure: never invent a percentage
 }
+
+@Test func sortOrders() throws {
+    func t(_ id: String, alt: Double, size: Double?, mag: Double?) -> RankedTarget {
+        RankedTarget(id: id, name: id, subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: size, magnitude: mag, fit: .fits,
+                     peakAltDeg: alt, peakTime: Date(), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+    }
+    let ts = [t("a", alt: 40, size: nil, mag: 9), t("b", alt: 70, size: 30, mag: nil), t("c", alt: 55, size: 90, mag: 5)]
+    let day = Date(timeIntervalSince1970: 1_790_000_000)
+    #expect(Planner.sorted(ts, by: .altitude, now: day, span: nil, site: sheffieldSite).map(\.id) == ["b", "c", "a"])
+    #expect(Planner.sorted(ts, by: .size, now: day, span: nil, site: sheffieldSite).map(\.id) == ["c", "b", "a"])
+    #expect(Planner.sorted(ts, by: .brightness, now: day, span: nil, site: sheffieldSite).map(\.id) == ["c", "a", "b"])
+    #expect(Planner.sorted(ts, by: .bestNow, now: day, span: nil, site: sheffieldSite).map(\.id) == ["a", "b", "c"])   // outside the span: ranked order
+}
+
+@Test func bestNowUsesCurrentAltitudeInsideTheSpan() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 23, 12, 0), site: sheffieldSite)
+    let span = ClearWindow(start: night.darkStart!, end: night.darkEnd!)
+    let ranked = Planner.rank(catalog: try Catalog.bundled(), constellations: [], window: span, site: sheffieldSite, fov: dwarfMini, rule: GoRule())
+    let now = span.midpoint
+    let alts = Planner.sorted(ranked, by: .bestNow, now: now, span: span, site: sheffieldSite)
+        .map { Ephemeris.altAz(raHours: $0.raHours, decDeg: $0.decDeg, at: now, site: sheffieldSite).alt }
+    #expect(alts == alts.sorted(by: >))
+}
+
+@Test func nearMoonRule() {
+    func t(_ id: String, _ group: TargetGroup, sep: Double) -> RankedTarget {
+        RankedTarget(id: id, name: id, subtitle: "", group: group, raHours: 0, decDeg: 0, sizeArcmin: nil, magnitude: nil, fit: .fits,
+                     peakAltDeg: 50, peakTime: Date(), moonSepDeg: sep, moonWashed: false, visibleFraction: 1)
+    }
+    #expect(t("NGC7000", .nebulae, sep: 10).isNearMoon(moonIllumination: 0.8, moonUpTonight: true))
+    #expect(!t("NGC7000", .nebulae, sep: 10).isNearMoon(moonIllumination: 0.4, moonUpTonight: true))
+    #expect(!t("NGC7000", .nebulae, sep: 20).isNearMoon(moonIllumination: 0.8, moonUpTonight: true))
+    #expect(!t("moon", .planets, sep: 0).isNearMoon(moonIllumination: 0.9, moonUpTonight: true))
+    #expect(!t("Cyg", .constellations, sep: 0).isNearMoon(moonIllumination: 0.9, moonUpTonight: true))
+    #expect(!t("NGC7000", .nebulae, sep: 10).isNearMoon(moonIllumination: 0.8, moonUpTonight: false))   // a Moon below the horizon all night washes nothing out
+}
+
+@Test func brightPlanetsCarryARealMoonSeparation() throws {
+    // 0 used to stand in for "not measured" on bright targets, which would mark every planet Near Moon.
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    var checked = 0
+    for h in 0..<8 {   // 21:00Z to 04:00Z, so at least one planet is up
+        let t = utc(2026, 7, 30, 21, 0).addingTimeInterval(Double(h) * 3600)
+        let moon = Ephemeris.moon(at: t, site: testSite).position
+        for p in Planner.brightTargets(at: t, site: testSite) where p.id != "moon" {
+            let expected = Ephemeris.separationDeg(ra1Hours: p.raHours, dec1Deg: p.decDeg, ra2Hours: moon.raHours, dec2Deg: moon.decDeg)
+            #expect(abs(p.moonSepDeg - expected) < 1e-6)
+            #expect(p.moonSepDeg > 0)
+            checked += 1
+        }
+    }
+    #expect(checked > 0)
+}

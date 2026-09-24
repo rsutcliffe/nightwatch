@@ -13,6 +13,7 @@ final class TargetsViewState: ObservableObject {
     @Published var search = ""
     @Published var selected: RankedTarget? = nil
     @Published var pendingScrollID: String? = nil
+    @Published var sort: TargetSort = .bestNow
 }
 
 struct TargetsView: View {
@@ -31,30 +32,46 @@ struct TargetsView: View {
         return .nebulae
     }
 
-    private var visible: [RankedTarget] {
-        guard case .group(let g) = ui.section else { return [] }
-        return targets.filter { $0.group == g }
+    private var sections: [BrowserSection] { TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+
+    private func move(_ direction: MoveCommandDirection) {
+        guard let i = sections.firstIndex(of: ui.section) else { return }
+        let next = direction == .up ? i - 1 : (direction == .down ? i + 1 : i)
+        guard sections.indices.contains(next), next != i else { return }
+        ui.section = sections[next]; ui.selected = nil
+    }
+
+    /// The filtered, sorted cards at `now`. "Best now" sorts by altitude at that instant, so the grid passes a clock tick.
+    private func visible(at now: Date) -> [RankedTarget] {
+        guard case .group(let g) = ui.section, let site = store.site else { return [] }
+        let shown = targets.filter { $0.group == g }
             .filter { !ui.fitsOnly || $0.fit == .fits }
             .filter { ui.includeMoonWashed || !$0.moonWashed }
             .filter { ui.search.isEmpty || $0.name.localizedCaseInsensitiveContains(ui.search) || $0.subtitle.localizedCaseInsensitiveContains(ui.search) }
+        return Planner.sorted(shown, by: ui.sort, now: now, span: store.plan.flatMap { $0.primary ?? $0.darkSpan }, site: site)
     }
 
     var body: some View {
         NavigationSplitView {
-            List(TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites], id: \.self, selection: $ui.section) { section in
-                switch section {
-                case .group(let g):
-                    Label { HStack { Text(g.displayName); Spacer(); Text("\(count(g))").foregroundStyle(Theme.dim) } } icon: { Image(systemName: Theme.glyph(for: g)) }
-                case .darkSites:
-                    Label { HStack { Text("Dark sites"); Spacer(); Text("\(store.darkSites.count)").foregroundStyle(Theme.dim) } } icon: { Image(systemName: "moon.stars") }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(sections, id: \.self) { section in
+                        Button { ui.section = section; ui.selected = nil } label: { sidebarRow(section) }
+                            .buttonStyle(.plain)
+                            .accessibilityAddTraits(ui.section == section ? .isSelected : [])
+                            .background {
+                                if ui.section == section {
+                                    Color.clear.nightwatchGlass(in: RoundedRectangle(cornerRadius: 6), fill: Color.white.opacity(0.14), tint: Color.white.opacity(0.14))
+                                }
+                            }
+                    }
                 }
+                .padding(8)
             }
-            .safeAreaInset(edge: .bottom) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Toggle("Fits my field of view", isOn: $ui.fitsOnly)
-                    Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
-                }.font(.caption).padding(10)
-            }
+            .nightwatchGlass(in: Rectangle())
+            .focusable()
+            .onMoveCommand { move($0) }   // arrow keys step through the sections, as the List did
+            .safeAreaInset(edge: .bottom) { filters }
             .navigationSplitViewColumnWidth(232)
         } detail: {
             if let selected = ui.selected {
@@ -72,6 +89,31 @@ struct TargetsView: View {
         .background(Theme.bg)
         .onAppear { consumeRequest() }
         .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
+    }
+
+    private func sidebarRow(_ section: BrowserSection) -> some View {
+        HStack {
+            switch section {
+            case .group(let g):
+                Label(g.displayName, systemImage: Theme.glyph(for: g)); Spacer(); Text("\(count(g))").foregroundStyle(Tokens.textSecondary)
+            case .darkSites:
+                Label("Dark sites", systemImage: "moon.stars"); Spacer(); Text("\(store.darkSites.count)").foregroundStyle(Tokens.textSecondary)
+            }
+        }
+        .font(.system(size: 12)).padding(.horizontal, 8).padding(.vertical, 5).contentShape(Rectangle())
+    }
+
+    /// Toggles with the Moon line above them, so "Include Moon-washed" has context (follow-on 5).
+    private var filters: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let p = store.plan, let s = store.site, let m = Planner.moonTonight(p), m != .down {
+                HStack(spacing: 5) { WarningDot(size: 5); Text("Moon \(Int((p.moonIllumination * 100).rounded()))% · \(Copy.moonText(m, site: s).lowercased())") }
+                    .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
+            }
+            Toggle("Fits my field of view", isOn: $ui.fitsOnly)
+            Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
+        }
+        .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: 11)).padding(10)
     }
 
     /// Applies a pending request from the popover once, then clears it.
@@ -116,26 +158,39 @@ struct TargetsView: View {
 
     private var grid: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(selectedGroup.displayName).font(.title2.weight(.semibold))
-                if let w = store.plan?.primary, let s = store.site {
-                    Text("Sorted by fit and altitude during tonight's clear window · \(Copy.hhmm(w.start, site: s))–\(Copy.hhmm(w.end, site: s))").font(.caption).foregroundStyle(Theme.dim)
-                } else if let n = store.plan?.night, let ds = n.darkStart, let de = n.darkEnd, let s = store.site {
-                    Text("\(store.copy.noWindow) Showing what is up during darkness · \(Copy.hhmm(ds, site: s))–\(Copy.hhmm(de, site: s))").font(.caption).foregroundStyle(Theme.dim)
-                } else {
-                    Text(store.copy.noWindow).font(.caption).foregroundStyle(Theme.dim)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(selectedGroup.displayName).font(.title2.weight(.semibold))
+                    Spacer()
+                    Picker("Sort", selection: $ui.sort) {
+                        ForEach(TargetSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented).fixedSize()
                 }
+                if let p = store.plan, let s = store.site {
+                    ClearSkyBars(plan: p, site: s, trackHeight: 14, labels: false).frame(maxWidth: 360)
+                    if p.darkSpan == nil {
+                        Text("No astronomical darkness tonight.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    } else if p.primary == nil {
+                        Text(store.copy.noWindow).font(.caption).foregroundStyle(Tokens.textSecondary)
+                    }
+                } else {
+                    Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
+                }
+                if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
                 if store.plan?.mode == .bright, selectedGroup != .planets {
-                    Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Theme.dim)
+                    Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             GlassGroup(spacing: 12) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                    ForEach(visible) { t in
-                        Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
-                            .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, site: $0) } ?? t.name)
-                    }
-                }.padding(20)
+                TimelineView(.periodic(from: .now, by: 300)) { clock in   // "Best now" re-sorts every five minutes
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                        ForEach(visible(at: clock.date)) { t in
+                            Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
+                                .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, site: $0) } ?? t.name)
+                        }
+                    }.padding(20)
+                }
             }
         }
     }
@@ -144,6 +199,7 @@ struct TargetsView: View {
         VStack(alignment: .trailing, spacing: 4) {
             if !ui.fitsOnly { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
             if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
+            else if let p = store.plan, t.isNearMoon(moonIllumination: p.moonIllumination, moonUpTonight: Planner.moonTonight(p).map { $0 != .down } ?? false) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
         }
     }
 

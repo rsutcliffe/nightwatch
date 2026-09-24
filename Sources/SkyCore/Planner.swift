@@ -390,9 +390,10 @@ extension Planner {
         let planets = brightPlanets.compactMap { p -> RankedTarget? in
             let pos = Ephemeris.planet(p, at: t, site: site)
             guard pos.altDeg >= brightTargetFloorDeg else { return nil }
+            let sep = Ephemeris.separationDeg(ra1Hours: pos.raHours, dec1Deg: pos.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
             return described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
                                           raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
-                                          peakAltDeg: pos.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1),
+                                          peakAltDeg: pos.altDeg, peakTime: t, moonSepDeg: sep, moonWashed: false, visibleFraction: 1),
                              viewable: nil, site: site, typeName: "Planet", catalogueID: p.displayName)
         }.sorted { $0.peakAltDeg > $1.peakAltDeg }
         return out + planets
@@ -513,5 +514,37 @@ extension Planner {
         if let s = plan.moonSet, span.start <= s, s <= span.end { return .sets(s) }
         if let r = plan.moonRise, span.start <= r, r <= span.end { return .rises(r) }
         return up == 0 ? .down : .upAllNight
+    }
+}
+
+public enum TargetSort: String, CaseIterable, Sendable { case bestNow = "Best now", altitude = "Altitude", size = "Size", brightness = "Brightness" }
+
+extension RankedTarget {
+    /// Within 15° of a Moon more than half lit that is up at some point tonight (follow-on 5). The Moon itself and
+    /// constellations never count. Deep-sky targets near a Moon that is up at the window's middle are already Moon-washed,
+    /// which the card shows first; this catches planets, and targets whose Moon rises or sets inside the window.
+    public func isNearMoon(moonIllumination: Double, moonUpTonight: Bool) -> Bool {
+        id != "moon" && group != .constellations && moonUpTonight && moonIllumination > 0.5 && moonSepDeg < 15
+    }
+}
+
+extension Planner {
+    /// Targets window sort. Best now: highest at `now` while `now` is inside `span`, else the ranked order. Altitude: peak
+    /// altitude. Size: largest first. Brightness: lowest magnitude first. Unknown sizes and magnitudes go last; ties keep the ranked order.
+    public static func sorted(_ ts: [RankedTarget], by sort: TargetSort, now: Date, span: ClearWindow?, site: Site) -> [RankedTarget] {
+        func stable(_ before: (RankedTarget, RankedTarget) -> Bool) -> [RankedTarget] {
+            ts.enumerated().sorted { a, b in
+                before(a.element, b.element) || (!before(b.element, a.element) && a.offset < b.offset)
+            }.map(\.element)
+        }
+        switch sort {
+        case .bestNow:
+            guard let s = span, s.start <= now, now <= s.end else { return ts }
+            let alt = ts.map { Ephemeris.altAz(raHours: $0.raHours, decDeg: $0.decDeg, at: now, site: site).alt }
+            return ts.indices.sorted { alt[$0] > alt[$1] || (alt[$0] == alt[$1] && $0 < $1) }.map { ts[$0] }
+        case .altitude: return stable { $0.peakAltDeg > $1.peakAltDeg }
+        case .size: return stable { ($0.sizeArcmin ?? -1) > ($1.sizeArcmin ?? -1) }
+        case .brightness: return stable { ($0.magnitude ?? 99) < ($1.magnitude ?? 99) }
+        }
     }
 }
