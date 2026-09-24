@@ -18,6 +18,8 @@ final class Store: ObservableObject {
     @Published var darkSites: [DarkSite] = []
     @Published var sitePlans: [SitePlan] = []
     @Published var bestAway: SitePlan?
+    /// Set by the popover so the Targets window opens on a section, scrolled to a dark-site card.
+    @Published var targetsRequest: TargetsRequest? = nil
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
 
