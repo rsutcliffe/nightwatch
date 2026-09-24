@@ -68,7 +68,8 @@ public enum Ephemeris {
 
     /// Searching for the return crossing from the exact instant of the downward one can hand back that same
     /// instant when the Sun barely dips below the threshold (Home at the June solstice gave a zero-length
-    /// nautical night), so the rise search starts one minute later.
+    /// nautical night), so the rise search starts one minute later. A window shorter than a minute is therefore
+    /// not reported, which costs nothing: a sub-minute dark window has no observing value.
     private static let afterCrossing = 1.0 / 1440
 
     /// The night that begins on the local calendar date containing `localDate` at `site`.
