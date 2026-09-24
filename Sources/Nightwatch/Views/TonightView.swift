@@ -31,7 +31,7 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").font(.caption).foregroundStyle(Theme.dim)
                 if let s = store.site, let p = store.plan {
-                    Text("\(p.night.key) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")")
+                    Text("\(p.night.key) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")" + (p.mode == .bright ? " · bright night" : ""))
                         .font(.caption).foregroundStyle(Theme.dim)   // wedge angle = site latitude; the vendor app does the alignment
                 }
             }
@@ -47,6 +47,20 @@ struct TonightView: View {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// The plain reason under the no-window verdict: astronomical darkness and the go rule on a dark night,
+    /// nautical darkness and the bright rule on a bright one.
+    private func noWindowReason(_ plan: NightPlan, _ site: Site) -> String? {
+        if plan.mode == .bright {
+            guard let ns = plan.night.nauticalStart, let ne = plan.night.nauticalEnd else { return nil }
+            let r = store.config.goRule
+            return Planner.noWindowReason(darkHours: plan.darkHours, darkStart: ns, darkEnd: ne,
+                                          rule: GoRule(minHours: store.config.brightNights.minHours, maxCloudPct: r.maxCloudPct, minAltitudeDeg: r.minAltitudeDeg),
+                                          site: site, mode: .bright, brightTargetsUp: Planner.anyBrightTargetUp(from: ns, to: ne, site: site))
+        }
+        guard let ds = plan.night.darkStart, let de = plan.night.darkEnd else { return nil }
+        return Planner.noWindowReason(darkHours: plan.darkHours, darkStart: ds, darkEnd: de, rule: store.config.goRule, site: site)
+    }
+
     private func verdict(_ plan: NightPlan, _ site: Site) -> some View {
         HStack(spacing: 16) {
             ZStack {
@@ -56,16 +70,18 @@ struct TonightView: View {
             }.frame(width: 84, height: 84)
             VStack(alignment: .leading, spacing: 4) {
                 if let w = plan.primary {
-                    Text("Clear window tonight").font(.title3.weight(.semibold))
+                    Text(plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight").font(.title3.weight(.semibold))
                     Text("\(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").foregroundStyle(Theme.text)
+                    if plan.mode == .bright {
+                        Text(Copy.brightList(plan.brightTargets)).font(.caption).foregroundStyle(Theme.dim)
+                    }
                     Text("Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: site))").font(.caption).foregroundStyle(Theme.dim)
-                } else if !plan.night.hasDarkness {
+                } else if !plan.night.hasDarkness && plan.mode == .dark {
                     Text("No astronomical darkness").font(.title3.weight(.semibold))
                     Text("Too far north or south for this date.").font(.caption).foregroundStyle(Theme.dim)
                 } else {
                     Text(store.copy.noWindow).font(.title3.weight(.semibold))
-                    if let ds = plan.night.darkStart, let de = plan.night.darkEnd,
-                       let why = Planner.noWindowReason(darkHours: plan.darkHours, darkStart: ds, darkEnd: de, rule: store.config.goRule, site: site) {
+                    if let why = noWindowReason(plan, site) {
                         Text(why).font(.caption).foregroundStyle(Theme.dim)
                     }
                     if let t = store.tomorrow, let w = t.primary {
@@ -140,19 +156,24 @@ struct TonightView: View {
         }
     }
 
+    /// Deep-sky picks on a dark night; the Moon and planets on a bright one.
+    private func picks(_ plan: NightPlan) -> [RankedTarget] { plan.mode == .bright ? plan.brightTargets : plan.best }
+
     private func best(_ plan: NightPlan) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(plan.best.isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.caption).foregroundStyle(Theme.dim)
+                Text(picks(plan).isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.caption).foregroundStyle(Theme.dim)
                 Spacer()
                 Button("All targets →") { open("targets") }.buttonStyle(.plain).font(.caption).foregroundStyle(Theme.accent)
             }
-            if plan.best.isEmpty {
+            if plan.mode == .bright, plan.brightTargets.isEmpty {
+                Text("No Moon or planet in a clear window tonight.").font(.caption).foregroundStyle(Theme.dim)
+            } else if plan.mode == .dark, plan.best.isEmpty {
                 Text("\(plan.targets.count) objects above the horizon during darkness. No clear window, so nothing is recommended.")
                     .font(.caption).foregroundStyle(Theme.dim)
             }
             HStack(spacing: 8) {
-                ForEach(plan.best) { t in
+                ForEach(picks(plan)) { t in
                     VStack(alignment: .leading, spacing: 6) {
                         ThumbnailView(target: t).frame(height: 64)
                         Text(t.name).font(.caption.weight(.semibold)).lineLimit(1)
