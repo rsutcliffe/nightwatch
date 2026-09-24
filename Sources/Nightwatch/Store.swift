@@ -217,6 +217,7 @@ final class Store: ObservableObject {
         darkSites = sites   // set with sitePlans so the Targets grid never sees a new list beside old plans
         sitePlans = SiteComparison.sorted(plans)
         bestAway = plan.map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil
+        CachePruning.prune(directory: Store.siteCacheDir, keepIDs: Set(sites.map(\.id)), now: now)
     }
 
     /// Makes `s` the active site. A saved site at the same place (within 0.001° in latitude and longitude) is reused;
