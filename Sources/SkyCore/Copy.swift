@@ -19,7 +19,19 @@ public struct Copy: Sendable {
     }
     public func tomorrowTitle(hours: Double) -> String { String(format: "Tomorrow night looks clear · %.1f h", hours) }
 
+    // Bright nights (v0.3): the same words in both wording modes, no Discworld lines (owner ruling).
+    public func brightHeadsUpTitle(windowStart: String, targets: [RankedTarget]) -> String {
+        "Bright night tonight from \(windowStart) · \(Copy.brightList(targets))"
+    }
+    public func brightGoTitle(windowStart: String) -> String { "Bright night. Clear from \(windowStart)" }
+    public func brightTomorrowTitle(hours: Double) -> String { String(format: "Tomorrow looks bright and clear · %.1f h", hours) }
+    /// "Moon 62%, Saturn": the Moon with its illumination, planets by name, in the plan's order.
+    public static func brightList(_ targets: [RankedTarget]) -> String {
+        targets.map { $0.id == "moon" ? "Moon \($0.subtitle.prefix { $0 != " " })" : $0.name }.joined(separator: ", ")
+    }
+
     public func notificationBody(plan: NightPlan, site: Site) -> String {
+        if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
         else if plan.moonIllumination < 0.1 { parts.append("No Moon") }

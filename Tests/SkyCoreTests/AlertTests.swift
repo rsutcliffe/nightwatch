@@ -151,3 +151,42 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     let r2 = AlertEngine.step(now: due, tonight: good, tomorrow: tomorrowGood, state: r1.state, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
     #expect(r2.notification == nil)
 }
+
+// MARK: - v0.3 bright nights
+
+private func brightTarget(_ id: String, _ name: String, _ subtitle: String, alt: Double) -> RankedTarget {
+    RankedTarget(id: id, name: name, subtitle: subtitle, group: .planets, raHours: 0, decDeg: 0, sizeArcmin: nil, magnitude: nil,
+                 fit: .small, peakAltDeg: alt, peakTime: Date(timeIntervalSince1970: 0), moonSepDeg: 0, moonWashed: false, visibleFraction: 1)
+}
+private func bright(_ p: NightPlan) -> NightPlan {
+    var b = p
+    b.mode = .bright
+    b.brightTargets = [brightTarget("moon", "Moon", "62% illuminated", alt: 22), brightTarget("planet-saturn", "Saturn", "Planet", alt: 18)]
+    return b
+}
+
+@Test func brightListNamesTheMoonWithItsPhase() {
+    #expect(Copy.brightList(bright(NightPlan(night: Night(key: "k", localDate: Date(), sunset: Date(), sunrise: Date(), darkStart: nil, darkEnd: nil),
+                                             windows: [], primary: nil, score: 0, qualifies: false, moonIllumination: 0, moonRise: nil, moonSet: nil,
+                                             darkHours: [], targets: [], best: [], seeingAvailable: false)).brightTargets) == "Moon 62%, Saturn")
+}
+
+@Test func brightHeadsUpGoAndPreviewUseBrightWording() throws {
+    let (night, good, bad, tomorrowGood) = try fixtures()
+    let tonight = bright(good)
+    let due = night.sunset.addingTimeInterval(-3600 + 60)
+    let heads = AlertEngine.step(now: due, tonight: tonight, tomorrow: nil, state: nil, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    let h = try #require(heads.notification)
+    #expect(h.kind == .headsUp)
+    #expect(h.title == "Bright night tonight from \(Copy.hhmm(tonight.primary!.start, site: site)) · Moon 62%, Saturn")
+    #expect(h.body == "Moon 62%, Saturn well placed.")
+
+    let goAt = tonight.primary!.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60 + 60)
+    let go = AlertEngine.step(now: goAt, tonight: tonight, tomorrow: nil, state: heads.state, settings: settings, forecastFetchedAt: goAt, site: site, copy: copy)
+    #expect(go.notification?.title == "Bright night. Clear from \(Copy.hhmm(tonight.primary!.start, site: site))")
+
+    let preview = AlertEngine.step(now: due, tonight: bad, tomorrow: bright(tomorrowGood), state: nil, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(preview.notification?.title == String(format: "Tomorrow looks bright and clear · %.1f h", tomorrowGood.primary!.hours))
+    // Same words in plain mode: no new Discworld copy for bright nights.
+    #expect(Copy(flavour: .plain).brightGoTitle(windowStart: "22:30") == copy.brightGoTitle(windowStart: "22:30"))
+}
