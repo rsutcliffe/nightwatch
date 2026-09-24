@@ -1,4 +1,5 @@
 import SwiftUI
+import SkyCore
 
 /// Amber warning dot with a soft glow. Always sits beside a text label: colour is never the only signal.
 struct WarningDot: View {
@@ -29,5 +30,15 @@ struct StatTile: View {
         .overlay { if warning { RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning.opacity(0.59), lineWidth: 0.75) } }
         .accessibilityElement(children: .combine)
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
+    }
+}
+
+/// Amber dot and "{n} h ago" beside any timestamp older than the six-hour stale rule.
+struct StaleBadge: View {
+    let fetchedAt: Date
+    var body: some View {
+        HStack(spacing: 4) { WarningDot(size: 5); Text(Copy.hoursAgo(fetchedAt, now: Date())) }
+            .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
+            .accessibilityElement(children: .combine)
     }
 }

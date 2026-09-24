@@ -13,7 +13,7 @@ struct TonightView: View {
                 ClearSkyBars(plan: plan, site: site, source: store.forecast?.cloudSource ?? "Open-Meteo")
                 notice(site)
                 tiles(plan, site)
-                best(plan)
+                best(plan, site)
             } else {
                 Text(store.lastError ?? "Waiting for the first forecast…").font(.callout).foregroundStyle(Theme.dim).padding(.vertical, 20)
             }
@@ -78,8 +78,6 @@ struct TonightView: View {
                         HStack(spacing: 5) { WarningDot(size: 4.5); Text(why) }
                             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
-                    Text("Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: site))")
-                        .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)   // moves into the footer toggle in Task 5
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
                     Text("No astronomical darkness").font(.system(size: 15, weight: .medium))
                     Text("Too far north or south for this date.").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
@@ -147,26 +145,29 @@ struct TonightView: View {
     /// Deep-sky picks on a dark night; the Moon and planets on a bright one.
     private func picks(_ plan: NightPlan) -> [RankedTarget] { plan.mode == .bright ? plan.brightTargets : plan.best }
 
-    private func best(_ plan: NightPlan) -> some View {
+    private func best(_ plan: NightPlan, _ site: Site) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(picks(plan).isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.caption).foregroundStyle(Theme.dim)
+                Text(picks(plan).isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                 Spacer()
-                Button("All targets →") { open("targets") }.buttonStyle(.plain).font(.caption).foregroundStyle(Theme.accent)
+                Button("All targets →") { open("targets") }.buttonStyle(.plain).font(.system(size: 10)).foregroundStyle(Tokens.textPrimary)
             }
             if plan.mode == .bright, plan.brightTargets.isEmpty {
-                Text("No Moon or planet in a clear window tonight.").font(.caption).foregroundStyle(Theme.dim)
+                Text("No Moon or planet in a clear window tonight.").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             } else if plan.mode == .dark, plan.best.isEmpty {
                 Text("\(plan.targets.count) objects above the horizon during darkness. No clear window, so nothing is recommended.")
-                    .font(.caption).foregroundStyle(Theme.dim)
+                    .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
             }
-            HStack(spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 ForEach(picks(plan)) { t in
-                    VStack(alignment: .leading, spacing: 6) {
-                        ThumbnailView(target: t).frame(height: 64)
-                        Text(t.name).font(.caption.weight(.semibold)).lineLimit(1)
-                        Text(t.group.displayName).font(.caption2).foregroundStyle(Theme.dim)
-                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 3) {
+                        ThumbnailView(target: t).frame(height: 64).clipShape(RoundedRectangle(cornerRadius: 7))
+                        Text(t.catalogueID).font(.system(size: 10.5, weight: .bold)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
+                        Text(t.commonName ?? t.typeName).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                        Text("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up").font(.system(size: 8.5, weight: .medium)).foregroundStyle(Tokens.bestLine)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .combine)
                 }
             }
         }
@@ -186,25 +187,37 @@ struct TonightView: View {
         }
     }
 
-    /// Two rows so the checkbox label never truncates: controls on the first, provenance on the second.
+    /// Toggle "Notify at HH:MM" (the pre-window time) bound to the notify setting, "Patrol", and the provenance line.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Toggle(isOn: Binding(get: { store.config.notifyEnabled }, set: { store.config.notifyEnabled = $0; store.saveConfig() })) {
-                    Text("Notify when clear").font(.callout)
-                }.toggleStyle(.checkbox).fixedSize()
+                    Text(notifyLabel).font(.system(size: 12))
+                }
+                .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).fixedSize()
                 Spacer()
                 if store.refreshing { ProgressView().controlSize(.small) }
-                Button(store.copy.refresh) { Task { await store.refresh(force: true) } }.font(.caption)
+                Button { Task { await store.refresh(force: true) } } label: {
+                    Text(store.copy.refresh).font(.system(size: 11)).padding(.horizontal, 10).frame(minWidth: 44, minHeight: 19)
+                }
+                .buttonStyle(.plain)
+                .background(Tokens.surfaceButton, in: RoundedRectangle(cornerRadius: 5))
+                .help("Fetch the forecast now and recompute tonight")
             }
             if let f = store.forecast, let s = store.site {
                 HStack(spacing: 6) {
+                    if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
                     Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
-                        .font(.caption).foregroundStyle(store.isStale ? Theme.warn : Theme.dim)
-                    Text("·").font(.caption).foregroundStyle(Theme.dim)
+                        .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+                    Text("·").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     sourceBadge(f)
                 }
             }
         }.padding(.top, 4)
+    }
+
+    private var notifyLabel: String {
+        guard let w = store.plan?.primary, let s = store.site else { return "Notify when clear" }
+        return "Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: s))"
     }
 }
