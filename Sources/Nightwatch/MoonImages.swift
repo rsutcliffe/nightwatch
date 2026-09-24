@@ -22,10 +22,10 @@ enum MoonImages {
 
 final class MoonLoader: ObservableObject { @Published var image: NSImage? }
 
-/// The Moon tile of the popover: the rendered Moon for the night beside illumination and set time.
+/// The popover's Moon tile: the rendered Moon (32 pt, dark rim) beside "{n}%" and "Sets 06:10" (or "Down tonight" alone).
 struct MoonTile: View {
-    let label: String
     let value: String
+    let line: String?
     let at: Date
     @StateObject private var loader = MoonLoader()
 
@@ -36,16 +36,21 @@ struct MoonTile: View {
                 if let img = loader.image {
                     Image(nsImage: img).resizable().aspectRatio(contentMode: .fill).clipShape(Circle())
                 } else {
-                    Image(systemName: "moon").font(.caption).foregroundStyle(Theme.dim)
+                    Image(systemName: "moon").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
-            }.frame(width: 30, height: 30)
+            }
+            .frame(width: 32, height: 32)
+            .overlay(Circle().stroke(Color.black.opacity(0.6), lineWidth: 1.5))
+            .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.caption2).foregroundStyle(Theme.dim)
-                Text(value).font(.callout.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.7).fixedSize(horizontal: false, vertical: true)
+                Text(value).font(.system(size: 12.5, weight: .medium)).fixedSize(horizontal: false, vertical: true)
+                if let line { Text(line).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary) }
             }
             Spacer(minLength: 0)
         }
-        .padding(10).frame(maxWidth: .infinity, alignment: .leading).nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
+        .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, alignment: .leading)
+        .accessibilityElement(children: .combine).accessibilityLabel("Moon, \(value)\(line.map { ", \($0)" } ?? "")")
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
         .task(id: MoonImage.hourKey(for: at)) { loader.image = await MoonImages.image(at: at) }
     }
 }

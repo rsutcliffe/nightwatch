@@ -53,6 +53,15 @@ public struct Copy: Sendable {
         return s + "."
     }
 
+    public static func moonText(_ m: MoonTonight, site: Site) -> String {
+        switch m {
+        case .sets(let t): "Sets \(hhmm(t, site: site))"
+        case .rises(let t): "Rises \(hhmm(t, site: site))"
+        case .upAllNight: "Up all night"
+        case .down: "Down tonight"
+        }
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)

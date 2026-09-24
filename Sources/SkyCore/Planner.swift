@@ -15,6 +15,9 @@ public struct ClearWindow: Codable, Equatable, Sendable {
     public init(start: Date, end: Date) { self.start = start; self.end = end }
     public var hours: Double { end.timeIntervalSince(start) / 3600 }
     public var midpoint: Date { start.addingTimeInterval(end.timeIntervalSince(start) / 2) }
+    /// True when any part of the hour from `t` falls inside the window. Windows are clipped to darkness, so a clear hour
+    /// that starts before darkness is still part of the window.
+    public func overlapsHour(startingAt t: Date) -> Bool { start < t.addingTimeInterval(3600) && t < end }
 }
 
 public struct ScoreInputs {
@@ -196,6 +199,8 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var brightTargets: [RankedTarget] = []
     /// The score terms that held tonight back, biggest loss first; empty without a clear window.
     public var limiting: [LimitingFactor] = []
+    /// The share of hourly samples in the plan's darkness with the Moon up; nil when there is no darkness.
+    public var moonUpFraction: Double? = nil
 }
 
 extension Planner {
@@ -329,13 +334,8 @@ extension Planner {
         }
         let primary = windows.max { $0.hours < $1.hours }
         let moonMid = Ephemeris.moon(at: primary?.midpoint ?? night.darkStart ?? night.sunset, site: site)
-        var aboveFraction = 0.0
-        if let ds = night.darkStart, let de = night.darkEnd {
-            var t = ds, n = 0, up = 0
-            while t <= de { n += 1; if Ephemeris.moon(at: t, site: site).position.altDeg > 0 { up += 1 }; t = t.addingTimeInterval(3600) }
-            aboveFraction = n == 0 ? 0 : Double(up) / Double(n)
-        }
         let darkness: (Date, Date)? = (night.darkStart != nil && night.darkEnd != nil) ? (night.darkStart!, night.darkEnd!) : nil
+        let aboveFraction = darkness.map { moonUpFraction(from: $0.0, to: $0.1, site: site) } ?? 0
         let inputs = ScoreInputs(darkHours: dark, windows: windows, darkness: darkness,
                                  moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct)
         let score = Planner.score(inputs)
@@ -347,13 +347,20 @@ extension Planner {
                                  moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
                                  darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets),
                                  seeingAvailable: dark.contains { $0.seeing != nil },
-                                 limiting: primary == nil ? [] : limitingFactors(inputs))
+                                 limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: darkness == nil ? nil : aboveFraction)
         // Bright-night mode only takes over when the dark rule cannot be met at all tonight (too little darkness).
         if let b = bright, b.enabled, !darkPlan.qualifies {
             let darkLen = darkness.map { $0.1.timeIntervalSince($0.0) / 3600 } ?? 0
             if darkLen < rule.minHours { return brightPlan(night: night, forecast: forecast, site: site, fov: fov, rule: rule, bright: b) }
         }
         return darkPlan
+    }
+
+    /// The share of hourly samples from `from` to `to` with the Moon above the horizon.
+    static func moonUpFraction(from: Date, to: Date, site: Site) -> Double {
+        var t = from, n = 0, up = 0
+        while t <= to { n += 1; if Ephemeris.moon(at: t, site: site).position.altDeg > 0 { up += 1 }; t = t.addingTimeInterval(3600) }
+        return n == 0 ? 0 : Double(up) / Double(n)
     }
 
     /// Bright targets must stand this high. Summer Moons and planets are low at British latitudes: at the middle of
@@ -429,7 +436,7 @@ extension Planner {
                          moonIllumination: moon.illumination, moonRise: moon.rise, moonSet: moon.set,
                          darkHours: span, targets: [], best: [], seeingAvailable: span.contains { $0.seeing != nil },
                          mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site, fov: fov) } ?? [],
-                         limiting: primary == nil ? [] : limitingFactors(inputs))
+                         limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: moonUpFraction(from: ns, to: ne, site: site))
     }
 }
 
@@ -484,5 +491,19 @@ extension Planner {
             prev = h.time
         }
         return String(format: "Longest clear run is %d h from %@; %@ needs %.0f h.", best.hours, Copy.hhmm(best.start, site: site), ruleName, rule.minHours)
+    }
+}
+
+public enum MoonTonight: Equatable, Sendable { case sets(Date), rises(Date), upAllNight, down }
+
+extension Planner {
+    /// What the Moon does during the plan's darkness; nil when there is no darkness to judge by.
+    public static func moonTonight(_ plan: NightPlan) -> MoonTonight? {
+        guard let up = plan.moonUpFraction, let span = plan.darkSpan else { return nil }
+        // Events first: the share is sampled hourly, so a Moon that rises after the last sample reads 0 % up.
+        // Only an event inside darkness is shown, so a rise or set found on the neighbouring night never is.
+        if let s = plan.moonSet, span.start <= s, s <= span.end { return .sets(s) }
+        if let r = plan.moonRise, span.start <= r, r <= span.end { return .rises(r) }
+        return up == 0 ? .down : .upAllNight
     }
 }

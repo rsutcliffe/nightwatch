@@ -27,23 +27,18 @@ struct DetailView: View {
                 Text(target.name).font(.title2.weight(.semibold))
                 Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? "")).foregroundStyle(Theme.dim)
                 if let s = store.site, let w = store.plan?.primary {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                        tile("Best", "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg))°")
-                        tile("Above \(Int(store.config.goRule.minAltitudeDeg))°", "\(Int(target.visibleFraction * 100))% of window")
-                        tile("Moon sep.", "\(Int(target.moonSepDeg))°")
-                        tile("Suggested", String(format: "%.0f min stack", min(w.hours, 3) * 60))
-                    }
+                    GlassGroup(spacing: 8) { LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                        StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg))°")
+                        StatTile(label: "Above \(Int(store.config.goRule.minAltitudeDeg))°", value: "\(Int(target.visibleFraction * 100))% of window")
+                        StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°")
+                        StatTile(label: "Suggested", value: String(format: "%.0f min stack", min(w.hours, 3) * 60))
+                    } }
                     altitudeCurve(site: s, window: w)
                 }
                 Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.caption).foregroundStyle(Theme.dim)
             }.padding(16)
         }
         .background(Theme.bg).foregroundStyle(Theme.text)
-    }
-
-    private func tile(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) { Text(label).font(.caption2).foregroundStyle(Theme.dim); Text(value).font(.callout.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7) }
-            .padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     /// Altitude from sunset to sunrise, clear window shaded, 30° floor drawn.

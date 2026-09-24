@@ -10,9 +10,8 @@ struct TonightView: View {
             header
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
-                awayLine(site)
-                auroraLine
-                cloudStrip(plan)
+                ClearSkyBars(plan: plan, site: site, source: store.forecast?.cloudSource ?? "Open-Meteo")
+                notice(site)
                 tiles(plan, site)
                 best(plan)
             } else {
@@ -102,79 +101,45 @@ struct TonightView: View {
         switch l { case .green: Theme.dim; case .yellow: Theme.warn; case .amber, .red: Theme.accent }
     }
 
-    /// AuroraWatch UK's status while it is at or above the chosen threshold, whatever the sky. Hidden when AuroraWatch
-    /// has not published for an hour: its `updated` time moves on every publication (live: 20:33:32Z then 20:39:31Z, both green).
-    private var auroraLine: some View {
-        Group {
-            if store.config.aurora.enabled, let a = store.aurora, a.level >= store.config.aurora.threshold, Date().timeIntervalSince(a.updated) < 3600 {
-                Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.caption).foregroundStyle(auroraColour(a.level))
-            }
+    /// At most one line under the bars: aurora first, then the Clearer sky line (spec §5.1).
+    /// The aurora line needs AuroraWatch UK to have published within the hour: its `updated` time moves on every
+    /// publication (live: 20:33:32Z then 20:39:31Z, both green), so an older status is stale.
+    @ViewBuilder private func notice(_ site: Site) -> some View {
+        if store.config.aurora.enabled, let a = store.aurora, a.level >= store.config.aurora.threshold, Date().timeIntervalSince(a.updated) < 3600 {
+            Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.system(size: 10)).foregroundStyle(auroraColour(a.level))
+        } else if let a = store.bestAway, let w = a.primary {
+            Button {
+                store.targetsRequest = TargetsRequest(section: .darkSites, siteID: a.site.id)
+                open("targets")
+            } label: {
+                Text("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
+                    .font(.system(size: 10)).foregroundStyle(Tokens.textPrimary).multilineTextAlignment(.leading)
+            }.buttonStyle(.plain)   // a link, so text.primary: red means clear sky only
         }
-    }
-
-    private func awayLine(_ site: Site) -> some View {
-        Group {
-            if let a = store.bestAway, let w = a.primary {
-                Button {
-                    store.targetsRequest = TargetsRequest(section: .darkSites, siteID: a.site.id)
-                    open("targets")
-                } label: {
-                    Text("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
-                        .font(.caption).foregroundStyle(Theme.accent).multilineTextAlignment(.leading)
-                }.buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func cloudStrip(_ plan: NightPlan) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .bottom, spacing: 3) {
-                ForEach(plan.darkHours, id: \.time) { h in
-                    let clear = h.cloudTotal <= store.config.goRule.maxCloudPct
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(clear ? Theme.accent : Theme.line)
-                        .frame(height: max(3, CGFloat(h.cloudTotal) * 0.4))
-                        .frame(maxWidth: .infinity)
-                }
-            }.frame(height: 44, alignment: .bottom)
-            HStack {
-                if let f = plan.darkHours.first, let l = plan.darkHours.last, let s = store.site {
-                    Text(Copy.hhmm(f.time, site: s)); Spacer(); Text(Copy.hhmm(l.time, site: s))
-                }
-            }.font(.caption2).foregroundStyle(Theme.dim)
-            Text("Cloud cover during darkness · bar height = % cloud · \(store.forecast?.cloudSource ?? "Open-Meteo")").font(.caption2).foregroundStyle(Theme.dim)
-        }
-    }
-
-    private func tile(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption2).foregroundStyle(Theme.dim)
-            Text(value).font(.callout.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
-        }.padding(10).frame(maxWidth: .infinity, alignment: .leading).nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
     }
 
     private func tiles(_ plan: NightPlan, _ site: Site) -> some View {
-        let dark: String = {
-            if let ds = plan.night.darkStart, let de = plan.night.darkEnd {
-                return "\(Copy.hhmm(ds, site: site))–\(Copy.hhmm(de, site: site))"
-            }
-            return "none"
-        }()
-        let moon = "\(Int((plan.moonIllumination * 100).rounded()))%" + (plan.moonSet.map { " · sets \(Copy.hhmm($0, site: site))" } ?? "")
+        let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" } ?? "None"
+        let moon = Planner.moonTonight(plan)
+        let pct = "\(Int((plan.moonIllumination * 100).rounded()))%"
         let seeing = plan.darkHours.compactMap(\.seeing)
-        let seeingText = seeing.isEmpty ? "n/a" : ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][min(8, seeing.reduce(0, +) / seeing.count)]
+        let seeingText = seeing.isEmpty ? nil : ["", "<0.5″", "0.5–0.75″", "0.75–1″", "1–1.25″", "1.25–1.5″", "1.5–2″", "2–2.5″", ">2.5″"][min(8, seeing.reduce(0, +) / seeing.count)]
         let wind = plan.darkHours.compactMap(\.windKmh)
-        let windText = wind.isEmpty ? "n/a" : String(format: "%.0f km/h", wind.reduce(0, +) / Double(wind.count))
-        let spread = plan.darkHours.compactMap { h -> Double? in guard let t = h.tempC, let d = h.dewPointC else { return nil }; return t - d }.min()
-        let dewText = spread.map { $0 < 2 ? "High" : ($0 < 4 ? "Medium" : "Low") } ?? "n/a"
+        let windText = wind.isEmpty ? nil : String(format: "%.0f km/h", wind.reduce(0, +) / Double(wind.count))
+        let dew = Planner.dewRisk(plan.darkHours)
         let frost = plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false
         let transp = plan.darkHours.compactMap(\.transparency)
-        let transpText = transp.isEmpty ? "n/a" : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
+        let transpText = transp.isEmpty ? nil : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
-        return GlassGroup(spacing: 8) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                tile("Dark", dark); MoonTile(label: "Moon", value: moon, at: moonAt); tile("Seeing", seeingText)
-                tile("Wind", windText); tile(frost ? "Frost likely" : "Dew risk", dewText); tile("Transparency", transpText)
+        return GlassGroup(spacing: 8.5) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8.5), count: 3), spacing: 8.5) {
+                StatTile(label: "Dark", value: dark)
+                MoonTile(value: moon == .down ? "Down tonight" : pct, line: moon.flatMap { $0 == .down ? nil : Copy.moonText($0, site: site) }, at: moonAt)
+                StatTile(label: "Seeing", value: seeingText)
+                StatTile(label: "Wind", value: windText)
+                StatTile(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName,
+                         hint: dew == .high ? "Dew heater advised" : nil, warning: dew == .high)
+                StatTile(label: "Transparency", value: transpText)
             }
         }
     }
