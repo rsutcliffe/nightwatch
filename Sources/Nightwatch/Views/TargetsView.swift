@@ -68,8 +68,7 @@ struct TargetsView: View {
                 }
                 .padding(8)
             }
-            .nightwatchGlass(in: Rectangle())
-            .focusable()
+            .focusable()   // the system sidebar is already glass on macOS 26, so no second layer here
             .onMoveCommand { move($0) }   // arrow keys step through the sections, as the List did
             .safeAreaInset(edge: .bottom) { filters }
             .navigationSplitViewColumnWidth(232)
@@ -187,7 +186,7 @@ struct TargetsView: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                         ForEach(visible(at: clock.date)) { t in
                             Button { ui.selected = t } label: { card(t) }.buttonStyle(.plain)
-                                .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, site: $0) } ?? t.name)
+                                .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
                         }
                     }.padding(20)
                 }
@@ -195,11 +194,16 @@ struct TargetsView: View {
         }
     }
 
+    private func nearMoon(_ t: RankedTarget) -> Bool {
+        guard let p = store.plan else { return false }
+        return t.isNearMoon(moonIllumination: p.moonIllumination, moonUpTonight: Planner.moonTonight(p).map { $0 != .down } ?? false)
+    }
+
     private func chips(_ t: RankedTarget) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
             if !ui.fitsOnly { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
             if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
-            else if let p = store.plan, t.isNearMoon(moonIllumination: p.moonIllumination, moonUpTonight: Planner.moonTonight(p).map { $0 != .down } ?? false) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
+            else if nearMoon(t) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
         }
     }
 

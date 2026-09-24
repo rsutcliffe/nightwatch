@@ -50,7 +50,7 @@ struct MoonTile: View {
         }
         .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, alignment: .leading)
         .accessibilityElement(children: .combine).accessibilityLabel("Moon, \(value)\(line.map { ", \($0)" } ?? "")")
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile, tint: Tokens.surfaceTile)
         .task(id: MoonImage.hourKey(for: at)) { loader.image = await MoonImages.image(at: at) }
     }
 }

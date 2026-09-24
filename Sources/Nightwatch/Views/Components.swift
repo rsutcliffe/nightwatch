@@ -29,7 +29,7 @@ struct StatTile: View {
         .overlay(alignment: .topTrailing) { if warning { WarningDot(size: 5).padding(7) } }
         .overlay { if warning { RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning.opacity(0.59), lineWidth: 0.75) } }
         .accessibilityElement(children: .combine)
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile)
+        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile, tint: Tokens.surfaceTile)
     }
 }
 

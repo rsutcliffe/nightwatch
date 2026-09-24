@@ -181,3 +181,31 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     }
     #expect(checked > 0)
 }
+
+@Test func cardLabelCarriesChipsAndMagnitude() {
+    func target(washed: Bool) -> RankedTarget {
+        var r = RankedTarget(id: "NGC7000", name: "NGC 7000", subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: 120, magnitude: 4, fit: .fits,
+                             peakAltDeg: 64, peakTime: utc(2026, 9, 23, 22, 20), moonSepDeg: 20, moonWashed: washed, visibleFraction: 1)
+        r.catalogueID = "NGC 7000"; r.commonName = "North America Nebula"; r.frameFill = 0.95
+        r.viewable = ClearWindow(start: utc(2026, 9, 23, 20, 10), end: utc(2026, 9, 24, 0, 40))
+        return r
+    }
+    let s = Copy.cardLabel(target(washed: true), lit: true, nearMoon: false, site: sheffieldSite)
+    #expect(s.contains("magnitude 4.0"))
+    #expect(s.contains("Moon-washed"))
+    #expect(s.contains("Fills 95% of frame"))
+    #expect(Copy.cardLabel(target(washed: false), lit: true, nearMoon: true, site: sheffieldSite).contains("Near Moon"))
+}
+
+@Test func notifyLabelFallsBackWhenTheNudgeIsInQuietHours() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 11, 20, 12, 0), site: sheffieldSite)
+    func plan(_ start: Date) -> NightPlan {
+        let w = ClearWindow(start: start, end: start.addingTimeInterval(3 * 3600))
+        return NightPlan(night: night, windows: [w], primary: w, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil, moonSet: nil,
+                         darkHours: [], targets: [], best: [], seeingAvailable: false)
+    }
+    let settings = AlertSettings()   // quiet 00:00–07:00, nudge 30 min before
+    #expect(Copy.notifyLabel(plan(utc(2026, 11, 20, 21, 0)), site: sheffieldSite, settings: settings) == "Notify at 20:30")
+    #expect(Copy.notifyLabel(plan(utc(2026, 11, 21, 1, 0)), site: sheffieldSite, settings: settings) == "Notify when clear")
+    #expect(Copy.notifyLabel(nil, site: sheffieldSite, settings: settings) == "Notify when clear")
+}

@@ -65,11 +65,25 @@ public struct Copy: Sendable {
     public static func hoursAgo(_ from: Date, now: Date) -> String { "\(Int(now.timeIntervalSince(from) / 3600)) h ago" }
 
     /// "NGC 6992 Eastern Veil, viewable from 00:00 to 03:28, best at 00:00, 57 degrees up" (spec §7).
-    public static func cardLabel(_ t: RankedTarget, lit: Bool, site: Site) -> String {
+    /// The card's whole sentence, chips and magnitude included, because the label replaces the card's contents for a screen reader.
+    public static func cardLabel(_ t: RankedTarget, lit: Bool, nearMoon: Bool, site: Site) -> String {
         let name = [t.catalogueID, t.commonName].compactMap { $0 }.joined(separator: " ")
-        guard lit else { return "\(name), not in clear sky tonight" }
-        guard let v = t.viewable else { return "\(name), viewable outside the clear window" }
-        return "\(name), viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up"
+        var parts = [name]
+        if let m = t.magnitude { parts.append(String(format: "magnitude %.1f", m)) }
+        parts.append(frameChip(t))
+        if t.moonWashed { parts.append("Moon-washed") } else if nearMoon { parts.append("Near Moon") }
+        if !lit { parts.append("not in clear sky tonight") }
+        else if let v = t.viewable {
+            parts.append("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
+        } else { parts.append("viewable outside the clear window") }
+        return parts.joined(separator: ", ")
+    }
+
+    /// The popover switch: "Notify at HH:MM" for the nudge before the window, unless quiet hours would drop that nudge.
+    public static func notifyLabel(_ plan: NightPlan?, site: Site, settings: AlertSettings) -> String {
+        guard let w = plan?.primary else { return "Notify when clear" }
+        let at = w.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60)
+        return AlertEngine.inQuietHours(at, site: site, settings: settings) ? "Notify when clear" : "Notify at \(hhmm(at, site: site))"
     }
 
     /// The neutral frame chip on a Targets card (follow-on 1).

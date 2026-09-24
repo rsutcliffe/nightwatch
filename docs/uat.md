@@ -20,3 +20,11 @@ Run on each Mac after `scripts/build-app.sh`.
 16. Popover "Clearer sky …" line → Targets opens on Dark sites with that card at the top; cards show "Score N vs M at home". → pass.
 17. `ls ~/Library/Caches/Nightwatch/sites` after a Patrol lists only current sites. → pass.
 18. Settings › Aurora on, threshold Amber: on an amber or red AuroraWatch UK status after dark with a clear sky, outside quiet hours, a notification arrives and the popover shows "Aurora: amber (AuroraWatch UK)"; under cloud, no notification. → pass.
+19. macOS 26 or later: the popover panel, tiles and Targets cards are frosted glass; with Reduce transparency on they are a solid dark fill with the same layout. → pass.
+20. Popover: the sky score sits in a 60-tick bezel whose ticks glow red across tonight's clear window; with a bright Moon up the line under the window time reads "Held back by a N% moon". → pass.
+21. Popover: clear-sky bars (taller = clearer) with the window hours red; the Moon tile shows the Moon, "N%" and "Sets HH:MM"; on a damp night the Dew risk tile is amber with "Dew heater advised". → pass.
+22. Popover: three cards read "ID / name / Best HH:MM · N° up"; the footer switch reads "Notify at HH:MM"; Patrol refreshes the update time. → pass.
+23. Targets: every card shows a track across the clear window, lit red where the target is viewable and brighter where higher, a white dot at the best moment, and "Viewable HH:MM–HH:MM · Best HH:MM · N°". → pass.
+24. Targets: titles read "IC 1340  Eastern Veil" with a magnitude on every card; a neutral "Fills N% of frame" chip disappears when "Fits my field of view" is on. → pass.
+25. Targets: the header has a slim clear-sky strip and a sort control that reorders the cards; the sidebar is glass with a white highlight and the arrow keys move through it; the filters are switches under an amber Moon line. → pass.
+26. Contrast: open the popover over a white window and run `swift scripts/contrast.swift` → every token prints "pass" (4.5:1 or better). → pass.

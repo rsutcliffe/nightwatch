@@ -217,7 +217,7 @@ struct TonightView: View {
     }
 
     private var notifyLabel: String {
-        guard let w = store.plan?.primary, let s = store.site else { return "Notify when clear" }
-        return "Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: s))"
+        guard let s = store.site else { return "Notify when clear" }
+        return Copy.notifyLabel(store.plan, site: s, settings: store.config.alerts)
     }
 }

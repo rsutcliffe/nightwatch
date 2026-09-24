@@ -25,7 +25,21 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 - Alerts: a heads-up one hour before local sunset, a nudge 30 minutes before the window opens, and a stand-down if the forecast turns. Quiet hours default to 00:00–07:00. Nothing fires from a forecast older than six hours.
 - Bright nights (opt-in, Settings › Bright nights): from about early May to early August at British latitudes there is no proper darkness, so the dark rule can never be met. With this on, Nightwatch suggests the Moon and the naked-eye planets instead and alerts for a one-hour clear run in nautical darkness (Sun 12° down) with a target at least 15° up. Deep-sky targets are never suggested on a bright night.
 - Aurora (opt-in, Settings › Aurora): after dark, Nightwatch checks AuroraWatch UK every 5 minutes and alerts when the status reaches your threshold (default amber) and this hour's forecast is clear. Status from AuroraWatch UK, Lancaster University, under its non-commercial terms. Quiet hours apply to aurora alerts too, and around midsummer the default quiet hours (00:00–07:00) cover almost all of the dark part of the night, so shorten them if you want summer aurora alerts.
-- The target browser groups what is up during the window into nebulae, galaxies, star clusters, planets and Moon, events (meteor showers, eclipses, conjunctions, comets, ISS passes) and constellations, with DSS2 thumbnails and a fits-frame badge relative to your field of view.
+- The popover (v0.4 "Jingo") shows:
+  - the sky score inside a 12-hour clock bezel whose ticks glow red across tonight's clear window
+  - the window time, with a "Held back by…" line naming what costs the score points (a bright Moon, dew, wind, seeing, cloud)
+  - clear-sky bars, one per hour of darkness, taller for clearer
+  - one notice line (aurora, or a clearer dark site nearby)
+  - six tiles, with the dew tile turning amber when a heater is advised
+  - the best three targets
+  - a "Notify at HH:MM" switch
+- The target browser groups what is up during the window into nebulae, galaxies, star clusters, planets and Moon, events (meteor showers, eclipses, conjunctions, comets, ISS passes) and constellations, with DSS2 thumbnails. Every card has:
+  - a timeline of the clear window, lit where the target is viewable and brighter where it is higher, with its best moment marked
+  - a chip saying how much of your field of view it fills
+  - an amber chip when the Moon washes it out or sits close by
+
+  The header has a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness).
+- On macOS 26 and later the popover and cards use Liquid Glass. On macOS 14 and 15, or with Reduce Transparency on, the same layout draws on a solid dark fill. The app's red keeps your night vision, and on the popover and the target cards it marks clear sky only. Warnings are amber with a dot and words.
 
 ## Telescope
 
