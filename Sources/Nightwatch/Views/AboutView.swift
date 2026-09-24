@@ -11,6 +11,7 @@ struct AboutView: View {
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(.caption).frame(maxWidth: .infinity, alignment: .leading) }
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
             Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. DSS images copyright AAO, SERC, Caltech and AURA via CDS hips2fits.").font(.caption2).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+            Text("Aurora alert status from AuroraWatch UK, Lancaster University.").font(.caption2).foregroundStyle(Theme.dim)
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").font(.caption2).foregroundStyle(Theme.dim)
             TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }

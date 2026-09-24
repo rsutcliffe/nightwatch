@@ -3,10 +3,11 @@ import Foundation
 
 /// Fires `onFire` every `interval` seconds while the app runs, plus once on wake from sleep.
 final class Scheduler {
-    private let activity = NSBackgroundActivityScheduler(identifier: "io.github.rsutcliffe.nightwatch.patrol")
+    private let activity: NSBackgroundActivityScheduler
     private let onFire: () -> Void
 
-    init(interval: TimeInterval = 30 * 60, onFire: @escaping () -> Void) {
+    init(interval: TimeInterval = 30 * 60, identifier: String = "io.github.rsutcliffe.nightwatch.patrol", onFire: @escaping () -> Void) {
+        self.activity = NSBackgroundActivityScheduler(identifier: identifier)
         self.onFire = onFire
         activity.repeats = true
         activity.interval = interval

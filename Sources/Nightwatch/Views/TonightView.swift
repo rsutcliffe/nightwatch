@@ -11,6 +11,7 @@ struct TonightView: View {
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
                 awayLine(site)
+                auroraLine
                 cloudStrip(plan)
                 tiles(plan, site)
                 best(plan)
@@ -89,6 +90,15 @@ struct TonightView: View {
                         Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.caption).foregroundStyle(Theme.dim)
                     }
                 }
+            }
+        }
+    }
+
+    /// AuroraWatch UK's status while it is at or above the chosen threshold (and fresh), whatever the sky.
+    private var auroraLine: some View {
+        Group {
+            if store.config.aurora.enabled, let a = store.aurora, a.level >= store.config.aurora.threshold, Date().timeIntervalSince(a.updated) < 3600 {
+                Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.caption).foregroundStyle(a.level == .yellow ? Theme.warn : Theme.accent)
             }
         }
     }

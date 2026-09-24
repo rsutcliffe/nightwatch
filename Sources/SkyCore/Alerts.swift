@@ -18,7 +18,7 @@ public struct AlertState: Codable, Equatable, Sendable {
 }
 
 public struct AlertNotification: Equatable, Sendable {
-    public enum Kind: Sendable { case headsUp, tomorrowPreview, go, cancel }
+    public enum Kind: Sendable { case headsUp, tomorrowPreview, go, cancel, aurora }
     public let kind: Kind
     public let title: String
     public let body: String
