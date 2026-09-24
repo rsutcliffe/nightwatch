@@ -11,6 +11,7 @@ struct TonightView: View {
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
                 awayLine(site)
+                auroraLine
                 cloudStrip(plan)
                 tiles(plan, site)
                 best(plan)
@@ -89,6 +90,21 @@ struct TonightView: View {
                         Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.caption).foregroundStyle(Theme.dim)
                     }
                 }
+            }
+        }
+    }
+
+    /// Severity in the app's night-safe palette (never green): green dim, yellow warn, amber and red accent.
+    private func auroraColour(_ l: AuroraLevel) -> Color {
+        switch l { case .green: Theme.dim; case .yellow: Theme.warn; case .amber, .red: Theme.accent }
+    }
+
+    /// AuroraWatch UK's status while it is at or above the chosen threshold, whatever the sky. Hidden when AuroraWatch
+    /// has not published for an hour: its `updated` time moves on every publication (live: 20:33:32Z then 20:39:31Z, both green).
+    private var auroraLine: some View {
+        Group {
+            if store.config.aurora.enabled, let a = store.aurora, a.level >= store.config.aurora.threshold, Date().timeIntervalSince(a.updated) < 3600 {
+                Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.caption).foregroundStyle(auroraColour(a.level))
             }
         }
     }

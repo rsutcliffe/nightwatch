@@ -22,6 +22,11 @@ final class Store: ObservableObject {
     @Published var targetsRequest: TargetsRequest? = nil
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
+    var auroraScheduler: Scheduler?
+    /// Last AuroraWatch UK status fetched (only while aurora alerts are on and the Sun is down).
+    @Published var aurora: AuroraStatus?
+    private var auroraState: AuroraAlertState?
+    private var lastAuroraFetch: Date?
 
     nonisolated static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
     static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
@@ -50,6 +55,8 @@ final class Store: ObservableObject {
         forecast = Store.read("forecast.json")
         plan = Store.read("plan.json")             // content in the popover before the first fetch
         alertState = Store.read("alerts-state.json")
+        aurora = Store.read("aurora.json")
+        auroraState = Store.read("aurora-state.json")
         comets = Store.read("comets.json") ?? []
         tle = Store.read("iss-tle.json")
         auxAttempts = Store.read("aux-attempts.json") ?? [:]
@@ -188,6 +195,26 @@ final class Store: ObservableObject {
     /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
     /// Each run takes a generation number; after every await it checks it is still the newest run, so a run superseded by a
     /// settings change stops fetching and never publishes over the newer one.
+    /// Polls AuroraWatch UK while aurora alerts are on and the Sun is at least 12 degrees down (every 5 minutes: their
+    /// terms ask for 3 or more), then notifies through the aurora rule. On a failed fetch the last status is kept.
+    func pollAurora(now: Date = Date()) async {
+        guard config.aurora.enabled, let site, Ephemeris.sunAltitude(at: now, site: site) <= AuroraAlert.sunBelowDeg else { return }
+        // Boot, the 5-minute timer and every wake can all land here: never ask AuroraWatch UK twice within 3 minutes.
+        if now.timeIntervalSince(lastAuroraFetch ?? .distantPast) >= 180 {
+            lastAuroraFetch = now
+            if let data = try? await fetcher.get(AuroraWatch.url), let status = try? AuroraWatch.parse(data) {
+                aurora = status
+                Store.write(status, "aurora.json")
+            }
+        }
+        guard let status = aurora, let fc = forecast, let key = plan?.night.key else { return }
+        let r = AuroraAlert.decide(status: status, now: now, site: site, nightKey: key, hours: fc.hours, rule: config.goRule,
+                                   settings: config.aurora, alerts: config.alerts, state: auroraState, copy: copy)
+        auroraState = r.state
+        Store.write(r.state, "aurora-state.json")
+        if config.notifyEnabled, let n = r.notification { Notifier.post(n) }
+    }
+
     private func recomputeDarkSites(now: Date, site: Site, night: Night) async {
         darkSitesGeneration += 1
         let gen = darkSitesGeneration

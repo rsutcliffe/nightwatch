@@ -43,5 +43,9 @@ struct NightwatchApp: App {
         }
         s.start()
         store.scheduler = s
+        let a = Scheduler(interval: 5 * 60, identifier: "io.github.rsutcliffe.nightwatch.aurora") { Task { @MainActor in await store.pollAurora() } }
+        a.start()
+        store.auroraScheduler = a
+        await store.pollAurora()
     }
 }

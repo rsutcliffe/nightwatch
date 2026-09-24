@@ -106,6 +106,13 @@ struct SettingsView: View {
                            binding: bind(\.brightNights.minHours), range: 1...6, step: 0.5)
                 Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(.caption).foregroundStyle(Theme.dim)
             }
+            Section("Aurora") {
+                Toggle("Alert me to aurora when the sky is clear", isOn: bind(\.aurora.enabled))
+                Picker("Alert from", selection: bind(\.aurora.threshold)) {
+                    ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).tag($0) }
+                }
+                Text("Status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(.caption).foregroundStyle(Theme.dim)
+            }
             Section("App") {
                 Picker("Wording", selection: bind(\.flavour)) { Text("Nightwatch").tag(Flavour.watch); Text("Plain").tag(Flavour.plain) }
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
