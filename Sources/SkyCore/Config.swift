@@ -29,6 +29,7 @@ public struct Config: Codable, Equatable, Sendable {
     public var loginItem = false
     public var notifyEnabled = true
     public var darkSites = DarkSiteSettings()
+    public var brightNights = BrightSettings()
 
     public init() {}
     public static let `default` = Config()
@@ -40,7 +41,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites
+        case sites, activeSiteName, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites, brightNights
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -57,7 +58,22 @@ public struct Config: Codable, Equatable, Sendable {
         loginItem = try c.decodeIfPresent(Bool.self, forKey: .loginItem) ?? false
         notifyEnabled = try c.decodeIfPresent(Bool.self, forKey: .notifyEnabled) ?? true
         darkSites = try c.decodeIfPresent(DarkSiteSettings.self, forKey: .darkSites) ?? DarkSiteSettings()
+        brightNights = try c.decodeIfPresent(BrightSettings.self, forKey: .brightNights) ?? BrightSettings()
     }
+}
+
+/// Bright-night mode (v0.3): Moon and planets on nights when the dark rule cannot be met.
+/// Windows are bounded by nautical twilight; 1 h minimum by owner ruling (Home gets 1.56 h at the solstice).
+public struct BrightSettings: Codable, Equatable, Sendable {
+    public var enabled = false
+    public var minHours: Double = 1
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
+        minHours = min(6, max(1, try c.decodeIfPresent(Double.self, forKey: .minHours) ?? 1))
+    }
+    enum CodingKeys: String, CodingKey { case enabled, minHours }
 }
 
 public struct DarkSiteSettings: Codable, Equatable, Sendable {

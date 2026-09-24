@@ -111,3 +111,18 @@ import Foundation
     let c = try JSONDecoder().decode(Config.self, from: Data(#"{"flavour":"plain","darkSites":{"unit":"furlongs","radiusKm":80}}"#.utf8))
     #expect(c.darkSites.unit == .km && c.darkSites.radiusKm == 80 && c.flavour == .plain)
 }
+
+@Test func brightSettingsDefaultAndLenientDecode() throws {
+    #expect(Config.default.brightNights == BrightSettings())
+    #expect(!BrightSettings().enabled && BrightSettings().minHours == 1)
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    let url = dir.appendingPathComponent("config.json")
+    try Data(#"{"brightNights":{"enabled":true}}"#.utf8).write(to: url)
+    let c = try ConfigStore.load(from: url)
+    #expect(c.brightNights.enabled && c.brightNights.minHours == 1)
+    try Data(#"{"brightNights":{"minHours":12}}"#.utf8).write(to: url)
+    #expect(try ConfigStore.load(from: url).brightNights.minHours == 6)   // clamped to the Settings range
+    try Data(#"{"sites":[]}"#.utf8).write(to: url)
+    #expect(try ConfigStore.load(from: url).brightNights == BrightSettings())
+}
