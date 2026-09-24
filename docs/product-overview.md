@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 24 September 2026, version 0.2.2 "Men at Arms". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 24 September 2026, version 0.3.0 "Feet of Clay". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -20,7 +20,9 @@ Every 30 minutes Nightwatch fetches two forecasts for the active site: cloud, de
 
 A night qualifies under the default go rule when there is a contiguous run of at least 3 hours inside astronomical darkness with total cloud at or under 25 percent. Both figures are adjustable, as is a minimum target altitude. Each night gets a score from cloud, Moon, seeing, transparency and wind, so the app ranks nights and sites, not only passes them.
 
-Nothing leaves the Mac except the two forecast requests, thumbnail fetches, and the comet and ISS element downloads.
+On summer nights without proper darkness, an opt-in bright-night mode keeps the heads-up coming: a one-hour clear run in nautical darkness (Sun 12° down) with the Moon or a naked-eye planet at least 15° up. The Moon no longer counts against the score on a bright night, because it is the target.
+
+Nothing leaves the Mac except the forecast requests, thumbnail fetches, the comet and ISS element downloads, and, when aurora alerts are on, AuroraWatch UK's status after dark.
 
 ## What it shows
 
@@ -30,9 +32,9 @@ Nothing leaves the Mac except the two forecast requests, thumbnail fetches, and 
 
 **Targets window.** Everything above the horizon during tonight's window, grouped into nebulae, galaxies, star clusters, planets and Moon, events, constellations, and dark sites. Deep-sky cards carry DSS2 sky-survey thumbnails and a fits-frame badge relative to the chosen field of view (fits, mosaic, or small). Planets and the Moon use real photographs. Events cover meteor showers, eclipses, conjunctions, comets and ISS passes. Filters: fits my field of view, include Moon-washed, and search.
 
-**Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Use as beat" makes a site the active site for the whole app.
+**Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Use as beat" makes a site the active site for the whole app. Each card compares tonight's score and sky with home, and the popover's "Clearer sky" line opens that site's card.
 
-**Settings.** Sites (automatic via Location Services or manual, with Bortle class), telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, wording, launch at login.
+**Settings.** Sites (automatic via Location Services or manual, with Bortle class), telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login.
 
 ## Alerts
 
@@ -42,6 +44,7 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 - Tomorrow preview.
 - A nudge 30 minutes before the window opens.
 - Stand-down if the forecast turns and the night no longer qualifies.
+- Aurora alert (opt-in): AuroraWatch UK at or above the chosen level after dark, with this hour clear.
 - Quiet hours, default 00:00 to 07:00.
 - Nothing fires from a forecast older than six hours.
 
@@ -64,6 +67,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 | Cloud, dew point, wind, visibility (primary, signed builds) | Apple Weather via WeatherKit | Apple WeatherKit terms, attribution shown in the popover |
 | Cloud, dew point, wind, visibility (fallback, all builds) | Open-Meteo | CC BY 4.0 |
 | Seeing, transparency | 7Timer (Shanghai Astronomical Observatory) | Non-commercial use |
+| Aurora status (opt-in) | AuroraWatch UK, Lancaster University | Free, non-commercial use, attribution |
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
 | Deep-sky catalogue | OpenNGC | CC BY-SA 4.0 |
 | Constellation figures | d3-celestial | BSD-3 |
@@ -79,7 +83,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (105 Swift Testing tests at 0.2.2).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (123 Swift Testing tests at 0.3.0).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -104,7 +108,7 @@ Tags follow the City Watch novels.
 | 0.2.0 | Men at Arms | 24 September 2026 | Dark-sky sites: certified list, light-pollution grid, per-site forecasts, use as beat |
 | 0.2.1 | Men at Arms, patch 1 | 24 September 2026 | Equatorial tilt line in the popover header; Apple Weather via WeatherKit as the primary cloud source with Open-Meteo fallback; signed build path |
 | 0.2.2 | Men at Arms, patch 2 | 24 September 2026 | Plain reason line under the no-window verdict; popover footer in two rows with the cloud source; strip caption names the real source |
-| 0.3 | Feet of Clay | under discussion | see the product direction synthesis |
+| 0.3.0 | Feet of Clay | 24 September 2026 | Bright-night mode; aurora alerts from AuroraWatch UK; best-spot completion (Clearer sky line lands on the card, cards compare with home); site-cache pruning |
 
 ## Install
 
