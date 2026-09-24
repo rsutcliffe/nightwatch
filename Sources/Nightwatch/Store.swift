@@ -26,6 +26,7 @@ final class Store: ObservableObject {
     /// Last AuroraWatch UK status fetched (only while aurora alerts are on and the Sun is down).
     @Published var aurora: AuroraStatus?
     private var auroraState: AuroraAlertState?
+    private var lastAuroraFetch: Date?
 
     nonisolated static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
     static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
@@ -198,9 +199,13 @@ final class Store: ObservableObject {
     /// terms ask for 3 or more), then notifies through the aurora rule. On a failed fetch the last status is kept.
     func pollAurora(now: Date = Date()) async {
         guard config.aurora.enabled, let site, Ephemeris.sunAltitude(at: now, site: site) <= AuroraAlert.sunBelowDeg else { return }
-        if let data = try? await fetcher.get(AuroraWatch.url), let status = try? AuroraWatch.parse(data) {
-            aurora = status
-            Store.write(status, "aurora.json")
+        // Boot, the 5-minute timer and every wake can all land here: never ask AuroraWatch UK twice within 3 minutes.
+        if now.timeIntervalSince(lastAuroraFetch ?? .distantPast) >= 180 {
+            lastAuroraFetch = now
+            if let data = try? await fetcher.get(AuroraWatch.url), let status = try? AuroraWatch.parse(data) {
+                aurora = status
+                Store.write(status, "aurora.json")
+            }
         }
         guard let status = aurora, let fc = forecast, let key = plan?.night.key else { return }
         let r = AuroraAlert.decide(status: status, now: now, site: site, nightKey: key, hours: fc.hours, rule: config.goRule,
