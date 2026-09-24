@@ -87,7 +87,7 @@ func close(_ a: Date, _ b: Date, minutes: Double) -> Bool { abs(a.timeIntervalSi
     #expect(n.hasNauticalDarkness)
     let ns = try #require(n.nauticalStart), ne = try #require(n.nauticalEnd)
     #expect(ns > n.sunset && ne < n.sunrise && ne > ns)
-    #expect(ne.timeIntervalSince(ns) > 2 * 3600)   // a usable bright window exists in June
+    #expect(ne.timeIntervalSince(ns) > 3600 && ne.timeIntervalSince(ns) < 2 * 3600)   // Sun bottoms out near -12.7 deg at the solstice: about 1.6 h
 }
 
 @Test func nauticalTwilightBracketsAstronomicalInSeptember() throws {
