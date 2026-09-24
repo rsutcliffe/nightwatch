@@ -45,6 +45,14 @@ public struct Copy: Sendable {
         factors.isEmpty ? nil : "Held back by " + factors.prefix(2).map(\.text).joined(separator: " and ")
     }
 
+    /// The bezel's screen-reader sentence (spec §7).
+    public static func bezelLabel(_ plan: NightPlan, site: Site) -> String {
+        guard let w = plan.primary else { return "Sky score \(plan.score) of 100. No clear window." }
+        var s = "Sky score \(plan.score) of 100. Clear from \(hhmm(w.start, site: site)) to \(hhmm(w.end, site: site))"
+        if let h = plan.darkHours.min(by: { $0.cloudTotal < $1.cloudTotal }) { s += ", clearest hour \(hhmm(h.time, site: site)) at \(max(0, 100 - h.cloudTotal))% clear" }
+        return s + "."
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)

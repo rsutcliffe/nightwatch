@@ -31,10 +31,10 @@ struct TonightView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").font(.caption).foregroundStyle(Theme.dim)
+                Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)
                 if let s = store.site, let p = store.plan {
                     Text("\(p.night.key) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")" + (p.mode == .bright ? " · bright night" : ""))
-                        .font(.caption).foregroundStyle(Theme.dim)   // wedge angle = site latitude; the vendor app does the alignment
+                        .font(.system(size: 11)).foregroundStyle(Tokens.textSecondary)   // wedge angle = site latitude; the vendor app does the alignment
                 }
             }
             Spacer()
@@ -64,31 +64,33 @@ struct TonightView: View {
     }
 
     private func verdict(_ plan: NightPlan, _ site: Site) -> some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle().stroke(Theme.line, lineWidth: 7)
-                Circle().trim(from: 0, to: Double(plan.score) / 100).stroke(Theme.accent, style: StrokeStyle(lineWidth: 7, lineCap: .round)).rotationEffect(.degrees(-90))
-                Text("\(plan.score)").font(.system(size: 24, weight: .semibold))
-            }.frame(width: 84, height: 84)
+        HStack(alignment: .top, spacing: 14) {
+            ScoreBezel(score: plan.score,
+                       slots: Bezel.slots(darkness: plan.darkSpan, windows: plan.windows, primary: plan.primary, hours: plan.darkHours, site: site),
+                       label: Copy.bezelLabel(plan, site: site))
             VStack(alignment: .leading, spacing: 4) {
                 if let w = plan.primary {
-                    Text(plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight").font(.title3.weight(.semibold))
-                    Text("\(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").foregroundStyle(Theme.text)
+                    Text(plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight").font(.system(size: 15, weight: .medium))
+                    Text("\(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").font(.system(size: 13))
                     if plan.mode == .bright {
-                        Text(Copy.brightList(plan.brightTargets)).font(.caption).foregroundStyle(Theme.dim)
+                        Text(Copy.brightList(plan.brightTargets)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
-                    Text("Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: site))").font(.caption).foregroundStyle(Theme.dim)
+                    if let why = Copy.heldBack(plan.limiting) {
+                        HStack(spacing: 5) { WarningDot(size: 4.5); Text(why) }
+                            .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text("Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: site))")
+                        .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)   // moves into the footer toggle in Task 5
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
-                    // A bright plan with no nautical darkness either (Scotland near midsummer) gets the same verdict.
-                    Text("No astronomical darkness").font(.title3.weight(.semibold))
-                    Text("Too far north or south for this date.").font(.caption).foregroundStyle(Theme.dim)
+                    Text("No astronomical darkness").font(.system(size: 15, weight: .medium))
+                    Text("Too far north or south for this date.").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                 } else {
-                    Text(store.copy.noWindow).font(.title3.weight(.semibold))
+                    Text(store.copy.noWindow).font(.system(size: 15, weight: .medium)).fixedSize(horizontal: false, vertical: true)
                     if let why = noWindowReason(plan, site) {
-                        Text(why).font(.caption).foregroundStyle(Theme.dim)
+                        Text(why).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     if let t = store.tomorrow, let w = t.primary {
-                        Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.caption).foregroundStyle(Theme.dim)
+                        Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
                 }
             }
