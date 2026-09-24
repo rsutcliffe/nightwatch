@@ -14,3 +14,9 @@ Run on each Mac after `scripts/build-app.sh`.
 10. Settings › Dark sites › radius 20 km → the list empties or shrinks within one Patrol. → pass.
 11. A card's "Use as beat" adds the site under Beats and the popover header changes to it. → pass.
 12. With the grid installed, at least one "Dark spot" card appears within 50 km of a rural site. → pass.
+13. Settings › Bright nights on, on a night with no astronomical darkness (or with Go rule hours set above tonight's darkness): the popover says "Bright night: Moon and planets" with a window when the Moon or a planet is 15° up in a clear run. → pass.
+14. Bright nights off: the same night shows "Nothing to see here" with the reason line, as 0.2.2. → pass.
+15. A September night with a clear dark window: the verdict is "Clear window tonight" whatever the Bright nights setting. → pass.
+16. Popover "Clearer sky …" line → Targets opens on Dark sites with that card at the top; cards show "Score N vs M at home". → pass.
+17. `ls ~/Library/Caches/Nightwatch/sites` after a Patrol lists only current sites. → pass.
+18. Settings › Aurora on, threshold Amber: on an amber or red AuroraWatch UK status after dark with a clear sky, outside quiet hours, a notification arrives and the popover shows "Aurora: amber (AuroraWatch UK)"; under cloud, no notification. → pass.
