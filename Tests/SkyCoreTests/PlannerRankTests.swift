@@ -70,3 +70,35 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(plan.targets.contains { $0.id == "moon" })
     #expect(plan.score < 30)
 }
+
+@Test func viewabilityIsClippedToTheWindowAndSampled() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 23, 12, 0), site: sheffieldSite)
+    let window = ClearWindow(start: night.darkStart!, end: night.darkStart!.addingTimeInterval(4 * 3600))
+    let ranked = Planner.rank(catalog: try Catalog.bundled(), constellations: try Constellations.bundled(), window: window, site: sheffieldSite, fov: dwarfMini, rule: GoRule())
+    for t in ranked {
+        let v = try #require(t.viewable)
+        #expect(v.start >= window.start && v.end <= window.end && v.start <= v.end)
+        #expect(t.altitudeSamples.count == 9)
+        #expect(!t.catalogueID.isEmpty && !t.typeName.isEmpty)
+    }
+    let nan = try #require(ranked.first { $0.id == "NGC7000" })
+    #expect(abs((nan.altitudeSamples.max() ?? 0) - nan.peakAltDeg) < 1)
+    #expect(nan.catalogueID == "NGC 7000" && nan.commonName == "North America Nebula" && nan.typeName == "Emission nebula")
+    #expect(ranked.contains { $0.viewable!.end < window.end })   // something sets during the window
+}
+
+@Test func frameFillAgainstTheLongerSide() {
+    #expect(abs(Planner.frameFill(sizeArcmin: 60, fov: dwarfMini)! - 60.0 / 60 / 2.1) < 1e-9)
+    #expect(Planner.frameFill(sizeArcmin: 500, fov: dwarfMini) == 1)
+    #expect(Planner.frameFill(sizeArcmin: nil, fov: dwarfMini) == nil)
+}
+
+@Test func brightMoonCarriesItsFrameFill() throws {
+    // The first hour of July 2026 with the Moon over half lit and 15° up at Home stands in for a bright window.
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let t = try #require((0..<(31 * 24)).lazy.map { utc(2026, 7, 1, 0, 0).addingTimeInterval(Double($0) * 3600) }.first {
+        let m = Ephemeris.moon(at: $0, site: testSite); return m.illumination > 0.5 && m.position.altDeg > 20
+    })
+    let moon = try #require(Planner.brightTargets(during: ClearWindow(start: t, end: t.addingTimeInterval(3600)), site: testSite, fov: dwarfMini).first { $0.id == "moon" })
+    #expect(moon.frameFill == Planner.frameFill(sizeArcmin: 31, fov: dwarfMini))
+}

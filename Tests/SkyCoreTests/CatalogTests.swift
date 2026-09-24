@@ -52,3 +52,23 @@ import Foundation
     let cyg = try #require(try Constellations.bundled().first { $0.id == "Cyg" })
     #expect(cyg.unwrappedLines == cyg.lines)          // nowhere near 0 h: untouched
 }
+
+@Test func catalogueIDsAreSpacedWithoutLeadingZeros() {
+    func o(_ id: String, messier: Int? = nil) -> DeepSkyObject {
+        DeepSkyObject(id: id, commonName: nil, messier: messier, typeCode: "Neb", group: .nebulae, raHours: 0, decDeg: 0,
+                      majAxisArcmin: nil, minAxisArcmin: nil, magnitude: nil, constellation: "Cyg")
+    }
+    #expect(o("IC1340").catalogueID == "IC 1340")
+    #expect(o("NGC0281").catalogueID == "NGC 281")
+    #expect(o("NGC7000").catalogueID == "NGC 7000")
+    #expect(o("NGC1976", messier: 42).catalogueID == "M42")
+    #expect(o("IC1340").displayName == "IC 1340")
+    // Addendum catalogues: one "{catalogue} {number}" pattern; ESO, PGC and UGC numbers are fixed-format and kept whole.
+    #expect(o("C009").catalogueID == "C 9")
+    #expect(o("B033").catalogueID == "B 33")
+    #expect(o("Mel071").catalogueID == "Mel 71")
+    #expect(o("Cl399").catalogueID == "Cl 399")
+    #expect(o("MWSC3171").catalogueID == "MWSC 3171")
+    #expect(o("ESO056-115").catalogueID == "ESO 056-115")
+    #expect(o("IC0186A").catalogueID == "IC 186A")
+}

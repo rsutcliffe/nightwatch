@@ -31,6 +31,29 @@ public struct ScoreInputs {
     }
 }
 
+public enum DewRisk: String, Codable, Sendable {
+    case low, medium, high
+    public var displayName: String { rawValue.capitalized }
+}
+
+public enum LimitingKind: String, Codable, Sendable { case cloud, moon, seeing, transparency, wind, dew }
+
+/// One score term that lost more than a third of its weight, in words for the reason line.
+public struct LimitingFactor: Codable, Equatable, Sendable {
+    public let kind: LimitingKind
+    public let text: String
+    public let pointsLost: Double
+}
+
+/// The score's terms, shared by `score` and `limitingFactors` so the reason line always explains the number shown.
+struct ScoreTerms {
+    var cloud: Double, cloudWeight: Double
+    var moon: Double
+    var seeing: Double?, transparency: Double?        // points earned of 7.5 each; nil without 7Timer data
+    var windPenalty: Double, avgWind: Double?
+    var dewPenalty: Double, dew: DewRisk?
+}
+
 public enum Planner {
     /// Hourly samples that overlap the night's darkness. A sample at time t covers [t, t + 1 h).
     public static func darkHours(_ hours: [HourlyConditions], night: Night) -> [HourlyConditions] {
@@ -58,37 +81,61 @@ public enum Planner {
         return out
     }
 
-    /// 0–100. Cloud 60 (75 without seeing data), Moon 15, seeing + transparency 15, wind and dew 10.
-    public static func score(_ s: ScoreInputs) -> Int {
-        guard let (ds, de) = s.darkness, de > ds, !s.darkHours.isEmpty else { return 0 }
+    /// Smallest temperature minus dew point over the hours: under 2 °C High, under 4 °C Medium, else Low; nil with no data.
+    public static func dewRisk(_ hours: [HourlyConditions]) -> DewRisk? {
+        let spreads = hours.compactMap { h -> Double? in guard let t = h.tempC, let d = h.dewPointC else { return nil }; return t - d }
+        guard let m = spreads.min() else { return nil }
+        return m < 2 ? .high : (m < 4 ? .medium : .low)
+    }
+
+    static func terms(_ s: ScoreInputs) -> ScoreTerms? {
+        guard let (ds, de) = s.darkness, de > ds, !s.darkHours.isEmpty else { return nil }
         let clearHours = Double(s.darkHours.filter { $0.cloudTotal <= s.maxCloudPct }.count)
-        let totalHours = Double(s.darkHours.count)
-        let clearFraction = min(1, clearHours / totalHours)
+        let clearFraction = min(1, clearHours / Double(s.darkHours.count))
         let primaryHours = s.windows.map(\.hours).max() ?? 0
         let contiguity = clearHours > 0 ? min(1, primaryHours / clearHours) : 0
         let seeingSamples = s.darkHours.compactMap(\.seeing)
         let transSamples = s.darkHours.compactMap(\.transparency)
         let hasSeeing = !seeingSamples.isEmpty && !transSamples.isEmpty
         let cloudWeight = hasSeeing ? 60.0 : 75.0
-        let cloudScore = cloudWeight * clearFraction * (0.5 + 0.5 * contiguity)
-        let moonScore = 15 * (1 - s.moonIllumination * s.moonAboveFraction)
-        var seeingScore = 0.0
+        var seeing: Double?, transparency: Double?
         if hasSeeing {
             let avgS = Double(seeingSamples.reduce(0, +)) / Double(seeingSamples.count)
             let avgT = Double(transSamples.reduce(0, +)) / Double(transSamples.count)
-            seeingScore = 7.5 * (1 - (avgS - 1) / 7) + 7.5 * (1 - (avgT - 1) / 7)
+            seeing = 7.5 * (1 - (avgS - 1) / 7); transparency = 7.5 * (1 - (avgT - 1) / 7)
         }
         let winds = s.darkHours.compactMap(\.windKmh)
-        let avgWind = winds.isEmpty ? 0 : winds.reduce(0, +) / Double(winds.count)
-        let windPenalty = min(1, max(0, (avgWind - 10) / 30)) * 5      // no penalty under 10 km/h, full at 40
-        let spreads = s.darkHours.compactMap { h -> Double? in
-            guard let t = h.tempC, let d = h.dewPointC else { return nil }
-            return t - d
-        }
-        let minSpread = spreads.min() ?? 10
-        let dewPenalty: Double = minSpread < 2 ? 5 : (minSpread < 4 ? 2.5 : 0)
-        let total = cloudScore + moonScore + seeingScore + (10 - windPenalty - dewPenalty)
+        let avgWind = winds.isEmpty ? nil : winds.reduce(0, +) / Double(winds.count)
+        let dew = dewRisk(s.darkHours)
+        return ScoreTerms(cloud: cloudWeight * clearFraction * (0.5 + 0.5 * contiguity), cloudWeight: cloudWeight,
+                          moon: 15 * (1 - s.moonIllumination * s.moonAboveFraction),
+                          seeing: seeing, transparency: transparency,
+                          windPenalty: min(1, max(0, ((avgWind ?? 0) - 10) / 30)) * 5, avgWind: avgWind,   // none under 10 km/h, full at 40
+                          dewPenalty: dew == .high ? 5 : (dew == .medium ? 2.5 : 0), dew: dew)
+    }
+
+    /// 0–100. Cloud 60 (75 without seeing data), Moon 15, seeing + transparency 15, wind and dew 10.
+    public static func score(_ s: ScoreInputs) -> Int {
+        guard let t = terms(s) else { return 0 }
+        let total = t.cloud + t.moon + ((t.seeing ?? 0) + (t.transparency ?? 0)) + (10 - t.windPenalty - t.dewPenalty)   // summed in the 0.3.1 order
         return max(0, min(100, Int(total.rounded())))
+    }
+
+    /// Each term that lost more than a third of its weight, most points lost first. On a bright plan the Moon term is
+    /// never lost (the plan passes moonIllumination 0), so the Moon is never blamed.
+    public static func limitingFactors(_ s: ScoreInputs) -> [LimitingFactor] {
+        guard let t = terms(s) else { return [] }
+        var out: [LimitingFactor] = []
+        func add(_ k: LimitingKind, _ text: String, lost: Double, of weight: Double) {
+            if lost > weight / 3 { out.append(LimitingFactor(kind: k, text: text, pointsLost: lost)) }
+        }
+        add(.cloud, "patchy cloud", lost: t.cloudWeight - t.cloud, of: t.cloudWeight)
+        add(.moon, "a \(Int((s.moonIllumination * 100).rounded()))% moon", lost: 15 - t.moon, of: 15)
+        if let v = t.seeing { add(.seeing, "poor seeing", lost: 7.5 - v, of: 7.5) }
+        if let v = t.transparency { add(.transparency, "poor transparency", lost: 7.5 - v, of: 7.5) }
+        if let w = t.avgWind { add(.wind, String(format: "wind at %.0f km/h", w), lost: t.windPenalty, of: 5) }
+        if let d = t.dew { add(.dew, "\(d == .high ? "high" : "medium") dew risk", lost: t.dewPenalty, of: 5) }
+        return out.sorted { $0.pointsLost > $1.pointsLost }
     }
 }
 
@@ -115,6 +162,17 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public let moonSepDeg: Double
     public let moonWashed: Bool
     public let visibleFraction: Double
+    /// The part of the ranking window with the target at or above the minimum altitude (30-minute resolution).
+    public var viewable: ClearWindow? = nil
+    /// Nine evenly spaced altitudes across `viewable`, first at its start and last at its end.
+    public var altitudeSamples: [Double] = []
+    /// Size over the field of view's longer side, capped at 1; nil when the size is unknown.
+    public var frameFill: Double? = nil
+    /// "Emission nebula", "Planet", "Constellation".
+    public var typeName: String = ""
+    /// "NGC 7000", "M42", "Jupiter", "Moon", "Cygnus".
+    public var catalogueID: String = ""
+    public var commonName: String? = nil
 }
 
 /// `.bright` when the dark rule could not be met and bright-night mode supplied the plan instead.
@@ -136,6 +194,8 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var mode: PlanMode = .dark
     /// Moon and planets up during the primary window on a bright night; empty in dark mode.
     public var brightTargets: [RankedTarget] = []
+    /// The score terms that held tonight back, biggest loss first; empty without a clear window.
+    public var limiting: [LimitingFactor] = []
 }
 
 extension Planner {
@@ -146,19 +206,47 @@ extension Planner {
         return .mosaic
     }
 
-    /// Sample a window every 30 minutes; returns fraction of samples at or above `minAlt`, the peak altitude and its time.
-    static func track(raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double) -> (fraction: Double, peakAlt: Double, peakTime: Date) {
+    /// Sample a window every 30 minutes: the fraction of samples at or above `minAlt`, the peak and its time, and the viewable
+    /// span from the first sample above to the last, run on to the window's end when the last sample is above.
+    /// ponytail: 30-minute resolution at the span's interior edges; sample finer if the timeline ever looks coarse.
+    static func track(raHours: Double, decDeg: Double, window: ClearWindow, site: Site, minAlt: Double) -> (fraction: Double, peakAlt: Double, peakTime: Date, viewable: ClearWindow?) {
         var t = window.start
         var above = 0, n = 0
         var peak = -90.0, peakTime = window.start
+        var first: Date?, last: Date?, lastSample = window.start
         while t <= window.end {
             let alt = Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: t, site: site).alt
             n += 1
-            if alt >= minAlt { above += 1 }
+            if alt >= minAlt { above += 1; if first == nil { first = t }; last = t }
             if alt > peak { peak = alt; peakTime = t }
+            lastSample = t
             t = t.addingTimeInterval(1800)
         }
-        return (n == 0 ? 0 : Double(above) / Double(n), peak, peakTime)
+        let viewable = first.map { ClearWindow(start: $0, end: last! == lastSample ? window.end : last!) }
+        return (n == 0 ? 0 : Double(above) / Double(n), peak, peakTime, viewable)
+    }
+
+    /// `count` evenly spaced altitudes across `span`.
+    static func altitudes(raHours: Double, decDeg: Double, span: ClearWindow, site: Site, count: Int = 9) -> [Double] {
+        let len = span.end.timeIntervalSince(span.start)
+        return (0..<count).map { k in
+            Ephemeris.altAz(raHours: raHours, decDeg: decDeg, at: span.start.addingTimeInterval(len * Double(k) / Double(count - 1)), site: site).alt
+        }
+    }
+
+    public static func frameFill(sizeArcmin: Double?, fov: FieldOfView) -> Double? {
+        guard let s = sizeArcmin else { return nil }
+        return min(1, s / 60 / max(fov.widthDeg, fov.heightDeg))
+    }
+
+    /// The target with its viewable span, altitude curve and names filled in.
+    static func described(_ r: RankedTarget, viewable: ClearWindow?, site: Site, typeName: String, catalogueID: String,
+                          commonName: String? = nil, frameFill: Double? = nil) -> RankedTarget {
+        var r = r
+        r.viewable = viewable
+        r.altitudeSamples = viewable.map { altitudes(raHours: r.raHours, decDeg: r.decDeg, span: $0, site: site) } ?? []
+        r.typeName = typeName; r.catalogueID = catalogueID; r.commonName = commonName; r.frameFill = frameFill
+        return r
     }
 
     public static func rank(catalog: Catalog, constellations: [Constellation], window: ClearWindow, site: Site, fov: FieldOfView, rule: GoRule) -> [RankedTarget] {
@@ -173,10 +261,12 @@ extension Planner {
             let tr = track(raHours: o.raHours, decDeg: o.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
             guard tr.fraction >= 0.5 else { continue }
             let sep = Ephemeris.separationDeg(ra1Hours: o.raHours, dec1Deg: o.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
-            out.append(RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group,
-                                    raHours: o.raHours, decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude,
-                                    fit: frameFit(sizeArcmin: o.majAxisArcmin, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
-                                    moonSepDeg: sep, moonWashed: moonUp && sep < 30, visibleFraction: tr.fraction))
+            out.append(described(RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group,
+                                              raHours: o.raHours, decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude,
+                                              fit: frameFit(sizeArcmin: o.majAxisArcmin, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
+                                              moonSepDeg: sep, moonWashed: moonUp && sep < 30, visibleFraction: tr.fraction),
+                                 viewable: tr.viewable, site: site, typeName: Catalog.typeNames[o.typeCode] ?? o.typeCode,
+                                 catalogueID: o.catalogueID, commonName: o.commonName, frameFill: frameFill(sizeArcmin: o.majAxisArcmin, fov: fov)))
         }
 
         for p in Planet.allCases {
@@ -184,26 +274,30 @@ extension Planner {
             let tr = track(raHours: pos.raHours, decDeg: pos.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
             guard tr.fraction >= 0.5 else { continue }
             let sep = Ephemeris.separationDeg(ra1Hours: pos.raHours, dec1Deg: pos.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
-            out.append(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
-                                    raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
-                                    peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep, moonWashed: false, visibleFraction: tr.fraction))
+            out.append(described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
+                                              raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
+                                              peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep, moonWashed: false, visibleFraction: tr.fraction),
+                                 viewable: tr.viewable, site: site, typeName: "Planet", catalogueID: p.displayName))
         }
         if moon.illumination > 0.05 {
             let tr = track(raHours: moon.position.raHours, decDeg: moon.position.decDeg, window: window, site: site, minAlt: 10)
             if tr.fraction > 0 {
-                out.append(RankedTarget(id: "moon", name: "Moon", subtitle: "\(Int((moon.illumination * 100).rounded()))% illuminated", group: .planets,
-                                        raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil,
-                                        fit: frameFit(sizeArcmin: 31, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
-                                        moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction))
+                out.append(described(RankedTarget(id: "moon", name: "Moon", subtitle: "\(Int((moon.illumination * 100).rounded()))% illuminated", group: .planets,
+                                                  raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil,
+                                                  fit: frameFit(sizeArcmin: 31, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
+                                                  moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction),
+                                     viewable: tr.viewable, site: site, typeName: "\(Int((moon.illumination * 100).rounded()))% illuminated",
+                                     catalogueID: "Moon", frameFill: frameFill(sizeArcmin: 31, fov: fov)))
             }
         }
 
         for c in constellations {
             let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20)
             guard tr.fraction >= 0.5 else { continue }
-            out.append(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
-                                    raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
-                                    peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction))
+            out.append(described(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
+                                              raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
+                                              peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction),
+                                 viewable: tr.viewable, site: site, typeName: "Constellation", catalogueID: c.name))
         }
 
         let fitOrder: [FrameFit: Int] = [.fits: 0, .small: 1, .mosaic: 2]
@@ -242,8 +336,9 @@ extension Planner {
             aboveFraction = n == 0 ? 0 : Double(up) / Double(n)
         }
         let darkness: (Date, Date)? = (night.darkStart != nil && night.darkEnd != nil) ? (night.darkStart!, night.darkEnd!) : nil
-        let score = Planner.score(ScoreInputs(darkHours: dark, windows: windows, darkness: darkness,
-                                              moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct))
+        let inputs = ScoreInputs(darkHours: dark, windows: windows, darkness: darkness,
+                                 moonIllumination: moonMid.illumination, moonAboveFraction: aboveFraction, maxCloudPct: rule.maxCloudPct)
+        let score = Planner.score(inputs)
         // Rank against the clear window when there is one, else against the whole of darkness so the browser
         // still shows what is up on a cloudy night. "Best tonight" only exists when a clear window exists.
         let rankingWindow = primary ?? darkness.map { ClearWindow(start: $0.0, end: $0.1) }
@@ -251,11 +346,12 @@ extension Planner {
         let darkPlan = NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
                                  moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
                                  darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets),
-                                 seeingAvailable: dark.contains { $0.seeing != nil })
+                                 seeingAvailable: dark.contains { $0.seeing != nil },
+                                 limiting: primary == nil ? [] : limitingFactors(inputs))
         // Bright-night mode only takes over when the dark rule cannot be met at all tonight (too little darkness).
         if let b = bright, b.enabled, !darkPlan.qualifies {
             let darkLen = darkness.map { $0.1.timeIntervalSince($0.0) / 3600 } ?? 0
-            if darkLen < rule.minHours { return brightPlan(night: night, forecast: forecast, site: site, rule: rule, bright: b) }
+            if darkLen < rule.minHours { return brightPlan(night: night, forecast: forecast, site: site, fov: fov, rule: rule, bright: b) }
         }
         return darkPlan
     }
@@ -270,16 +366,19 @@ extension Planner {
         var out: [RankedTarget] = []
         let moon = Ephemeris.moon(at: t, site: site)
         if moon.illumination >= 0.10, moon.position.altDeg >= brightTargetFloorDeg {
-            out.append(RankedTarget(id: "moon", name: "Moon", subtitle: "\(Int((moon.illumination * 100).rounded()))% illuminated", group: .planets,
-                                    raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil, fit: .fits,
-                                    peakAltDeg: moon.position.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1))
+            let lit = "\(Int((moon.illumination * 100).rounded()))% illuminated"
+            out.append(described(RankedTarget(id: "moon", name: "Moon", subtitle: lit, group: .planets,
+                                              raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil, fit: .fits,
+                                              peakAltDeg: moon.position.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1),
+                                 viewable: nil, site: site, typeName: lit, catalogueID: "Moon"))
         }
         let planets = brightPlanets.compactMap { p -> RankedTarget? in
             let pos = Ephemeris.planet(p, at: t, site: site)
             guard pos.altDeg >= brightTargetFloorDeg else { return nil }
-            return RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
-                                raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
-                                peakAltDeg: pos.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1)
+            return described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
+                                          raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
+                                          peakAltDeg: pos.altDeg, peakTime: t, moonSepDeg: 0, moonWashed: false, visibleFraction: 1),
+                             viewable: nil, site: site, typeName: "Planet", catalogueID: p.displayName)
         }.sorted { $0.peakAltDeg > $1.peakAltDeg }
         return out + planets
     }
@@ -292,18 +391,21 @@ extension Planner {
     }
 
     /// Every bright target up during `w`, each at its highest, Moon first then by altitude.
-    static func brightTargets(during w: ClearWindow, site: Site) -> [RankedTarget] {
+    static func brightTargets(during w: ClearWindow, site: Site, fov: FieldOfView) -> [RankedTarget] {
         var best: [String: RankedTarget] = [:]
         var t = w.start
         while t <= w.end {
             for x in brightTargets(at: t, site: site) where (best[x.id]?.peakAltDeg ?? -90) < x.peakAltDeg { best[x.id] = x }
             t = t.addingTimeInterval(1800)
         }
-        return best.values.sorted { ($0.id == "moon" ? 0 : 1, -$0.peakAltDeg) < ($1.id == "moon" ? 0 : 1, -$1.peakAltDeg) }
+        return best.values.map { x in
+            described(x, viewable: track(raHours: x.raHours, decDeg: x.decDeg, window: w, site: site, minAlt: brightTargetFloorDeg).viewable,
+                      site: site, typeName: x.typeName, catalogueID: x.catalogueID, frameFill: x.id == "moon" ? frameFill(sizeArcmin: 31, fov: fov) : nil)
+        }.sorted { ($0.id == "moon" ? 0 : 1, -$0.peakAltDeg) < ($1.id == "moon" ? 0 : 1, -$1.peakAltDeg) }
     }
 
     /// The bright-night plan: clear hours between nautical dusk and dawn that have a bright target at the floor.
-    static func brightPlan(night: Night, forecast: Forecast, site: Site, rule: GoRule, bright: BrightSettings) -> NightPlan {
+    static func brightPlan(night: Night, forecast: Forecast, site: Site, fov: FieldOfView, rule: GoRule, bright: BrightSettings) -> NightPlan {
         guard let ns = night.nauticalStart, let ne = night.nauticalEnd else {
             let moon = Ephemeris.moon(at: night.darkStart ?? night.sunset, site: site)   // keep the Moon tile truthful
             return NightPlan(night: night, windows: [], primary: nil, score: 0, qualifies: false, moonIllumination: moon.illumination, moonRise: moon.rise, moonSet: moon.set,
@@ -321,11 +423,13 @@ extension Planner {
         let primary = windows.max { $0.hours < $1.hours }
         let moon = Ephemeris.moon(at: primary?.midpoint ?? ns, site: site)
         // The Moon is the target on a bright night, so its score term is not taken away.
-        let score = Planner.score(ScoreInputs(darkHours: span, windows: windows, darkness: (ns, ne), moonIllumination: 0, moonAboveFraction: 0, maxCloudPct: rule.maxCloudPct))
+        let inputs = ScoreInputs(darkHours: span, windows: windows, darkness: (ns, ne), moonIllumination: 0, moonAboveFraction: 0, maxCloudPct: rule.maxCloudPct)
+        let score = Planner.score(inputs)
         return NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
                          moonIllumination: moon.illumination, moonRise: moon.rise, moonSet: moon.set,
                          darkHours: span, targets: [], best: [], seeingAvailable: span.contains { $0.seeing != nil },
-                         mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site) } ?? [])
+                         mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site, fov: fov) } ?? [],
+                         limiting: primary == nil ? [] : limitingFactors(inputs))
     }
 }
 

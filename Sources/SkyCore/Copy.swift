@@ -40,6 +40,11 @@ public struct Copy: Sendable {
         return parts.joined(separator: ". ") + "."
     }
 
+    /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.
+    public static func heldBack(_ factors: [LimitingFactor]) -> String? {
+        factors.isEmpty ? nil : "Held back by " + factors.prefix(2).map(\.text).joined(separator: " and ")
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)

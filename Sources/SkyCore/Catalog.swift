@@ -27,11 +27,23 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
     public let magnitude: Double?
     public let constellation: String
 
+    /// "M42" for a Messier object, else the catalogue number spaced and without leading zeros: "NGC 281", "IC 1340".
+    public var catalogueID: String { messier.map { "M\($0)" } ?? DeepSkyObject.spaced(id) }
+
+    /// "{catalogue} {number}": letters, a space, then the number without leading zeros. ESO, PGC and UGC numbers are
+    /// fixed-format and kept whole ("ESO 056-115"). An id with no letters or no number is returned as it is.
+    static func spaced(_ id: String) -> String {
+        let prefix = id.prefix { $0.isLetter }
+        let rest = id.dropFirst(prefix.count)
+        guard !prefix.isEmpty, rest.first?.isNumber == true else { return id }
+        let number = ["ESO", "PGC", "UGC"].contains(String(prefix)) ? rest : rest.drop { $0 == "0" }
+        return "\(prefix) \(number.isEmpty ? "0" : number)"
+    }
+
     public var displayName: String {
         var parts: [String] = []
         if let m = messier { parts.append("M\(m)") }
-        parts.append(id.replacingOccurrences(of: "NGC0", with: "NGC ").replacingOccurrences(of: "IC0", with: "IC ")
-            .replacingOccurrences(of: "NGC", with: "NGC ").replacingOccurrences(of: "  ", with: " "))
+        parts.append(DeepSkyObject.spaced(id))
         if let c = commonName { parts.append(c) }
         return parts.joined(separator: " · ")
     }
@@ -47,6 +59,14 @@ public struct Catalog: Sendable {
         "G": .galaxies, "GPair": .galaxies, "GTrpl": .galaxies, "GGroup": .galaxies,
         "OCl": .clusters, "GCl": .clusters, "Cl+N": .clusters, "*Ass": .clusters,
         "PN": .nebulae, "HII": .nebulae, "EmN": .nebulae, "Neb": .nebulae, "RfN": .nebulae, "SNR": .nebulae, "DrkN": .nebulae
+    ]
+
+    /// OpenNGC type codes in words, for card subtitles ("Emission nebula").
+    public static let typeNames: [String: String] = [
+        "G": "Galaxy", "GPair": "Galaxy pair", "GTrpl": "Galaxy triplet", "GGroup": "Galaxy group",
+        "OCl": "Open cluster", "GCl": "Globular cluster", "Cl+N": "Cluster with nebula", "*Ass": "Stellar association",
+        "PN": "Planetary nebula", "HII": "Emission nebula", "EmN": "Emission nebula", "Neb": "Nebula", "RfN": "Reflection nebula",
+        "SNR": "Supernova remnant", "DrkN": "Dark nebula"
     ]
 
     static func hours(_ s: String) -> Double? {
