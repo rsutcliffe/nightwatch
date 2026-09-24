@@ -3,12 +3,16 @@ import SkyCore
 
 enum BrowserSection: Hashable { case group(TargetGroup), darkSites }
 
+/// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line).
+struct TargetsRequest: Equatable { let section: BrowserSection; let siteID: String? }
+
 final class TargetsViewState: ObservableObject {
     @Published var section: BrowserSection = .group(.nebulae)
     @Published var fitsOnly = false
     @Published var includeMoonWashed = false
     @Published var search = ""
     @Published var selected: RankedTarget? = nil
+    @Published var pendingScrollID: String? = nil
 }
 
 struct TargetsView: View {
@@ -66,6 +70,17 @@ struct TargetsView: View {
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
         .preferredColorScheme(.dark)
         .background(Theme.bg)
+        .onAppear { consumeRequest() }
+        .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
+    }
+
+    /// Applies a pending request from the popover once, then clears it.
+    private func consumeRequest() {
+        guard let r = store.targetsRequest else { return }
+        ui.selected = nil
+        ui.section = r.section
+        ui.pendingScrollID = r.siteID
+        store.targetsRequest = nil
     }
 
     private var darkSitesList: some View {
@@ -80,11 +95,21 @@ struct TargetsView: View {
                 Text("No dark sites within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)). Widen the radius in Settings.")
                     .foregroundStyle(Theme.dim).padding(20)
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
-                ForEach(store.sitePlans) { DarkSiteCard(plan: $0) }
-                ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)) }
-            }.padding(20)
+            ScrollViewReader { proxy in
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    ForEach(store.sitePlans) { DarkSiteCard(plan: $0).id($0.id) }
+                    ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
+                }.padding(20)
+                .onAppear { scroll(proxy) }
+                .onChange(of: ui.pendingScrollID) { _, _ in scroll(proxy) }
+            }
         }
+    }
+
+    private func scroll(_ proxy: ScrollViewProxy) {
+        guard let id = ui.pendingScrollID else { return }
+        withAnimation { proxy.scrollTo(id, anchor: .top) }
+        ui.pendingScrollID = nil
     }
 
     private var grid: some View {
@@ -165,6 +190,15 @@ struct DarkSiteCard: View {
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" + (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? ""))
                 .font(.caption).foregroundStyle(Theme.dim)
+            if let home = store.site {
+                let siteSky = s.bortle.map { "Bortle \($0)" } ?? s.band?.displayName ?? "darkness unknown"
+                if !plan.forecastMissing, let hp = store.plan {
+                    Text("Score \(plan.score) vs \(hp.score) at home · \(siteSky), home Bortle \(home.bortle)")
+                        .font(.caption).foregroundStyle(plan.score >= hp.score + 20 ? Theme.accent : Theme.dim)
+                } else {
+                    Text("\(siteSky), home Bortle \(home.bortle)").font(.caption).foregroundStyle(Theme.dim)
+                }
+            }
             if let w = plan.primary, let home = store.site {
                 Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(.caption)
             } else if plan.forecastMissing {

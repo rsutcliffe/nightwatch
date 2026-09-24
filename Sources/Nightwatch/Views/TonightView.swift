@@ -97,9 +97,10 @@ struct TonightView: View {
         Group {
             if let a = store.bestAway, let w = a.primary {
                 Button {
+                    store.targetsRequest = TargetsRequest(section: .darkSites, siteID: a.site.id)
                     open("targets")
                 } label: {
-                    Text("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
+                    Text("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
                         .font(.caption).foregroundStyle(Theme.accent).multilineTextAlignment(.leading)
                 }.buttonStyle(.plain)
             }
