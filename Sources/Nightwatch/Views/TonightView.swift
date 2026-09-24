@@ -76,7 +76,8 @@ struct TonightView: View {
                         Text(Copy.brightList(plan.brightTargets)).font(.caption).foregroundStyle(Theme.dim)
                     }
                     Text("Notify at \(Copy.hhmm(w.start.addingTimeInterval(-Double(store.config.alerts.preWindowMinutes) * 60), site: site))").font(.caption).foregroundStyle(Theme.dim)
-                } else if !plan.night.hasDarkness && plan.mode == .dark {
+                } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
+                    // A bright plan with no nautical darkness either (Scotland near midsummer) gets the same verdict.
                     Text("No astronomical darkness").font(.title3.weight(.semibold))
                     Text("Too far north or south for this date.").font(.caption).foregroundStyle(Theme.dim)
                 } else {
