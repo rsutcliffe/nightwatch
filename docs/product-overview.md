@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.8 "Night Watch". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.9 "Night Watch". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -62,7 +62,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 
 **About.** Website, "Send feedback" (GitHub Discussions) and "Report a problem" (GitHub Issues), and a line when a newer version is out.
 
-**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.6.8 is available  Download ↗".
+**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.6.9 is available  Download ↗".
 
 ## Alerts
 
@@ -113,8 +113,8 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 ## Architecture
 
 - A Swift package with four targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `NightwatchUI` (the views the app and the widget share) and `Nightwatch` (the SwiftUI menu-bar app). The widget extension is the one Xcode project, generated from `Widget/project.yml` with xcodegen; it reads a snapshot the app writes to a shared App Group after each patrol.
-- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (235 Swift Testing tests at 0.6.8).
-- Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
+- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (238 Swift Testing tests at 0.6.9).
+- Caches under `~/Library/Caches/Nightwatch`: forecasts, plans and images, all rebuilt if a cleaner or macOS empties the folder. The record of alerts already sent (`alerts-state.json`, `aurora-state.json`) lives with the settings instead, so emptying the caches never sends a notification twice. A user from 0.6.6 or earlier who never changed a setting gets a settings file on first launch, so the welcome never returns either. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
 ## Tone
@@ -155,6 +155,7 @@ Tags follow the City Watch novels.
 | 0.6.6 | Night Watch, patch 6 | 25 September 2026 | The first public download: a signed, notarised DMG on the GitHub release; aurora on the desktop widgets; aurora alerts play a sound; the large widget no longer overflows on a clear night (measured at the real 344 × 344 size); AuroraWatch UK linked and the sky survey credited as their terms ask; `scripts/release.sh` builds a Developer ID signed, notarised download |
 | 0.6.7 | Night Watch, patch 7 | 25 September 2026 | First-run welcome (telescope and place); "How to shoot this" on every detail page, from the makers' own settings; a once-a-day update check with a popover line; website, feedback and problem links in About; the Targets page repaints on every sidebar click; constellations carry their Moon separation |
 | 0.6.8 | Night Watch, patch 8 | 25 September 2026 | "How to shoot this" sits above the caption and no longer runs off the window; its title wraps |
+| 0.6.9 | Night Watch, patch 9 | 25 September 2026 | Emptying the app caches (a cleaner, or macOS when disk space is low) no longer sends the same notification twice: the record of alerts already sent now lives with the settings, and moves there on first launch; the welcome window no longer comes back after the caches are emptied |
 
 ## Install
 

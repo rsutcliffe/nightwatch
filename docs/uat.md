@@ -37,7 +37,7 @@ Run on each Mac after `scripts/build-app.sh`.
 33. After a Patrol the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
 34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
 35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
-36. About shows version 0.6.8.
+36. About shows version 0.6.9.
 37. Targets › Constellations: every card shows its figure artwork with the star plot on top, not a stick figure; opening one shows the same art larger, with no "dashed = your field of view" note. → pass.
 38. Signed build, after a heads-up or nudge: when Apple Weather and Open-Meteo both lose the window, "Stand down. Clouds moving in" arrives with "Apple Weather and Open-Meteo both see cloud."; when only one does, "Hold fire. Forecasts disagree" arrives at most once a night, saying what each sees; if both clear again before the nudge, the nudge still fires. → pass.
 39. Targets: open a nebula, a large nebula (NGC 7000), a constellation and a planet. Each image fills the page with its text in black caption boxes. The large nebula's dashed box sits fully inside the clear space above the caption. On a clear night the caption shows the four figures and a labelled altitude chart, red only inside the window. → pass.
@@ -52,3 +52,4 @@ Run on each Mac after `scripts/build-app.sh`.
 48. A target's detail page › "How to shoot this" opens the card for your telescope: for a DWARF and an emission nebula, "Duo-Band", "15–60 s per frame at gain 60–80" and frames sized to tonight's window, with the source named. → pass.
 49. When a newer release is on GitHub, the popover footer reads "Nightwatch <version> is available  Download ↗" (checked at most once a day; Settings › Updates turns it off). → pass.
 50. About shows Website, Send feedback and Report a problem links, each opening the right page. → pass.
+51. After an alert, `~/Library/Application Support/Nightwatch` holds alerts-state.json and `~/Library/Caches/Nightwatch` does not. Quit, delete `~/Library/Caches/Nightwatch` (as a cleaner would), relaunch → no repeat notification. Then, with a forecast cached, move `config.json` aside and launch → no welcome, and a new config.json holds `"welcomed" : true`; quit, empty the caches again, relaunch → still no welcome. Put the original config.json back. → pass.
