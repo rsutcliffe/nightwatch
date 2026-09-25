@@ -10,6 +10,25 @@ cp Sources/Nightwatch/Info.plist "$APP/Contents/Info.plist"
 cp .build/release/Nightwatch "$APP/Contents/MacOS/Nightwatch"
 cp -R .build/release/Nightwatch_SkyCore.bundle "$APP/Contents/Resources/"
 cp NOTICE "$APP/Contents/Resources/NOTICE"
+
+# App icon from the Icon Composer document. With Xcode, actool compiles the Liquid Glass icon (Assets.car) plus a classic
+# .icns; macOS 26+ then shows the icon itself rather than inside a grey tile. Without Xcode, a classic .icns only.
+# actool needs absolute paths: it resolves relative ones against its own long-lived service's working directory.
+ICON="$PWD/Resources/AppIcon/Nightwatch.icon"
+if xcrun --find actool >/dev/null 2>&1 && xcrun actool "$ICON" --compile "$PWD/$APP/Contents/Resources" --output-format human-readable-text \
+     --errors --output-partial-info-plist "$PWD/build/icon-partial.plist" --app-icon Nightwatch --include-all-app-icons \
+     --enable-on-demand-resources NO --development-region en --target-device mac --minimum-deployment-target 14.0 --platform macosx >/dev/null; then
+  /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string Nightwatch" -c "Add :CFBundleIconName string Nightwatch" "$APP/Contents/Info.plist"
+  echo "Icon: Liquid Glass (actool) plus .icns"
+else
+  # An icon failure never stops the build: the app still works with the default icon.
+  if swift scripts/make-icns.swift "$ICON/Assets/Nightwatch.png" "$APP/Contents/Resources/Nightwatch.icns"; then
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string Nightwatch" "$APP/Contents/Info.plist"
+    echo "Icon: classic .icns (no actool)"
+  else
+    echo "Icon: none (make-icns failed); the app builds with the default icon"
+  fi
+fi
 # Signed build when an Apple Development identity and a provisioning profile for this bundle id exist:
 # WeatherKit then works. Otherwise ad hoc as before, and the app falls back to Open-Meteo.
 BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist")

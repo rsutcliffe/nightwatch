@@ -13,6 +13,8 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
     scripts/fetch-data.sh         # optional: only to refresh the bundled catalogue; the data is committed
     scripts/build-app.sh          # builds, signs ad hoc, installs to /Applications, launches
 
+The app icon comes from `Resources/AppIcon/Nightwatch.icon`, an Icon Composer document. With Xcode installed, the build compiles it into a Liquid Glass icon with `actool`; with the Command Line Tools alone, `scripts/make-icns.swift` makes a classic icon from the same artwork.
+
 ## Tests
 
     scripts/test.sh
