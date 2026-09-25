@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.4.1 "Jingo". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.5.0 "The Fifth Elephant". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -16,7 +16,7 @@ It was built for a DwarfLab DWARF Mini owner in the UK, but it is telescope-agno
 
 ## How it decides
 
-Every 30 minutes Nightwatch fetches two forecasts for the active site: cloud, dew point, wind and visibility from Apple Weather (WeatherKit) when the build is signed for it, or from Open-Meteo otherwise, and 7Timer for seeing and transparency. Apple Weather also supplies low, mid and high cloud layers directly; Open-Meteo estimates them. The popover footer names the source that drove tonight's verdict. It computes astronomical darkness, Moon phase and position, planet positions and target visibility locally with Astronomy Engine.
+Every 30 minutes Nightwatch fetches forecasts for the active site: cloud, dew point, wind and visibility from Apple Weather (WeatherKit) when the build is signed for it, or from Open-Meteo otherwise, and 7Timer for seeing and transparency. On a signed build Open-Meteo's cloud is also fetched as a second opinion, shown as one agreement line and never used for the verdict. Apple Weather also supplies low, mid and high cloud layers directly; Open-Meteo estimates them. The popover footer names the source that drove tonight's verdict. It computes astronomical darkness, Moon phase and position, planet positions and target visibility locally with Astronomy Engine.
 
 A night qualifies under the default go rule when there is a contiguous run of at least 3 hours inside astronomical darkness with total cloud at or under 25 percent. Both figures are adjustable, as is a minimum target altitude. Each night gets a score from cloud, Moon, seeing, transparency and wind, so the app ranks nights and sites, not only passes them.
 
@@ -31,7 +31,7 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 **Popover.** Liquid Glass on macOS 26 and later, a solid dark fill otherwise or with Reduce Transparency on. Top to bottom:
 - **Header:** the site name, Bortle class and the equatorial set-up line (wedge tilt equals the site latitude, pointed at true north or south).
 - **Score:** the sky score inside a 60-tick 12-hour clock bezel. Ticks glow red across the clear window, dim where it is dark but cloudy, and faint in daylight.
-- **Verdict:** the clear window, or "Nothing to see here" with a plain reason, plus a "Held back by a 97% moon and high dew risk" line when something costs the score points.
+- **Verdict:** the clear window, or "Nothing to see here" with a plain reason, plus a "Held back by a 97% moon and high dew risk" line when something costs the score points, and, on a signed build, Open-Meteo's second opinion ("Open-Meteo agrees", or where it differs).
 - **Clear-sky bars:** one per hour of darkness, with the window hours red.
 - **Notice line:** at most one, for aurora or a clearer dark site nearby.
 - **Six tiles:** dark hours, the Moon with a real NASA phase image and its set or rise time, seeing, wind, dew or frost risk (amber with "Dew heater advised" when high), and transparency.
@@ -56,7 +56,7 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 
 All alerts are macOS notifications and all are derived from local sunset at the active site, so they are correct in either hemisphere and any time zone.
 
-- Evening heads-up, one hour before sunset, when tonight qualifies.
+- Evening heads-up, one hour before sunset, when tonight qualifies. On a signed build it, and the nudge before the window, end with Open-Meteo's second opinion, and the opt-in "Alert only when Open-Meteo agrees" holds it back when Open-Meteo is not clear enough inside the window.
 - Tomorrow preview.
 - A nudge 30 minutes before the window opens.
 - Stand-down if the forecast turns and the night no longer qualifies.
@@ -81,7 +81,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 | Purpose | Source | Licence |
 | --- | --- | --- |
 | Cloud, dew point, wind, visibility (primary, signed builds) | Apple Weather via WeatherKit | Apple WeatherKit terms, attribution shown in the popover |
-| Cloud, dew point, wind, visibility (fallback, all builds) | Open-Meteo | CC BY 4.0 |
+| Cloud, dew point, wind, visibility (fallback, all builds); cloud as the second opinion on signed builds | Open-Meteo | CC BY 4.0 |
 | Seeing, transparency | 7Timer (Shanghai Astronomical Observatory) | Non-commercial use |
 | Aurora status (opt-in) | AuroraWatch UK, Lancaster University | Free, non-commercial use, attribution |
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
@@ -99,7 +99,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (158 Swift Testing tests at 0.4.0).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (187 Swift Testing tests at 0.5.0).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -128,6 +128,7 @@ Tags follow the City Watch novels.
 | 0.3.1 | Feet of Clay, patch 1 | 24 September 2026 | Fixes from the release review: stale aurora statuses never alert; the bright reason line matches the rule; toggling Bright nights mid-evening no longer sends a stand-down |
 | 0.4.0 | Jingo | 24 September 2026 | Liquid Glass redesign: sky-score bezel, "Held back by" reason line, clear-sky bars, dew warning tile, notify switch; Targets viewability timeline, frame-fill chips, sort control, glass sidebar, Moon line |
 | 0.4.1 | Jingo, patch 1 | 25 September 2026 | Tiles in each popover row share one height; tile contrast measured live and fixed (tiles are a fill on the glass panel) |
+| 0.5.0 | The Fifth Elephant | 25 September 2026 | Open-Meteo as a second opinion beside Apple Weather: one agreement line in the popover and alerts; opt-in "Alert only when Open-Meteo agrees"; nothing logged |
 
 ## Install
 

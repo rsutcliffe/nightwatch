@@ -168,3 +168,18 @@ private let primary = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 9
     p.agreement = nil
     #expect(!copy.notificationBody(plan: p, site: testSite).contains("Open-Meteo"))
 }
+
+@Test func aBrightWindowNeverSuggestsARunElsewhere() throws {
+    // The bright rule also needs a target 15° up, which cloud alone cannot show, so a cloudy bright window reads "no clear window".
+    let night = try Ephemeris.night(localDate: utc(2026, 7, 30, 12, 0), site: testSite)
+    let t0 = utc(2026, 7, 30, 18, 0)
+    let hours = (0..<14).map { HourlyConditions(time: t0.addingTimeInterval(Double($0) * 3600), cloudTotal: 5, cloudLow: nil, cloudMid: nil, cloudHigh: nil,
+                                                 tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil) }
+    var b = BrightSettings(); b.enabled = true
+    let p0 = Planner.plan(night: night, forecast: Forecast(fetchedAt: t0, latitude: testSite.latitude, longitude: testSite.longitude, hours: hours, seeingSource: nil),
+                          catalog: Catalog(objects: []), constellations: [], site: testSite, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule(), bright: b)
+    let w = try #require(p0.primary)
+    // Open-Meteo: cloudy through the bright window, clear in every other hour of nautical darkness.
+    let om = SecondOpinion(source: "Open-Meteo", hours: hours.map { HourlyCloud(time: $0.time, cloudTotal: w.overlapsHour(startingAt: $0.time) ? 90 : 5) })
+    #expect(Planner.agreement(plan: p0, second: om, rule: GoRule(minHours: 1)) == .noWindow)
+}

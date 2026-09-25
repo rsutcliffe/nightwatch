@@ -87,9 +87,12 @@ struct SettingsView: View {
                 stepperRow("Nudge before the window opens", value: "\(store.config.alerts.preWindowMinutes) min",
                            binding: bind(\.alerts.preWindowMinutes), range: 0...120, step: 15)
                 Toggle("Cancel notice if the forecast turns", isOn: bind(\.alerts.cancelOnDowngrade))
+                // Keyed on the build's source, not on one fetch: a single failed Open-Meteo call must not grey it out, and a
+                // switch that is on can always be turned off.
+                let signed = store.forecast?.cloudSource == "Apple Weather"
                 Toggle("Alert only when Open-Meteo agrees", isOn: bind(\.alerts.requireAgreement))
-                    .disabled(store.forecast?.secondOpinion == nil)
-                if store.forecast?.secondOpinion == nil {
+                    .disabled(!signed && !store.config.alerts.requireAgreement)
+                if !signed {
                     Text("Needs Apple Weather (signed build)").font(.caption).foregroundStyle(Theme.dim)
                 }
                 stepperRow("Quiet hours start", value: String(format: "%02d:00", store.config.alerts.quietStartHour),

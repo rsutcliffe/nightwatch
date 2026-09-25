@@ -28,3 +28,6 @@ Run on each Mac after `scripts/build-app.sh`.
 24. Targets: titles read "IC 1340  Eastern Veil" with a magnitude on every card; a neutral "Fills N% of frame" chip disappears when "Fits my field of view" is on. → pass.
 25. Targets: the header has a slim clear-sky strip and a sort control that reorders the cards; the sidebar is glass with a white highlight and the arrow keys move through it; the filters are switches under an amber Moon line. → pass.
 26. Contrast: open the popover over a white window and run `swift scripts/contrast.swift` → every token prints "pass" (4.5:1 or better). → pass.
+27. Signed build, after a Patrol: `~/Library/Caches/Nightwatch/forecast.json` contains "secondOpinion" with source "Open-Meteo". → pass.
+28. Popover: under the window time, "Open-Meteo agrees" with a tick, or "Open-Meteo agrees: no clear window" when neither sees one, or an amber-dot line where it differs ("sees cloud from HH:MM", "sees it clear from HH:MM", "has a clear run HH:MM–HH:MM", "sees no clear window"); the evening heads-up and the nudge end with the same sentence. → pass.
+29. Settings › Alerts: "Alert only when Open-Meteo agrees" is off by default and enabled on the signed build; with it on, a night where Open-Meteo is not clear inside the window sends no heads-up. → pass.

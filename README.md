@@ -28,6 +28,7 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 - The popover (v0.4 "Jingo") shows:
   - the sky score inside a 12-hour clock bezel whose ticks glow red across tonight's clear window
   - the window time, with a "Held back by…" line naming what costs the score points (a bright Moon, dew, wind, seeing, cloud)
+  - on a build signed for Apple Weather, a second-opinion line from Open-Meteo (v0.5 "The Fifth Elephant"): "Open-Meteo agrees", "Open-Meteo agrees: no clear window", or where it differs ("sees cloud from 00:00", "sees it clear from 21:00", "has a clear run 23:00–02:00", "sees no clear window"). The same sentence ends the evening heads-up and the nudge before the window. Settings › Alerts › "Alert only when Open-Meteo agrees" holds an alert back when Open-Meteo is not clear enough inside the window. Nothing is logged: the second opinion lives in the forecast cache and is replaced on every patrol
   - clear-sky bars, one per hour of darkness, taller for clearer
   - one notice line (aurora, or a clearer dark site nearby)
   - six tiles, with the dew tile turning amber when a heater is advised

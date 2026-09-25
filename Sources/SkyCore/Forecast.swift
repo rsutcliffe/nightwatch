@@ -93,7 +93,9 @@ public enum OpenMeteo {
     static let variables = ["cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "dew_point_2m", "temperature_2m",
                             "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility"]
 
-    public static func url(latitude: Double, longitude: Double, days: Int) -> URL {
+    /// `pastDays`: also return that many days before today. The second opinion asks for 1: Open-Meteo starts at 00:00 local,
+    /// so a patrol just after midnight would otherwise lack the evening hours of tonight's darkness.
+    public static func url(latitude: Double, longitude: Double, days: Int, pastDays: Int = 0) -> URL {
         var c = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
         c.queryItems = [
             .init(name: "latitude", value: String(format: "%.4f", latitude)),
@@ -101,7 +103,7 @@ public enum OpenMeteo {
             .init(name: "hourly", value: variables.joined(separator: ",")),
             .init(name: "timezone", value: "auto"),
             .init(name: "forecast_days", value: String(days))
-        ]
+        ] + (pastDays > 0 ? [.init(name: "past_days", value: String(pastDays))] : [])
         return c.url!
     }
 
@@ -205,7 +207,7 @@ public enum ForecastService {
         var second: SecondOpinion? = nil
         if let primary, let r = try? await primary(site, now), !r.hours.isEmpty {
             hours = r.hours; cloudSource = r.source; markURL = r.markURL; legalURL = r.legalURL
-            if wantSecond, let data = try? await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)),
+            if wantSecond, let data = try? await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3, pastDays: 1)),
                let om = try? OpenMeteo.parse(data), !om.isEmpty {
                 second = SecondOpinion(source: "Open-Meteo", hours: om.map { HourlyCloud(time: $0.time, cloudTotal: $0.cloudTotal) })
             }

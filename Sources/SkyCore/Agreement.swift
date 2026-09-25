@@ -30,7 +30,9 @@ extension Planner {
                 }
                 return .clearFrom(max(run.start, w.start))
             }
-            // Nothing clear enough inside Apple's window: say where Open-Meteo is clear, if anywhere tonight.
+            // Nothing clear enough inside Apple's window: say where Open-Meteo is clear, if anywhere tonight. Not on a bright
+            // plan: a bright run also needs a target 15° up, which cloud alone cannot show.
+            if plan.mode == .bright { return .noWindow }
             if let elsewhere = windows(hours: hours, darkStart: span.start, darkEnd: span.end, rule: rule).max(by: { $0.hours < $1.hours }) {
                 return .clearRun(elsewhere.start, elsewhere.end)
             }

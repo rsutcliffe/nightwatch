@@ -179,3 +179,25 @@ final class RecordingFetcher: Fetcher, @unchecked Sendable {
     let fc = try JSONDecoder().decode(Forecast.self, from: Data(json.utf8))
     #expect(fc.secondOpinion == nil && fc.cloudSource == "Apple Weather")
 }
+
+@Test func secondOpinionRequestIncludesTheDayBefore() async throws {
+    // Open-Meteo starts at 00:00 local, so a patrol just after midnight needs yesterday's evening hours for tonight's darkness.
+    let f = RecordingURLFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json")])
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let primary: CloudProvider = { _, _ in CloudResult(hours: fakeHours(5, cloud: 7), source: "Apple Weather") }
+    _ = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: primary)
+    let om = try #require(f.urls.first { $0.host == "api.open-meteo.com" })
+    #expect(om.query?.contains("past_days=1") == true)
+    #expect(OpenMeteo.url(latitude: 53.38, longitude: -1.47, days: 3).query?.contains("past_days") == false)   // the primary request is unchanged
+}
+
+final class RecordingURLFetcher: Fetcher, @unchecked Sendable {
+    let byHost: [String: Data]
+    private(set) var urls: [URL] = []
+    init(byHost: [String: Data]) { self.byHost = byHost }
+    func get(_ url: URL) async throws -> Data {
+        urls.append(url)
+        guard let d = byHost[url.host ?? ""] else { throw URLError(.badURL) }
+        return d
+    }
+}
