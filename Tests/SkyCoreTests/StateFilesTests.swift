@@ -2,35 +2,53 @@ import Testing
 import Foundation
 @testable import SkyCore
 
-private func tempDir() throws -> URL {
-    let d = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
-    return d
+private func withTempDirs(_ body: (URL, URL) throws -> Void) throws {
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let caches = root.appendingPathComponent("Caches"), support = root.appendingPathComponent("Support/Nightwatch")
+    try FileManager.default.createDirectory(at: caches, withIntermediateDirectories: true)
+    try body(caches, support)
 }
 
-@Test func stateFilesMoveOutOfCachesOnce() throws {
-    let caches = try tempDir(), support = try tempDir().appendingPathComponent("Nightwatch")
-    try Data("old-alerts".utf8).write(to: caches.appendingPathComponent("alerts-state.json"))
-    try Data("old-aurora".utf8).write(to: caches.appendingPathComponent("aurora-state.json"))
-    try Data("{}".utf8).write(to: caches.appendingPathComponent("forecast.json"))   // a real cache file stays put
-    StateFiles.migrate(from: caches, to: support)
-    #expect(try String(contentsOf: support.appendingPathComponent("alerts-state.json"), encoding: .utf8) == "old-alerts")
-    #expect(try String(contentsOf: support.appendingPathComponent("aurora-state.json"), encoding: .utf8) == "old-aurora")
-    #expect(try FileManager.default.contentsOfDirectory(atPath: caches.path) == ["forecast.json"])
+private func write(_ text: String, _ url: URL, modified: Date) throws {
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(text.utf8).write(to: url)
+    try FileManager.default.setAttributes([.modificationDate: modified], ofItemAtPath: url.path)
 }
 
-@Test func stateAlreadyInSupportWinsOverALeftoverCopy() throws {
-    let caches = try tempDir(), support = try tempDir()
-    try Data("current".utf8).write(to: support.appendingPathComponent("alerts-state.json"))
-    try Data("stale".utf8).write(to: caches.appendingPathComponent("alerts-state.json"))
-    StateFiles.migrate(from: caches, to: support)
-    #expect(try String(contentsOf: support.appendingPathComponent("alerts-state.json"), encoding: .utf8) == "current")
-    #expect(!FileManager.default.fileExists(atPath: caches.appendingPathComponent("alerts-state.json").path))
-    StateFiles.migrate(from: caches.appendingPathComponent("missing"), to: support)   // nothing to move: no throw, no change
-    #expect(try String(contentsOf: support.appendingPathComponent("alerts-state.json"), encoding: .utf8) == "current")
+private func read(_ url: URL) throws -> String { try String(contentsOf: url, encoding: .utf8) }
+
+@Test func stateFilesMoveOutOfCaches() throws {
+    try withTempDirs { caches, support in
+        try write("old-alerts", caches.appendingPathComponent(StateFiles.alerts), modified: Date())
+        try write("old-aurora", caches.appendingPathComponent(StateFiles.aurora), modified: Date())
+        try write("{}", caches.appendingPathComponent("forecast.json"), modified: Date())   // a real cache file stays put
+        StateFiles.migrate(from: caches, to: support)   // also creates the missing Application Support folder
+        #expect(try read(support.appendingPathComponent(StateFiles.alerts)) == "old-alerts")
+        #expect(try read(support.appendingPathComponent(StateFiles.aurora)) == "old-aurora")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: caches.path) == ["forecast.json"])
+    }
+}
+
+@Test func theCopyWrittenLastWins() throws {
+    let earlier = Date(timeIntervalSince1970: 1_790_000_000), later = earlier.addingTimeInterval(600)
+    try withTempDirs { caches, support in
+        // Normal case: the Application Support copy is current; a leftover in Caches is removed.
+        try write("current", support.appendingPathComponent(StateFiles.alerts), modified: later)
+        try write("stale", caches.appendingPathComponent(StateFiles.alerts), modified: earlier)
+        StateFiles.migrate(from: caches, to: support)
+        #expect(try read(support.appendingPathComponent(StateFiles.alerts)) == "current")
+        #expect(!FileManager.default.fileExists(atPath: caches.appendingPathComponent(StateFiles.alerts).path))
+        // Back to 0.6.8 and up again: 0.6.8 wrote a newer record in Caches, and that one is kept.
+        try write("from-0.6.8", caches.appendingPathComponent(StateFiles.alerts), modified: later.addingTimeInterval(600))
+        StateFiles.migrate(from: caches, to: support)
+        #expect(try read(support.appendingPathComponent(StateFiles.alerts)) == "from-0.6.8")
+        StateFiles.migrate(from: caches.appendingPathComponent("missing"), to: support)   // nothing to move: no change
+        #expect(try read(support.appendingPathComponent(StateFiles.alerts)) == "from-0.6.8")
+    }
 }
 
 @Test func stateLivesBesideTheSettingsNotInCaches() {
     #expect(StateFiles.directory == ConfigStore.defaultURL.deletingLastPathComponent())
-    #expect(!StateFiles.directory.path.contains("/Caches/"))
+    for n in StateFiles.names { #expect(!StateFiles.url(n).path.contains("/Caches/")) }
 }

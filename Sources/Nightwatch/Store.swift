@@ -62,9 +62,9 @@ final class Store: ObservableObject {
         StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
         plan = Store.read("plan.json")             // content in the popover before the first fetch
-        alertState = Store.readFile(StateFiles.directory.appendingPathComponent("alerts-state.json"))
+        alertState = Store.readFile(StateFiles.url(StateFiles.alerts)) ?? Store.read(StateFiles.alerts)   // Caches only if the move failed
         aurora = Store.read("aurora.json")
-        auroraState = Store.readFile(StateFiles.directory.appendingPathComponent("aurora-state.json"))
+        auroraState = Store.readFile(StateFiles.url(StateFiles.aurora)) ?? Store.read(StateFiles.aurora)
         comets = Store.read("comets.json") ?? []
         tle = Store.read("iss-tle.json")
         auxAttempts = Store.read("aux-attempts.json") ?? [:]
@@ -82,9 +82,14 @@ final class Store: ObservableObject {
             config = try ConfigStore.load(from: url)
             configLoadFailed = false
             // No settings file, but a forecast from an earlier run: someone who used 0.6.6 or earlier without ever
-            // changing a setting. They are already set up, so no welcome.
+            // changing a setting. They are already set up, so no welcome. Saved at once, because the forecast is a cache
+            // that a cleaner may delete, and the welcome must not come back when it does (v0.6.9).
             if !config.welcomed, !FileManager.default.fileExists(atPath: url.path),
-               FileManager.default.fileExists(atPath: Store.url("forecast.json").path) { config.welcomed = true }
+               FileManager.default.fileExists(atPath: Store.url("forecast.json").path) {
+                config.welcomed = true
+                try? ConfigStore.save(config, to: url)
+                configModDate = Store.configModDate()
+            }
         } catch {
             configLoadFailed = true
             if let d = try? Data(contentsOf: url) { try? d.write(to: url.appendingPathExtension("bad"), options: .atomic) }
@@ -203,7 +208,7 @@ final class Store: ObservableObject {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
                                      forecastFetchedAt: fc.fetchedAt, site: site, copy: copy)
             alertState = r.state
-            Store.writeFile(r.state, StateFiles.directory.appendingPathComponent("alerts-state.json"))
+            Store.writeFile(r.state, StateFiles.url(StateFiles.alerts))
             if let n = r.notification { Notifier.post(n) }
         }
         await recomputeHomePlan(now: now)   // after the alerts, so a slow home fetch never delays one
@@ -271,7 +276,7 @@ final class Store: ObservableObject {
         // Only record a level as sent when it was: turning notifications on mid-storm then alerts for the current level.
         guard config.notifyEnabled else { return }
         auroraState = r.state
-        Store.writeFile(r.state, StateFiles.directory.appendingPathComponent("aurora-state.json"))
+        Store.writeFile(r.state, StateFiles.url(StateFiles.aurora))
         if let n = r.notification { Notifier.post(n) }
     }
 
