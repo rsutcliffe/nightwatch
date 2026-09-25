@@ -30,14 +30,16 @@ public struct Copy: Sendable {
         targets.map { $0.id == "moon" ? "Moon \($0.subtitle.prefix { $0 != " " })" : $0.name }.joined(separator: ", ")
     }
 
-    public func notificationBody(plan: NightPlan, site: Site) -> String {
-        if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." }
+    /// `agreement`: append Open-Meteo's line (v0.5); the tomorrow preview passes false.
+    public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true) -> String {
+        let line = agreement ? plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? "" : ""
+        if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
         else if plan.moonIllumination < 0.1 { parts.append("No Moon") }
         else { parts.append("Moon \(Int((plan.moonIllumination * 100).rounded()))%") }
         if !plan.best.isEmpty { parts.append(plan.best.map(\.name).joined(separator: ", ") + " well placed") }
-        return parts.joined(separator: ". ") + "."
+        return parts.joined(separator: ". ") + "." + line
     }
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.
@@ -93,6 +95,23 @@ public struct Copy: Sendable {
         case .small: "Small in frame"
         case .mosaic: "Mosaic"
         }
+    }
+
+    /// The v0.5 agreement line, the same in both wording modes.
+    public static func agreementText(_ a: Agreement, site: Site) -> String {
+        switch a {
+        case .agree: "Open-Meteo agrees"
+        case .cloudFrom(let t): "Open-Meteo sees cloud from \(hhmm(t, site: site))"
+        case .clearFrom(let t): "Open-Meteo sees it clear from \(hhmm(t, site: site))"
+        case .noWindow: "Open-Meteo sees no clear window"
+        case .agreeNoWindow: "Open-Meteo agrees: no clear window"
+        case .clearRun(let a, let b): "Open-Meteo has a clear run \(hhmm(a, site: site))–\(hhmm(b, site: site))"
+        }
+    }
+
+    /// Amber dot when Open-Meteo disagrees; a tick when it agrees.
+    public static func agreementWarns(_ a: Agreement) -> Bool {
+        switch a { case .agree, .agreeNoWindow: false; default: true }
     }
 
     public static func hhmm(_ date: Date, site: Site) -> String {

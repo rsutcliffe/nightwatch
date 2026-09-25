@@ -146,3 +146,25 @@ private let primary = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 9
     let n = try Ephemeris.night(localDate: utc(2026, 11, 20, 12, 0), site: testSite)
     #expect(n.darkStart! < utc(2026, 11, 20, 20, 0) && n.darkEnd! > utc(2026, 11, 21, 3, 0))
 }
+
+@Test func agreementWording() {
+    let a = utc(2026, 11, 20, 23, 0), b = utc(2026, 11, 21, 2, 0)
+    #expect(Copy.agreementText(.agree, site: testSite) == "Open-Meteo agrees")
+    #expect(Copy.agreementText(.cloudFrom(a), site: testSite) == "Open-Meteo sees cloud from 23:00")
+    #expect(Copy.agreementText(.clearFrom(a), site: testSite) == "Open-Meteo sees it clear from 23:00")
+    #expect(Copy.agreementText(.noWindow, site: testSite) == "Open-Meteo sees no clear window")
+    #expect(Copy.agreementText(.agreeNoWindow, site: testSite) == "Open-Meteo agrees: no clear window")
+    #expect(Copy.agreementText(.clearRun(a, b), site: testSite) == "Open-Meteo has a clear run 23:00–02:00")
+    #expect(!Copy.agreementWarns(.agree) && !Copy.agreementWarns(.agreeNoWindow))
+    #expect(Copy.agreementWarns(.cloudFrom(a)) && Copy.agreementWarns(.clearFrom(a)) && Copy.agreementWarns(.noWindow) && Copy.agreementWarns(.clearRun(a, b)))
+}
+
+@Test func notificationBodyCarriesTheLineButNotForTomorrow() throws {
+    var p = try plan(primaryCloud: primary)
+    p.agreement = .agree
+    let copy = Copy(flavour: .watch)
+    #expect(copy.notificationBody(plan: p, site: testSite).hasSuffix(" Open-Meteo agrees."))
+    #expect(!copy.notificationBody(plan: p, site: testSite, agreement: false).contains("Open-Meteo"))
+    p.agreement = nil
+    #expect(!copy.notificationBody(plan: p, site: testSite).contains("Open-Meteo"))
+}

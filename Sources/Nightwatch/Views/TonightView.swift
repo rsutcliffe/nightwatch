@@ -78,6 +78,7 @@ struct TonightView: View {
                         HStack(spacing: 5) { WarningDot(size: 4.5); Text(why) }
                             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
+                    agreementLine(plan, site)
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
                     Text("No astronomical darkness").font(.system(size: 15, weight: .medium))
                     Text("Too far north or south for this date.").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
@@ -86,11 +87,24 @@ struct TonightView: View {
                     if let why = noWindowReason(plan, site) {
                         Text(why).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
+                    agreementLine(plan, site)
                     if let t = store.tomorrow, let w = t.primary {
                         Text("Tomorrow: \(Copy.hhmm(w.start, site: site)) → \(Copy.hhmm(w.end, site: site))").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
                 }
             }
+        }
+    }
+
+    /// Open-Meteo's second opinion (v0.5): a tick when it agrees, an amber dot when it does not; hidden without one.
+    @ViewBuilder private func agreementLine(_ plan: NightPlan, _ site: Site) -> some View {
+        if let a = plan.agreement {
+            HStack(spacing: 5) {
+                if Copy.agreementWarns(a) { WarningDot(size: 4.5) }
+                else { Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true) }
+                Text(Copy.agreementText(a, site: site))
+            }
+            .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 

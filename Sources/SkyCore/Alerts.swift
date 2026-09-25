@@ -70,7 +70,7 @@ public enum AlertEngine {
                     note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site))
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
-                    note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site))
+                    note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site, agreement: false))
                     s.stage = .previewSent
                 }
                 // A night that fails at sunset stays idle: the forecast can still clear later and fire go.
