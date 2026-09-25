@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.7 "Night Watch". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.8 "Night Watch". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -113,7 +113,7 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 ## Architecture
 
 - A Swift package with four targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `NightwatchUI` (the views the app and the widget share) and `Nightwatch` (the SwiftUI menu-bar app). The widget extension is the one Xcode project, generated from `Widget/project.yml` with xcodegen; it reads a snapshot the app writes to a shared App Group after each patrol.
-- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (235 Swift Testing tests at 0.6.7).
+- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (235 Swift Testing tests at 0.6.8).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -154,6 +154,7 @@ Tags follow the City Watch novels.
 | 0.6.5 | Night Watch, patch 5 | 25 September 2026 | Where you observe: home, one-click "Back to" home from the popover and Dark sites, dark sites visited without being saved, honest comparison with home, an "Add a site" sheet with named sky darkness, and menus in place of up/down arrows throughout Settings |
 | 0.6.6 | Night Watch, patch 6 | 25 September 2026 | The first public download: a signed, notarised DMG on the GitHub release. Aurora on the desktop widgets; aurora alerts play a sound; the large widget no longer overflows on a clear night (measured at the real 344 × 344 size); AuroraWatch UK linked and the sky survey credited as their terms ask; `scripts/release.sh` builds a Developer ID signed, notarised download |
 | 0.6.7 | Night Watch, patch 7 | 25 September 2026 | First-run welcome (telescope and place); "How to shoot this" on every detail page, from the makers' own settings; a once-a-day update check with a popover line; website, feedback and problem links in About; the Targets page repaints on every sidebar click; constellations carry their Moon separation |
+| 0.6.8 | Night Watch, patch 8 | 25 September 2026 | "How to shoot this" sits above the caption and no longer runs off the window; its title wraps |
 
 ## Install
 
