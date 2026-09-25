@@ -25,6 +25,7 @@ struct DetailView: View {
                     topBar.zIndex(1)
                     if fitted {
                         fittedHero.frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .overlay(alignment: .bottomTrailing) { tipsOverlay }
                     } else {
                         // The clear space between the top bar and the caption. The photo is centred on it and overflows it to
                         // cover the page; the dashed box stays inside it.
@@ -37,12 +38,9 @@ struct DetailView: View {
                                     .frame(width: f.size.width, height: f.size.height)
                             }
                         }
+                        .overlay(alignment: .bottomTrailing) { tipsOverlay }
                     }
-                    // The card floats above the caption rather than taking a row, so opening it never resizes the image.
                     caption.zIndex(1)
-                        .overlay(alignment: .topTrailing) {
-                            if tipsUI.shown, let s = store.site { tipsCard(site: s).alignmentGuide(.top) { $0[.bottom] + 12 } }
-                        }
                 }
                 .padding(16)
             }
@@ -161,6 +159,12 @@ struct DetailView: View {
 }
 
 extension DetailView {
+    /// The card sits over the bottom of the image area, just above the caption: an overlay takes no layout space, so
+    /// opening it never resizes the image, and it is never clipped by the window's bottom edge (owner, 25 Sep 2026).
+    @ViewBuilder var tipsOverlay: some View {
+        if tipsUI.shown, let s = store.site { tipsCard(site: s).zIndex(2) }
+    }
+
     /// "How to shoot this" (v0.6.7, owner-approved mockup): the settings for the user's own telescope and this kind of
     /// target, sized to tonight's window, with where the numbers come from.
     func tipsCard(site: Site) -> some View {
@@ -169,6 +173,7 @@ extension DetailView {
                                    stackMinutes: target.viewable.map { min($0.hours, 3) * 60 }, site: site)
         return VStack(alignment: .leading, spacing: 8) {
             Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
+                .fixedSize(horizontal: false, vertical: true)   // wraps rather than cutting a long telescope name short
             ForEach(tip.rows, id: \.label) { r in
                 HStack(alignment: .top, spacing: 8) {
                     Text(r.label).font(.system(size: 11)).foregroundStyle(Theme.dim).frame(width: 64, alignment: .leading)
