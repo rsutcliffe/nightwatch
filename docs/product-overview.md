@@ -95,7 +95,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
 | Deep-sky catalogue | OpenNGC | CC BY-SA 4.0 |
 | Constellation artwork | Made for Nightwatch; star lines from d3-celestial | MIT (artwork), BSD-3 (star lines) |
-| Thumbnails | CDS hips2fits, DSS2 | DSS images copyright AAO, SERC, Caltech, AURA |
+| Sky-survey images | Digitized Sky Survey (STScI/NASA), coloured by CDS, via hips2fits | ODbL 1.0 (CDS); STScI permits non-profit use with acknowledgement; plates copyright AAO, SERC, Caltech, AURA |
 | Comets | IAU Minor Planet Center | Public |
 | ISS passes | CelesTrak elements, SatelliteKit SGP4 | MIT |
 | Meteor showers | International Meteor Organization calendar | Compiled |
@@ -145,7 +145,7 @@ Tags follow the City Watch novels.
 | 0.6.3 | Night Watch, patch 3 | 25 September 2026 | After a heads-up, a stand-down only when both forecasts lose the window; when they split, "Hold fire. Forecasts disagree", saying what each sees |
 | 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption; dark-site cards say "Observe from here" instead of "Use as beat" |
 | 0.6.5 | Night Watch, patch 5 | 25 September 2026 | Where you observe: home, one-click "Back to" home from the popover and Dark sites, dark sites visited without being saved, honest comparison with home, an "Add a site" sheet with named sky darkness, and menus in place of up/down arrows throughout Settings |
-| 0.6.6 | Night Watch, patch 6 | 25 September 2026 | Aurora on the desktop widgets; aurora alerts play a sound; the large widget no longer overflows on a clear night (measured at the real 344 × 344 size) |
+| 0.6.6 | Night Watch, patch 6 | 25 September 2026 | Aurora on the desktop widgets; aurora alerts play a sound; the large widget no longer overflows on a clear night (measured at the real 344 × 344 size); AuroraWatch UK linked and the sky survey credited as their terms ask; `scripts/release.sh` builds a Developer ID signed, notarised download |
 
 ## Install
 

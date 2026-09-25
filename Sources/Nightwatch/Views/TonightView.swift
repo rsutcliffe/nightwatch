@@ -117,7 +117,11 @@ struct TonightView: View {
     /// publication (live: 20:33:32Z then 20:39:31Z, both green), so an older status is stale.
     @ViewBuilder private func notice(_ site: Site) -> some View {
         if let a = store.aurora, store.config.aurora.shows(a), AuroraSettings.isFresh(a, now: Date()) {
-            Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.system(size: 10)).foregroundStyle(Color(hex: a.level.hex))
+            // AuroraWatch UK's terms ask for the source to be named, "ideally with a link or button" to their site.
+            Link(destination: URL(string: "https://aurorawatch.lancs.ac.uk/")!) {
+                Text("Aurora: \(a.level.rawValue) (AuroraWatch UK) ↗").font(.system(size: 10)).foregroundStyle(Color(hex: a.level.hex))
+            }
+            .buttonStyle(.plain).help("Open AuroraWatch UK")
         } else if let a = store.bestAway, let w = a.primary {
             Button {
                 // The menu-bar label also opens the window on any request; opening a single Window twice is harmless.

@@ -75,11 +75,14 @@ public protocol Fetcher: Sendable {
 }
 
 public struct URLSessionFetcher: Fetcher {
+    /// Names the app and its real version, as AuroraWatch UK's API terms ask ("set the HTTP User-Agent header to match the
+    /// name of your app"), so every service can see who is calling.
+    public static let userAgent = "Nightwatch/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev") (https://github.com/rsutcliffe/nightwatch)"
     public var timeout: TimeInterval
     public init(timeout: TimeInterval = 20) { self.timeout = timeout }
     public func get(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url, timeoutInterval: timeout)
-        req.setValue("Nightwatch/0.1 (https://github.com/rsutcliffe/nightwatch)", forHTTPHeaderField: "User-Agent")
+        req.setValue(URLSessionFetcher.userAgent, forHTTPHeaderField: "User-Agent")
         let (data, response) = try await URLSession.shared.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             throw URLError(.badServerResponse)

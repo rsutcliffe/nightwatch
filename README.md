@@ -6,6 +6,10 @@
 
 Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
+## Download
+
+Signed, notarised releases are attached to each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases): open `Nightwatch-<version>.dmg` and drag Nightwatch to Applications. How a release is made is in [docs/releasing.md](docs/releasing.md).
+
 ## Build and install (any Mac, macOS 14+, no Xcode needed)
 
     xcode-select --install        # Command Line Tools, once
@@ -89,7 +93,7 @@ Settings live in `~/Library/Application Support/Nightwatch/config.json`. Symlink
 
 ## Data sources and licences
 
-See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0). 7Timer data is for non-commercial use. OpenNGC is CC BY-SA 4.0. DSS images are copyright AAO, SERC, Caltech and AURA, served by CDS hips2fits. Dark-sky site attributions are in "Dark-sky sites" above.
+See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0). 7Timer data is for non-commercial use. OpenNGC is CC BY-SA 4.0. Sky-survey images are the Digitized Sky Survey (STScI/NASA), coloured by CDS under ODbL 1.0 and used under STScI's terms for non-profit use; the plates are copyright AAO, SERC, Caltech and AURA. Nightwatch is free and has no ads, which every non-commercial term above requires. Dark-sky site attributions are in "Dark-sky sites" above.
 
 ## Release names
 

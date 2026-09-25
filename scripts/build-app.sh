@@ -36,7 +36,9 @@ BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Content
 IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Apple Development/{print $2; exit}')
 PROFILE=""
 for p in ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.provisionprofile(N) ~/Library/MobileDevice/Provisioning\ Profiles/*.provisionprofile(N); do
-  if security cms -D -i "$p" 2>/dev/null | grep -q "\.$BUNDLE_ID</string>"; then PROFILE="$p"; break; fi
+  # Development profiles only: a Developer ID profile (ProvisionsAllDevices) belongs to scripts/release.sh.
+  PL=$(security cms -D -i "$p" 2>/dev/null) || continue
+  if print -r -- "$PL" | grep -q "\.$BUNDLE_ID</string>" && ! print -r -- "$PL" | grep -q "<key>ProvisionsAllDevices</key>"; then PROFILE="$p"; break; fi
 done
 if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
   security cms -D -i "$PROFILE" > build/profile.plist
@@ -55,6 +57,8 @@ if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
      && mkdir -p "$PINS" && cp Package.resolved "$PINS/" \
      && xcodebuild -project Widget/NightwatchWidget.xcodeproj -scheme NightwatchWidget -configuration Release \
           -derivedDataPath build/widget -onlyUsePackageVersionsFromResolvedFile DEVELOPMENT_TEAM="$TEAM" \
+          MARKETING_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Sources/Nightwatch/Info.plist)" \
+          CURRENT_PROJECT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Sources/Nightwatch/Info.plist)" \
           -allowProvisioningUpdates build > build/widget.log 2>&1; then
     mkdir -p "$APP/Contents/PlugIns"
     cp -R build/widget/Build/Products/Release/NightwatchWidget.appex "$APP/Contents/PlugIns/"

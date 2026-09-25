@@ -11,6 +11,7 @@ settings:
   base:
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
+    # build-app.sh passes the app's version from Sources/Nightwatch/Info.plist, so the two never drift; these are fallbacks.
     MARKETING_VERSION: "0.6.6"
     CURRENT_PROJECT_VERSION: "18"
     ENABLE_HARDENED_RUNTIME: YES
@@ -28,6 +29,8 @@ targets:
       path: build/Info.plist
       properties:
         CFBundleDisplayName: Nightwatch
+        CFBundleShortVersionString: $(MARKETING_VERSION)   # otherwise xcodegen writes a literal 1.0
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Must equal the app's group, which scripts/build-app.sh derives as <team>.<CFBundleIdentifier in Sources/Nightwatch/Info.plist>.
         # Change the three io.github.rsutcliffe.nightwatch strings here if that bundle ID ever changes.
         NightwatchAppGroup: $(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch

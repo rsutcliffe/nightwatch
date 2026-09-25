@@ -122,6 +122,8 @@ struct DetailView: View {
             Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
                 .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
             Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
+            // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
+            if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: 9.5)).foregroundStyle(Theme.dim) }
         }
     }
 
