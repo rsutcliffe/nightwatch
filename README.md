@@ -6,6 +6,24 @@
 
 Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
+<img src="docs/images/screenshot-popover.png" width="360" alt="The Nightwatch popover: tonight's sky score of 49, a clear window from 23:00 to 04:00, clear sky by hour, darkness, Moon, seeing, wind, dew risk and transparency, and the three best targets">
+
+## Screenshots
+
+Taken at Northumberland Dark Sky Park.
+
+**A target's page:** the survey photo fills the window, the dashed box is your field of view, and "How to shoot this" gives your telescope's filter, exposure and frames.
+
+<img src="docs/images/screenshot-target.jpg" width="728" alt="The NGC 7000 North America Nebula page: a sky-survey photo with a dashed field-of-view box, the How to shoot this card for a DWARF Mini, and the altitude through tonight's clear window">
+
+**Dark sites:** darker places nearby, scored for tonight against home.
+
+<img src="docs/images/screenshot-dark-sites.png" width="728" alt="Dark sites within 50 km, each card showing its score against home, distance and direction, darkness and clear window, with an Observe from here button">
+
+**Desktop widgets:** small, medium and large.
+
+<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 49, clear 23:00 to 04:00"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score, clear window and clear sky by hour"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score, clear window, clear sky by hour and the three best targets">
+
 ## Download
 
 Signed, notarised releases are attached to each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases): open `Nightwatch-<version>.dmg` and drag Nightwatch to Applications. A first launch asks what you image with and where you observe from. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md).
