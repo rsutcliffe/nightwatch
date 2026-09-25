@@ -80,6 +80,10 @@ final class Store: ObservableObject {
         do {
             config = try ConfigStore.load(from: url)
             configLoadFailed = false
+            // No settings file, but a forecast from an earlier run: someone who used 0.6.6 or earlier without ever
+            // changing a setting. They are already set up, so no welcome.
+            if !config.welcomed, !FileManager.default.fileExists(atPath: url.path),
+               FileManager.default.fileExists(atPath: Store.url("forecast.json").path) { config.welcomed = true }
         } catch {
             configLoadFailed = true
             if let d = try? Data(contentsOf: url) { try? d.write(to: url.appendingPathExtension("bad"), options: .atomic) }
@@ -316,11 +320,23 @@ final class Store: ObservableObject {
     /// Once a day, when allowed: is there a newer Nightwatch on GitHub? Downloads do not update themselves.
     func checkForUpdate(now: Date = Date()) async {
         guard config.checkForUpdates else { availableUpdate = nil; return }
-        guard attemptDue("update-check", every: ReleaseCheck.interval, now: now),
+        let last: ReleaseCheck.Record? = Store.read("update-check.json")
+        showUpdate(last?.latest)   // the last answer, so the line survives a relaunch
+        guard ReleaseCheck.due(last, now: now),
               let data = try? await fetcher.get(ReleaseCheck.latestURL), let latest = ReleaseCheck.parse(data) else { return }
-        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
-        availableUpdate = ReleaseCheck.isNewer(latest.version, than: current) ? latest : nil
+        Store.write(ReleaseCheck.Record(checkedAt: now, latest: latest), "update-check.json")
+        showUpdate(latest)
     }
+
+    /// Shows `latest` only when it is newer than this copy, so an upgrade clears the line by itself.
+    private func showUpdate(_ latest: ReleaseCheck.Latest?) {
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        availableUpdate = latest.flatMap { ReleaseCheck.isNewer($0.version, than: current) ? $0 : nil }
+    }
+
+    /// The first-run welcome (v0.6.7): not for anyone already set up, and never while settings cannot be saved,
+    /// since "Start watching" could not then record that it was shown.
+    var showWelcome: Bool { !config.welcomed && !configLoadFailed }
     func goHome() { config.goHome(); saveConfig() }
 
     /// While away, tonight's plan at home. Home's forecast is cached for 30 minutes, as a dark site's is, and never asks for

@@ -112,7 +112,11 @@ struct SettingsView: View {
                 Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(.caption).foregroundStyle(Theme.dim)
             }
             Section("Updates") {
-                Toggle("Check for a new version once a day", isOn: bind(\.checkForUpdates))
+                Toggle("Check for a new version once a day", isOn: Binding(get: { store.config.checkForUpdates }, set: {
+                    store.config.checkForUpdates = $0
+                    if !$0 { store.availableUpdate = nil }   // off means the line goes now, not at the next patrol
+                    store.saveConfig()
+                }))
                 Text("Asks GitHub for the latest release and shows a line in the popover when there is a newer one. Nothing else is sent.")
                     .font(.caption).foregroundStyle(Theme.dim)
             }

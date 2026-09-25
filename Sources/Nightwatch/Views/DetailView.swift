@@ -38,8 +38,11 @@ struct DetailView: View {
                             }
                         }
                     }
-                    if tipsUI.shown, let s = store.site { tipsCard(site: s).frame(maxWidth: .infinity, alignment: .trailing).zIndex(1) }
+                    // The card floats above the caption rather than taking a row, so opening it never resizes the image.
                     caption.zIndex(1)
+                        .overlay(alignment: .topTrailing) {
+                            if tipsUI.shown, let s = store.site { tipsCard(site: s).alignmentGuide(.top) { $0[.bottom] + 12 } }
+                        }
                 }
                 .padding(16)
             }
@@ -125,7 +128,7 @@ struct DetailView: View {
             Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
                 .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
             Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
-            Button { tipsUI.shown.toggle() } label: {
+            if store.site != nil { Button { tipsUI.shown.toggle() } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "camera.aperture").accessibilityHidden(true)
                     Text("How to shoot this")
@@ -134,7 +137,7 @@ struct DetailView: View {
             }
             .buttonStyle(.plain).font(.system(size: 11)).padding(.horizontal, 9).padding(.vertical, 5)
             .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6)).padding(.top, 4)
-            .help("Filter, exposure and frames for your telescope and this target")
+            .help("Filter, exposure and frames for your telescope and this target") }
             // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
             if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: 9.5)).foregroundStyle(Theme.dim) }
         }
@@ -163,7 +166,7 @@ extension DetailView {
     func tipsCard(site: Site) -> some View {
         let preset = Self.presets.first { $0.id == store.config.fovPresetID }
         let tip = ShootingTips.tip(for: target, presetID: preset?.id, presetName: preset?.name,
-                                   stackMinutes: store.plan?.primary.map { min($0.hours, 3) * 60 }, site: site)
+                                   stackMinutes: target.viewable.map { min($0.hours, 3) * 60 }, site: site)
         return VStack(alignment: .leading, spacing: 8) {
             Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
             ForEach(tip.rows, id: \.label) { r in

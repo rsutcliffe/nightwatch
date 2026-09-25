@@ -15,13 +15,14 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let tip = ShootingTips.tip(for: target("NGC0281", .nebulae, "Emission nebula"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 180, site: site)
     #expect(tip.title == "How to shoot this with your DwarfLab DWARF Mini")
     #expect(tip.rows.first { $0.label == "Filter" }?.text.hasPrefix("Duo-Band") == true)
-    #expect(tip.rows.first { $0.label == "Exposure" }?.text == "15–60 s per frame at gain 60–80 (try 30 s).")
-    #expect(tip.rows.first { $0.label == "Frames" }?.text == "200–400 recommended; 360 × 30 s fills 3 h of tonight's window.")
+    #expect(tip.rows.first { $0.label == "Exposure" }?.text == "15–60 s per frame at gain 60–80.")
+    #expect(tip.rows.first { $0.label == "Frames" }?.text == "200–400 recommended. At 30 s a frame, for example, 360 frames fill the 3 h it is up tonight.")
     #expect(tip.rows.last?.text == "Start at 23:00, when it is clear and high enough; it is best at 01:30.")
     #expect(tip.source == "Settings from DWARFLAB's user manual.")
     let galaxy = ShootingTips.tip(for: target("NGC0224", .galaxies, "Galaxy"), presetID: "dwarf-3", presetName: "DwarfLab DWARF 3", stackMinutes: 90, site: site)
     #expect(galaxy.rows.first { $0.label == "Filter" }?.text.hasPrefix("Astro") == true)
-    #expect(galaxy.rows.first { $0.label == "Frames" }?.text == "200–400 recommended; 180 × 30 s fills 1.5 h of tonight's window.")
+    #expect(galaxy.rows.first { $0.label == "Frames" }?.text == "200–400 recommended. At 30 s a frame, for example, 180 frames fill the 1.5 h it is up tonight.")
+    #expect(galaxy.rows.first { $0.label == "Filter" }?.text.contains("spans the whole spectrum") == true)
 }
 
 @Test func seestarSwitchesItsFilterByTheKindOfLight() {
@@ -40,6 +41,8 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let custom = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: nil, presetName: nil, stackMinutes: 120, site: site)
     #expect(custom.title == "How to shoot this with your telescope" && custom.source == nil)
     #expect(custom.rows.first { $0.label == "Filter" }?.text.contains("if it glows red") == true)
+    let dwarfUnknown = ShootingTips.tip(for: target("NGC0281", .nebulae, "Nebula"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 60, site: site)
+    #expect(dwarfUnknown.rows.first { $0.label == "Filter" }?.text.contains("; Astro if it is a reflection") == true)   // the filter's own name, capitalised
 }
 
 @Test func releaseCheckComparesVersionsNumerically() {
@@ -49,6 +52,8 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     #expect(ReleaseCheck.parse(Data(json.utf8)) == ReleaseCheck.Latest(version: "0.6.7", url: URL(string: "https://github.com/rsutcliffe/nightwatch/releases/tag/v0.6.7")!))
     #expect(ReleaseCheck.parse(Data(#"{"tag_name":"v0.7.0","html_url":"https://x","prerelease":true}"#.utf8)) == nil)
     #expect(ReleaseCheck.parse(Data("not json".utf8)) == nil)
+    let t0 = Date(), rec = ReleaseCheck.Record(checkedAt: t0, latest: nil)
+    #expect(ReleaseCheck.due(nil, now: t0) && !ReleaseCheck.due(rec, now: t0.addingTimeInterval(3600)) && ReleaseCheck.due(rec, now: t0.addingTimeInterval(24 * 3600)))
 }
 
 @Test func newConfigsWelcomeButOldOnesDoNot() throws {

@@ -33,7 +33,7 @@ public enum ShootingTips {
         }
     }
 
-    /// `stackMinutes`: the detail page's suggested stack (tonight's window, up to 3 h); nil when there is no clear window.
+    /// `stackMinutes`: how long the target is up inside tonight's clear window, up to 3 h; nil when there is no clear window.
     public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site) -> ShootingTip {
         let k = kind(t)
         var rows: [ShootingTip.Row] = []
@@ -57,9 +57,9 @@ public enum ShootingTips {
                 source = nil
             default:
                 rows.append(.init("Filter", filterText(k, dualBand: "Duo-Band", broadband: "Astro")))
-                rows.append(.init("Exposure", "15–60 s per frame at gain 60–80 (try 30 s)."))
+                rows.append(.init("Exposure", "15–60 s per frame at gain 60–80."))
                 if let n = frames(30), let h = hours {
-                    rows.append(.init("Frames", "200–400 recommended; \(n) × 30 s fills \(h) of tonight's window."))
+                    rows.append(.init("Frames", "200–400 recommended. At 30 s a frame, for example, \(n) frames fill the \(h) it is up tonight."))
                 } else {
                     rows.append(.init("Frames", "200–400 recommended."))
                 }
@@ -79,13 +79,13 @@ public enum ShootingTips {
                 rows.append(.init("Filter", filterText(k, dualBand: "Light-pollution filter on", broadband: "Light-pollution filter off (UV/IR cut)")))
                 rows.append(.init("Exposure", "10 s frames; the Seestar stacks them as it goes."))
                 if let n = frames(10), let h = hours {
-                    rows.append(.init("Frames", "Let it stack for the window: \(h) is about \(n) frames. Faint targets need at least half an hour."))
+                    rows.append(.init("Frames", "Let it stack while it is up: \(h) is about \(n) frames."))
                 } else {
-                    rows.append(.init("Frames", "Let it stack for as long as you can: faint targets need at least half an hour."))
+                    rows.append(.init("Frames", "Let it stack for as long as you can."))
                 }
             }
         case "dslr-apsc-200":
-            source = "Exposure guidance from the 500 and NPF rules for untracked shots."
+            source = "The untracked limit comes from the 500 and NPF rules; tracked times are typical ranges, not a maker's figure."
             switch k {
             case .moon:
                 rows.append(.init("Exposure", "The Moon is bright: use short exposures and check the histogram."))
@@ -96,7 +96,7 @@ public enum ShootingTips {
             default:
                 rows.append(.init("Exposure", "On a star tracker, 60–120 s in the suburbs and longer at a dark site. Without one, under about 1.5 s before stars trail."))
                 if let h = hours, let n = frames(120) {
-                    rows.append(.init("Frames", "Take as many as the window allows: \(h) is about \(n) × 120 s on a tracker."))
+                    rows.append(.init("Frames", "Take as many as the time it is up allows: \(h) is about \(n) × 120 s on a tracker."))
                 }
                 if k == .emission || k == .nebulaUnknown {
                     rows.append(.init("Filter", "A dual-band or light-pollution filter lifts an emission nebula out of a bright sky."))
@@ -109,7 +109,7 @@ public enum ShootingTips {
             default:
                 rows.append(.init("Filter", filterText(k, dualBand: "A dual-band or narrowband filter", broadband: "No filter, or a light-pollution filter only")))
                 rows.append(.init("Exposure", "Check your telescope's manual for exposure and gain."))
-                if let h = hours { rows.append(.init("Frames", "Tonight's window allows up to \(h) of frames.")) }
+                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) tonight.")) }
             }
         }
 
@@ -122,8 +122,8 @@ public enum ShootingTips {
     static func filterText(_ k: Kind, dualBand: String, broadband: String) -> String {
         switch k {
         case .emission: "\(dualBand): it passes the hydrogen-alpha and oxygen-III light an emission nebula gives off."
-        case .broadband: "\(broadband): galaxies, star clusters and reflection nebulae shine across the spectrum, so a narrow filter would cut their light."
-        default: "\(dualBand) if it glows red (an emission nebula); \(broadband.prefix(1).lowercased() + broadband.dropFirst()) if it is a reflection or dark nebula."
+        case .broadband: "\(broadband): this target's light spans the whole spectrum, so a narrow filter would cut most of it."
+        default: "\(dualBand) if it glows red (an emission nebula); \(broadband) if it is a reflection or dark nebula."
         }
     }
 }

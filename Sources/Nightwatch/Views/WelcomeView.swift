@@ -48,7 +48,7 @@ struct WelcomeView: View {
                     if state.locating { ProgressView().controlSize(.small) }
                 }
                 if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(.caption) }
-                if state.locationFailed {
+                if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
                     Text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
                         .font(.caption).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
                 }

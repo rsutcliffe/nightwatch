@@ -23,8 +23,8 @@ struct MenuBarLabel: View {
     var body: some View {
         Image(systemName: store.iconName)
             .task {
+                if store.showWelcome { NSApp.activate(); openWindow(id: "welcome") }   // first launch only, before the rest of boot
                 await boot()
-                if !store.config.welcomed { NSApp.activate(); openWindow(id: "welcome") }   // first launch only
             }
             .onChange(of: store.targetsRequest) { _, r in
                 guard r != nil else { return }
@@ -86,7 +86,8 @@ struct NightwatchApp: App {
         await store.refresh(force: false)
         let s = Scheduler { [location] in
             Task { @MainActor in
-                if store.site == nil, let fix = await location.requestOnce() { store.autoSite = fix }   // retry location until we have a site
+                // Retry location until there is a site, but never before the welcome has explained why it is asked for.
+                if store.site == nil, store.config.welcomed, let fix = await location.requestOnce() { store.autoSite = fix }
                 await store.refresh(force: false)
                 await store.checkForUpdate()   // at most once a day; attemptDue gates it
             }
