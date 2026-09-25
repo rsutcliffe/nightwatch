@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.5.1 "The Fifth Elephant". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.5.2 "The Fifth Elephant". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -130,6 +130,7 @@ Tags follow the City Watch novels.
 | 0.4.1 | Jingo, patch 1 | 25 September 2026 | Tiles in each popover row share one height; tile contrast measured live and fixed (tiles are a fill on the glass panel) |
 | 0.5.0 | The Fifth Elephant | 25 September 2026 | Open-Meteo as a second opinion beside Apple Weather: one agreement line in the popover and alerts; opt-in "Alert only when Open-Meteo agrees"; nothing logged |
 | 0.5.1 | The Fifth Elephant, patch 1 | 25 September 2026 | App icon: a star over a red-lit horizon, as a Liquid Glass icon when built with Xcode and a classic icon otherwise |
+| 0.5.2 | The Fifth Elephant, patch 2 | 25 September 2026 | App icon replaced with the owner's favourite: a porthole onto the night sky with a red-lit horizon, full-bleed for macOS 27 |
 
 ## Install
 
