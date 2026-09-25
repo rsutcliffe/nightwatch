@@ -234,7 +234,7 @@ final class Store: ObservableObject {
             var fc: Forecast? = Store.readFile(cacheURL)
             if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true {
                 let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
-                let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now)
+                let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now, secondOpinion: false)
                 guard gen == darkSitesGeneration else { return }
                 if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) }
             }

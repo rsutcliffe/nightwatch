@@ -23,6 +23,20 @@ public struct HourlyConditions: Codable, Equatable, Sendable {
     }
 }
 
+/// One hour of a second source's total cloud: all the agreement line compares.
+public struct HourlyCloud: Codable, Equatable, Sendable {
+    public var time: Date
+    public var cloudTotal: Int
+    public init(time: Date, cloudTotal: Int) { self.time = time; self.cloudTotal = cloudTotal }
+}
+
+/// Open-Meteo's cloud beside Apple Weather's, for the agreement line (v0.5). Never drives the verdict; never logged.
+public struct SecondOpinion: Codable, Equatable, Sendable {
+    public var source: String
+    public var hours: [HourlyCloud]
+    public init(source: String, hours: [HourlyCloud]) { self.source = source; self.hours = hours }
+}
+
 public struct Forecast: Codable, Equatable, Sendable {
     public var fetchedAt: Date
     public var latitude: Double
@@ -34,10 +48,13 @@ public struct Forecast: Codable, Equatable, Sendable {
     /// Apple's attribution mark and legal page, present only when cloudSource is Apple Weather.
     public var attributionMarkURL: String?
     public var attributionLegalURL: String?
+    /// Open-Meteo's cloud when Apple Weather is primary (v0.5); nil on unsigned builds and for dark sites.
+    public var secondOpinion: SecondOpinion?
     public init(fetchedAt: Date, latitude: Double, longitude: Double, hours: [HourlyConditions], seeingSource: String?,
-                cloudSource: String? = nil, attributionMarkURL: String? = nil, attributionLegalURL: String? = nil) {
+                cloudSource: String? = nil, attributionMarkURL: String? = nil, attributionLegalURL: String? = nil, secondOpinion: SecondOpinion? = nil) {
         self.fetchedAt = fetchedAt; self.latitude = latitude; self.longitude = longitude; self.hours = hours; self.seeingSource = seeingSource
         self.cloudSource = cloudSource; self.attributionMarkURL = attributionMarkURL; self.attributionLegalURL = attributionLegalURL
+        self.secondOpinion = secondOpinion
     }
 }
 
@@ -180,11 +197,18 @@ public enum ForecastService {
     }
 
     /// Cloud hours from `primary` (WeatherKit by default) when it answers, else Open-Meteo; 7Timer seeing merged on top either way.
-    public static func fetch(site: Site, fetcher: Fetcher, now: Date, primary: CloudProvider? = WeatherKitSource.provider) async throws -> Forecast {
+    /// `secondOpinion`: also keep Open-Meteo's cloud when the primary answers (the active site only; dark sites pass false).
+    public static func fetch(site: Site, fetcher: Fetcher, now: Date, primary: CloudProvider? = WeatherKitSource.provider,
+                             secondOpinion wantSecond: Bool = true) async throws -> Forecast {
         var hours: [HourlyConditions]
         var cloudSource = "Open-Meteo", markURL: String? = nil, legalURL: String? = nil
+        var second: SecondOpinion? = nil
         if let primary, let r = try? await primary(site, now), !r.hours.isEmpty {
             hours = r.hours; cloudSource = r.source; markURL = r.markURL; legalURL = r.legalURL
+            if wantSecond, let data = try? await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)),
+               let om = try? OpenMeteo.parse(data), !om.isEmpty {
+                second = SecondOpinion(source: "Open-Meteo", hours: om.map { HourlyCloud(time: $0.time, cloudTotal: $0.cloudTotal) })
+            }
         } else {
             hours = try OpenMeteo.parse(try await fetcher.get(OpenMeteo.url(latitude: site.latitude, longitude: site.longitude, days: 3)))
         }
@@ -195,6 +219,6 @@ public enum ForecastService {
             seeingSource = "7Timer"
         }
         return Forecast(fetchedAt: now, latitude: site.latitude, longitude: site.longitude, hours: hours, seeingSource: seeingSource,
-                        cloudSource: cloudSource, attributionMarkURL: markURL, attributionLegalURL: legalURL)
+                        cloudSource: cloudSource, attributionMarkURL: markURL, attributionLegalURL: legalURL, secondOpinion: second)
     }
 }

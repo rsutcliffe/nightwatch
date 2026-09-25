@@ -125,3 +125,57 @@ private func fakeHours(_ n: Int, cloud: Int) -> [HourlyConditions] {
     let fc = try d.decode(Forecast.self, from: Data(json.utf8))
     #expect(fc.cloudSource == nil && fc.attributionMarkURL == nil)
 }
+
+final class RecordingFetcher: Fetcher, @unchecked Sendable {
+    let byHost: [String: Data]
+    private(set) var hosts: [String] = []
+    init(byHost: [String: Data]) { self.byHost = byHost }
+    func get(_ url: URL) async throws -> Data {
+        hosts.append(url.host ?? "")
+        guard let d = byHost[url.host ?? ""] else { throw URLError(.badURL) }
+        return d
+    }
+}
+
+@Test func fetchKeepsOpenMeteoAsSecondOpinionWhenPrimaryAnswers() async throws {
+    let f = StubFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json")])
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let primary: CloudProvider = { _, _ in CloudResult(hours: fakeHours(5, cloud: 7), source: "Apple Weather") }
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: primary)
+    let second = try #require(fc.secondOpinion)
+    #expect(second.source == "Open-Meteo")
+    #expect(second.hours.count == 72)
+    #expect(fc.hours.allSatisfy { $0.cloudTotal == 7 })   // the primary still drives
+}
+
+@Test func noSecondOpinionWhenOpenMeteoIsAlreadyPrimary() async throws {
+    let f = StubFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json")])
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let failing: CloudProvider = { _, _ in throw URLError(.notConnectedToInternet) }
+    #expect(try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: failing).secondOpinion == nil)
+    #expect(try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: nil).secondOpinion == nil)
+}
+
+@Test func failedSecondFetchLeavesTheForecastIntact() async throws {
+    let f = StubFetcher(byHost: [:])   // Open-Meteo unreachable
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let primary: CloudProvider = { _, _ in CloudResult(hours: fakeHours(5, cloud: 7), source: "Apple Weather") }
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: primary)
+    #expect(fc.hours.count == 5)
+    #expect(fc.secondOpinion == nil)
+}
+
+@Test func fetchWithoutSecondOpinionMakesOneOpenMeteoCallAtMost() async throws {
+    let f = RecordingFetcher(byHost: ["api.open-meteo.com": try fixture("openmeteo.json")])
+    let site = Site(name: "S", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let primary: CloudProvider = { _, _ in CloudResult(hours: fakeHours(5, cloud: 7), source: "Apple Weather") }
+    let fc = try await ForecastService.fetch(site: site, fetcher: f, now: Date(), primary: primary, secondOpinion: false)
+    #expect(fc.secondOpinion == nil)
+    #expect(f.hosts.filter { $0 == "api.open-meteo.com" }.isEmpty)
+}
+
+@Test func zeroFourForecastDecodes() throws {
+    let json = #"{"fetchedAt":0,"latitude":54.0,"longitude":-1.5,"hours":[],"seeingSource":null,"cloudSource":"Apple Weather"}"#
+    let fc = try JSONDecoder().decode(Forecast.self, from: Data(json.utf8))
+    #expect(fc.secondOpinion == nil && fc.cloudSource == "Apple Weather")
+}
