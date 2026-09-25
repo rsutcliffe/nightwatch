@@ -9,6 +9,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Sources/Nightwatch/Info.plist "$APP/Contents/Info.plist"
 cp .build/release/Nightwatch "$APP/Contents/MacOS/Nightwatch"
 cp -R .build/release/Nightwatch_SkyCore.bundle "$APP/Contents/Resources/"
+cp -R Resources/Constellations "$APP/Contents/Resources/"   # the owner's artwork; the widget does not need it
 cp NOTICE "$APP/Contents/Resources/NOTICE"
 
 # App icon from the Icon Composer document. With Xcode, actool compiles the Liquid Glass icon (Assets.car) plus a classic

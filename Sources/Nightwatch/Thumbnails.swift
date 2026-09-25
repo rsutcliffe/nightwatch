@@ -45,7 +45,11 @@ enum Thumbnails {
     }
 }
 
-final class ThumbnailLoader: ObservableObject { @Published var image: NSImage? }
+/// `art`: a constellation's artwork, loaded once per card in the same task as the photo thumbnails, never in `body`.
+final class ThumbnailLoader: ObservableObject {
+    @Published var image: NSImage?
+    @Published var art: ConstellationArt?
+}
 
 struct ThumbnailView: View {
     @EnvironmentObject var store: Store
@@ -60,35 +64,38 @@ struct ThumbnailView: View {
                 Color.clear
                     .overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else if target.group == .constellations, let c = store.constellation(target.id) {
-                ConstellationFigure(constellation: c).padding(6)
+            } else if let art = loader.art {
+                art.padding(4)
             } else {
                 Image(systemName: Theme.glyph(for: target.group)).font(.title2).foregroundStyle(Theme.dim)
             }
         }
-        .task(id: target.id) { loader.image = await Thumbnails.image(for: target, fov: store.config.fov) }
+        .task(id: target.id) {
+            if target.group == .constellations { loader.art = ConstellationArt(id: target.id); return }
+            loader.image = await Thumbnails.image(for: target, fov: store.config.fov)
+        }
     }
 }
 
-/// Stick figure drawn from the d3-celestial polylines, normalised into the view.
-struct ConstellationFigure: View {
-    let constellation: Constellation
-    var body: some View {
-        GeometryReader { g in
-            let lines = constellation.unwrappedLines
-            let pts = lines.flatMap { $0 }
-            let ras = pts.map { $0[0] }, decs = pts.map { $0[1] }
-            if let minRA = ras.min(), let maxRA = ras.max(), let minDec = decs.min(), let maxDec = decs.max(), maxRA > minRA, maxDec > minDec {
-                Path { p in
-                    for line in lines {
-                        for (i, pt) in line.enumerated() {
-                            let x = g.size.width * (1 - (pt[0] - minRA) / (maxRA - minRA))   // RA increases to the left
-                            let y = g.size.height * (1 - (pt[1] - minDec) / (maxDec - minDec))
-                            i == 0 ? p.move(to: CGPoint(x: x, y: y)) : p.addLine(to: CGPoint(x: x, y: y))
-                        }
-                    }
-                }.stroke(Theme.accent.opacity(0.8), lineWidth: 1)
-            }
+/// The owner's constellation artwork (v0.6.2): the figure with its star plot on top, fitted rather than cropped.
+/// The build copies Resources/Constellations into the app; `scripts/import-constellations.sh` makes the files.
+struct ConstellationArt: View {
+    let figure: NSImage
+    let plot: NSImage
+
+    init?(id: String) {
+        func layer(_ name: String) -> NSImage? {
+            Bundle.main.url(forResource: "\(id)-\(name)", withExtension: "heic", subdirectory: "Constellations").flatMap(NSImage.init(contentsOf:))
         }
+        guard let f = layer("figure"), let p = layer("plot") else { return nil }
+        figure = f; plot = p
+    }
+
+    var body: some View {
+        ZStack {
+            Image(nsImage: figure).resizable().aspectRatio(contentMode: .fit)
+            Image(nsImage: plot).resizable().aspectRatio(contentMode: .fit)
+        }
+        .accessibilityHidden(true)
     }
 }

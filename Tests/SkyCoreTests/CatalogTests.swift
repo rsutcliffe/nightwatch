@@ -43,14 +43,13 @@ import Foundation
     #expect(ser.lines.count >= 2)
 }
 
-@Test func figureCrossingZeroHoursIsUnwrapped() throws {
-    let and = try #require(try Constellations.bundled().first { $0.id == "And" })
-    let raw = and.lines.flatMap { $0.map { $0[0] } }
-    #expect(raw.max()! - raw.min()! > 12)            // straddles 0 h in the stored 0..24 form
-    let ras = and.unwrappedLines.flatMap { $0.map { $0[0] } }
-    #expect(ras.max()! - ras.min()! < 6)
-    let cyg = try #require(try Constellations.bundled().first { $0.id == "Cyg" })
-    #expect(cyg.unwrappedLines == cyg.lines)          // nowhere near 0 h: untouched
+/// The owner's artwork (v0.6.2): every catalogue constellation has a figure and a star-plot layer, and nothing extra.
+@Test func everyConstellationHasArtwork() throws {
+    let dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../Resources/Constellations").standardized
+    let files = Set(try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".heic") })   // Finder's .DS_Store is not art
+    let ids = Set(try Constellations.bundled().map(\.id))
+    #expect(ids.count == 88)
+    #expect(files == Set(ids.flatMap { ["\($0)-figure.heic", "\($0)-plot.heic"] }))
 }
 
 @Test func catalogueIDsAreSpacedWithoutLeadingZeros() {

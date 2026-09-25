@@ -23,7 +23,9 @@ struct DetailView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                Text("dashed = your field of view").font(.caption2).foregroundStyle(Theme.dim).frame(maxWidth: .infinity, alignment: .trailing)
+                if target.group != .constellations {
+                    Text("dashed = your field of view").font(.caption2).foregroundStyle(Theme.dim).frame(maxWidth: .infinity, alignment: .trailing)
+                }
                 Text(target.name).font(.title2.weight(.semibold))
                 Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? "")).foregroundStyle(Theme.dim)
                 if let s = store.site, let w = store.plan?.primary {

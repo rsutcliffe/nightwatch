@@ -98,7 +98,6 @@ final class Store: ObservableObject {
         forecast.map { abs($0.latitude - s.latitude) <= 0.01 && abs($0.longitude - s.longitude) <= 0.01 } ?? false
     }
 
-    func constellation(_ id: String) -> Constellation? { constellations.first { $0.id == id } }
 
     var copy: Copy { Copy(flavour: config.flavour) }
     var site: Site? { config.activeSite(auto: autoSite) }
