@@ -94,7 +94,7 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
 }
 
 @Test func brightMoonCarriesItsFrameFill() throws {
-    // The first hour of July 2026 with the Moon over half lit and 15° up at Home stands in for a bright window.
+    // The first hour of July 2026 with the Moon over half lit and 15° up at the test site stands in for a bright window.
     let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
     let t = try #require((0..<(31 * 24)).lazy.map { utc(2026, 7, 1, 0, 0).addingTimeInterval(Double($0) * 3600) }.first {
         let m = Ephemeris.moon(at: $0, site: testSite); return m.illumination > 0.5 && m.position.altDeg > 20

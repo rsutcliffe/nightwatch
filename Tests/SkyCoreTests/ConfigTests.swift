@@ -144,7 +144,7 @@ private let york = site("University of York - Astrocampus", 53.943, -1.060, bort
 }
 
 @Test func visitingADarkSiteDoesNotSaveItAndGoingHomeReturns() {
-    var c = Config(); c.sites = [testSite]; c.activeSiteName = "Test site"
+    var c = Config(); c.sites = [testSite]; c.activeSiteName = "Home"
     c.visit(york)
     #expect(c.sites == [testSite] && c.activeSite(auto: nil) == york && c.isAway(auto: nil))
     c.goHome()
@@ -152,7 +152,7 @@ private let york = site("University of York - Astrocampus", 53.943, -1.060, bort
 }
 
 @Test func visitingASavedPlaceSelectsItInstead() {
-    var c = Config(); c.sites = [testSite, york]; c.activeSiteName = "Test site"
+    var c = Config(); c.sites = [testSite, york]; c.activeSiteName = "Home"
     c.visit(site("Astrocampus", 53.9432, -1.0605))              // within 0.001° of the saved York site
     #expect(c.visiting == nil && c.activeSiteName == york.name)
 }
@@ -185,7 +185,7 @@ private let york = site("University of York - Astrocampus", 53.943, -1.060, bort
 @Test func olderConfigsDecodeWithoutTheNewKeys() throws {
     let json = #"{"sites":[{"name":"Home","latitude":54.0,"longitude":-1.5,"elevationM":100,"timeZoneID":"Europe/London","bortle":5}],"activeSiteName":"Test site"}"#
     let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
-    #expect(c.homeSiteName == nil && c.visiting == nil && c.homeSite(auto: nil)?.name == "Test site")
+    #expect(c.homeSiteName == nil && c.visiting == nil && c.homeSite(auto: nil)?.name == "Home")
 }
 
 @Test func bortleLevelsHavePlainNames() {
@@ -197,7 +197,7 @@ private let york = site("University of York - Astrocampus", 53.943, -1.060, bort
     var c = Config(); c.sites = [testSite]; c.homeIsThisMac = true
     let mac = site("Here", 51.5, -0.1), moved = site("Here", 51.52, -0.12)
     #expect(c.homeSite(auto: mac) == mac && !c.isAway(auto: moved))   // on Automatic at home: a moving fix never flickers "away"
-    c.choose(savedName: "Test site")
+    c.choose(savedName: "Home")
     #expect(c.isAway(auto: mac))
     c.goHome()
     #expect(c.activeSiteName == nil && c.visiting == nil)

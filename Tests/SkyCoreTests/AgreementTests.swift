@@ -5,7 +5,7 @@ import Foundation
 private let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
 private let rule = GoRule()   // 3 h at 25 %
 
-/// A plan over an Home November night (GMT, so UTC is local) with the given primary hours from 17:00.
+/// A plan over a test-site November night (GMT, so UTC is local) with the given primary hours from 17:00.
 private func plan(primaryCloud: [Int], mode: PlanMode = .dark) throws -> NightPlan {
     let night = try Ephemeris.night(localDate: utc(2026, 11, 20, 12, 0), site: testSite)
     let t0 = utc(2026, 11, 20, 17, 0)

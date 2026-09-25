@@ -11,7 +11,7 @@ private func hours(from t0: Date, _ cloud: [Int]) -> [HourlyConditions] {
                          tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil)
     }
 }
-/// Plans for an Home night from `day` (12:00 UTC), hourly cloud from 17:00 UTC that day.
+/// Plans for a test-site night from `day` (12:00 UTC), hourly cloud from 17:00 UTC that day.
 private func plans(_ day: Date, _ cloud: [Int], bright: Bool = false) throws -> (NightPlan, NightPlan) {
     let night = try Ephemeris.night(localDate: day, site: testSite)
     let next = try Ephemeris.night(localDate: day.addingTimeInterval(86_400), site: testSite)

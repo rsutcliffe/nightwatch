@@ -117,16 +117,16 @@ private func reasonHours(_ clouds: [Int], from t0: Date) -> [HourlyConditions] {
     #expect(r == "Longest clear run is 2 h from 23:00; the rule needs 3 h.")
 }
 
-// MARK: - v0.3 bright nights (Home; nights chosen from a probe of summer 2026)
+// MARK: - v0.3 bright nights (the test site; nights chosen from a probe of summer 2026)
 
-private let testSiteBright = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+private let brightTestSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
 private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
 
-/// Evening of `day` at Home with every hour from 18:00 UTC at `cloud` percent.
+/// Evening of `day` at the test site with every hour from 18:00 UTC at `cloud` percent.
 private func brightNight(_ month: Int, _ day: Int, cloud: Int) throws -> (Night, Forecast) {
-    let night = try Ephemeris.night(localDate: utc(2026, month, day, 12, 0), site: testSiteBright)
+    let night = try Ephemeris.night(localDate: utc(2026, month, day, 12, 0), site: brightTestSite)
     let t0 = utc(2026, month, day, 18, 0)
-    let fc = Forecast(fetchedAt: t0, latitude: testSiteBright.latitude, longitude: testSiteBright.longitude,
+    let fc = Forecast(fetchedAt: t0, latitude: brightTestSite.latitude, longitude: brightTestSite.longitude,
                       hours: (0..<14).map { hour(t0, $0, cloud: cloud) }, seeingSource: nil)
     return (night, fc)
 }
@@ -134,7 +134,7 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
 
 @Test func brightPlanOnAJulyNightWithTheMoonUp() throws {
     let (night, fc) = try brightNight(7, 30, cloud: 5)   // Moon 98 % and Saturn near 20 degrees mid-window
-    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn)
     #expect(p.mode == .bright)
     #expect(p.qualifies && p.primary != nil)
     #expect(p.brightTargets.first?.id == "moon")
@@ -144,34 +144,34 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
 
 @Test func brightModeOffKeepsTheDarkResult() throws {
     let (night, fc) = try brightNight(7, 30, cloud: 5)
-    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: nil)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: nil)
     #expect(p.mode == .dark && !p.qualifies)
     #expect(p.brightTargets.isEmpty)
 }
 
 @Test func brightPlanNeedsClearHours() throws {
     let (night, fc) = try brightNight(7, 30, cloud: 90)
-    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn)
     #expect(p.mode == .bright && !p.qualifies)
 }
 
 @Test func brightPlanNeedsATargetUp() throws {
     let (night, fc) = try brightNight(6, 15, cloud: 5)   // nothing at 15 degrees in the nautical window
-    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn)
     #expect(p.mode == .bright && !p.qualifies)
     let ns = try #require(night.nauticalStart), ne = try #require(night.nauticalEnd)
-    #expect(!Planner.anyBrightTargetUp(from: ns, to: ne, site: testSiteBright))
+    #expect(!Planner.anyBrightTargetUp(from: ns, to: ne, site: brightTestSite))
 }
 
 @Test func darkPlanWinsWhenTheDarkRuleIsMet() throws {
     let (night, fc) = try brightNight(9, 24, cloud: 5)
-    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn)
     #expect(p.mode == .dark && p.qualifies)
 }
 
 @Test func brightScoreIgnoresTheMoonPenalty() throws {
     let (night, fc) = try brightNight(7, 30, cloud: 5)
-    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: testSiteBright, fov: dwarfMini, rule: GoRule(), bright: brightOn)
+    let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: brightTestSite, fov: dwarfMini, rule: GoRule(), bright: brightOn)
     let ns = try #require(night.nauticalStart), ne = try #require(night.nauticalEnd)
     let penalised = Planner.score(ScoreInputs(darkHours: p.darkHours, windows: p.windows, darkness: (ns, ne), moonIllumination: 1, moonAboveFraction: 1, maxCloudPct: 25))
     #expect(p.score - penalised == 15)   // the Moon is the target, so its whole 15-point term is kept
@@ -180,20 +180,20 @@ private var brightOn: BrightSettings { var b = BrightSettings(); b.enabled = tru
 @Test func noWindowReasonInBrightMode() {
     let t0 = utc(2026, 6, 27, 22, 0)
     let clouds = Planner.noWindowReason(darkHours: reasonHours([90, 90], from: t0), darkStart: t0, darkEnd: t0.addingTimeInterval(2 * 3600),
-                                        rule: GoRule(minHours: 1), site: testSiteBright, mode: .bright)
+                                        rule: GoRule(minHours: 1), site: brightTestSite, mode: .bright)
     #expect(clouds == "Cloud never below 90% during nautical darkness; the bright rule allows 25%.")
     let none = Planner.noWindowReason(darkHours: reasonHours([5, 5], from: t0), darkStart: t0, darkEnd: t0.addingTimeInterval(2 * 3600),
-                                      rule: GoRule(minHours: 1), site: testSiteBright, mode: .bright, brightTargetsUp: false)
+                                      rule: GoRule(minHours: 1), site: brightTestSite, mode: .bright, brightTargetsUp: false)
     #expect(none == "No Moon or planet 15° up during nautical darkness.")
 }
 
 @Test func brightReasonMatchesTheRule() throws {
-    // 20 June at Home: 1.56 h of nautical darkness. One clear hour that straddles a bound is not a 1 h run.
-    let night = try Ephemeris.night(localDate: utc(2026, 6, 20, 12, 0), site: testSiteBright)
+    // 20 June at the test site: 1.56 h of nautical darkness. One clear hour that straddles a bound is not a 1 h run.
+    let night = try Ephemeris.night(localDate: utc(2026, 6, 20, 12, 0), site: brightTestSite)
     let ns = try #require(night.nauticalStart), ne = try #require(night.nauticalEnd)
     let t0 = Date(timeIntervalSince1970: floor(ns.timeIntervalSince1970 / 3600) * 3600)   // the hour containing nautical dusk
     let hrs = reasonHours([5, 90, 90], from: t0)
-    let r = Planner.noWindowReason(darkHours: hrs, darkStart: ns, darkEnd: ne, rule: GoRule(minHours: 1), site: testSiteBright, mode: .bright)
+    let r = Planner.noWindowReason(darkHours: hrs, darkStart: ns, darkEnd: ne, rule: GoRule(minHours: 1), site: brightTestSite, mode: .bright)
     #expect(r != nil && !(r!.contains("is 1.0 h") || r!.contains("is 1 h")))
     #expect(r!.contains("needs 1.0 h") || r!.hasPrefix("No Moon or planet"))
 }

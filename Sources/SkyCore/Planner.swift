@@ -375,7 +375,7 @@ extension Planner {
     }
 
     /// Bright targets must stand this high. Summer Moons and planets are low at British latitudes: at the middle of
-    /// nautical darkness nothing reached 30 degrees on any of 94 summer nights at Home in 2026 (owner ruling, 24 September 2026).
+    /// nautical darkness nothing reached 30 degrees on any of 94 summer nights at 54° N in 2026 (owner ruling, 24 September 2026).
     public static let brightTargetFloorDeg = 15.0
     private static let brightPlanets: [Planet] = [.mercury, .venus, .mars, .jupiter, .saturn]   // the naked-eye ones
 

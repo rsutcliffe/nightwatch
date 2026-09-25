@@ -145,7 +145,7 @@ public struct AuroraSettings: Codable, Equatable, Sendable {
 }
 
 /// Bright-night mode (v0.3): Moon and planets on nights when the dark rule cannot be met.
-/// Windows are bounded by nautical twilight; 1 h minimum by owner ruling (Home gets 1.56 h at the solstice).
+/// Windows are bounded by nautical twilight; 1 h minimum by owner ruling (a site at 54° N gets about 1.5 h at the solstice).
 public struct BrightSettings: Codable, Equatable, Sendable {
     public var enabled = false
     public var minHours: Double = 1

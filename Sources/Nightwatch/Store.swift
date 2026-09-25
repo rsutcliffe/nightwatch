@@ -105,7 +105,7 @@ final class Store: ObservableObject {
     var site: Site? { config.activeSite(auto: autoSite) }
     var homeSite: Site? { config.homeSite(auto: autoSite) }
     var isAway: Bool { config.isAway(auto: autoSite) }
-    /// "Test site", or "my location" when home is this Mac's location.
+    /// "Home", or "my location" when home is this Mac's location.
     var homeLabel: String { config.sites.isEmpty ? "my location" : (homeSite?.name ?? "home") }
     var isStale: Bool { (forecast?.fetchedAt).map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true }
     var iconName: String { Theme.icon(for: plan, stale: isStale, now: Date()) }
