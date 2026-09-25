@@ -47,6 +47,9 @@ struct WelcomeView: View {
                     }
                     if state.locating { ProgressView().controlSize(.small) }
                 }
+                if state.locating {
+                    Text("If macOS asks, choose Allow.").font(.caption).foregroundStyle(Theme.dim)
+                }
                 if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(.caption) }
                 if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
                     Text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
@@ -72,6 +75,10 @@ struct WelcomeView: View {
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store) }
+        // Notifications are asked for as the welcome closes, after it has said what they are for: from Start watching
+        // or the close button alike, so nobody is left never asked. Once answered, the alerts are worked out straight away
+        // (recompute, not refresh: a refresh already in flight would make a refresh return early).
+        .onDisappear { Task { @MainActor in await Notifier.requestAuthorisation(); await store.recompute(now: Date()) } }
     }
 
     private func useThisMac() {

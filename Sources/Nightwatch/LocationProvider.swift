@@ -5,22 +5,30 @@ import SkyCore
 final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<Site?, Never>?
-    /// A fix that arrives with no `requestOnce` waiting: authorisation granted after the 15 s timeout.
+    private var request = 0   // numbers each requestOnce, so an earlier request's timeout never ends a later one
+    /// A fix that arrives with no `requestOnce` waiting: authorisation granted after the timeout (60 s while asking, 15 s otherwise).
     var onSite: ((Site) -> Void)?
 
     private var allowed: Bool { [.authorizedAlways, .authorized].contains(manager.authorizationStatus) }
 
     /// One fix, or nil when denied, restricted or timed out. Never prompts more than macOS itself does.
-    func requestOnce() async -> Site? {
+    /// When macOS has not asked yet, this asks and waits for the answer (up to a minute, time to read the prompt) before
+    /// requesting a fix: a fix requested before the answer fails at once, which showed "not available" while the prompt
+    /// was still on screen (v0.6.10).
+    @MainActor func requestOnce() async -> Site? {   // on main, with the delegate calls and the timeout
         guard continuation == nil else { return nil }   // one request in flight; a second would leak its continuation
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
-        if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
-        guard allowed || manager.authorizationStatus == .notDetermined else { return nil }
+        let asking = manager.authorizationStatus == .notDetermined
+        guard allowed || asking else { return nil }
+        request += 1
+        let this = request
         return await withCheckedContinuation { c in
             continuation = c
-            manager.requestLocation()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in self?.finish(nil) }
+            if asking { manager.requestWhenInUseAuthorization() } else { manager.requestLocation() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + (asking ? 60 : 15)) { [weak self] in
+                if self?.request == this { self?.finish(nil) }
+            }
         }
     }
 
@@ -29,9 +37,10 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Se
         continuation = nil
     }
 
-    /// The user answered the prompt (possibly long after `requestOnce` gave up): ask for a fix now.
+    /// The user answered the prompt (possibly long after `requestOnce` gave up): ask for a fix now, or end a waiting
+    /// request at once on Don't Allow.
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        if allowed { manager.requestLocation() }
+        if allowed { manager.requestLocation() } else if manager.authorizationStatus != .notDetermined { finish(nil) }
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {

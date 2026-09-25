@@ -74,6 +74,7 @@ if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
   <key>com.apple.application-identifier</key><string>$TEAM.$BUNDLE_ID</string>
   <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
+  <key>com.apple.security.personal-information.location</key><true/>
 </dict></plist>
 ENT
   codesign --force --sign "$IDENTITY" --entitlements build/Nightwatch.entitlements --options runtime "$APP"

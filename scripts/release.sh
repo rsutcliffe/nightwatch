@@ -88,6 +88,7 @@ if [[ -n "$PROFILE" ]]; then
   <key>com.apple.application-identifier</key><string>$TEAM.$BUNDLE_ID</string>
   <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
+  <key>com.apple.security.personal-information.location</key><true/>
 </dict></plist>
 ENT
 else
@@ -97,6 +98,7 @@ else
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
+  <key>com.apple.security.personal-information.location</key><true/>
 </dict></plist>
 ENT
 fi
