@@ -34,12 +34,6 @@ struct TargetsView: View {
 
     private var sections: [BrowserSection] { TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
 
-    private func move(_ direction: MoveCommandDirection) {
-        guard let i = sections.firstIndex(of: ui.section) else { return }
-        let next = direction == .up ? i - 1 : (direction == .down ? i + 1 : i)
-        guard sections.indices.contains(next), next != i else { return }
-        ui.section = sections[next]; ui.selected = nil
-    }
 
     /// The filtered, sorted cards at `now`. "Best now" sorts by altitude at that instant, so the grid passes a clock tick.
     private func visible(at now: Date) -> [RankedTarget] {
@@ -53,23 +47,13 @@ struct TargetsView: View {
 
     var body: some View {
         NavigationSplitView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(sections, id: \.self) { section in
-                        Button { ui.section = section; ui.selected = nil } label: { sidebarRow(section) }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(ui.section == section ? .isSelected : [])
-                            .background {
-                                if ui.section == section {
-                                    Color.clear.nightwatchGlass(in: RoundedRectangle(cornerRadius: 6), fill: Color.white.opacity(0.14), tint: Color.white.opacity(0.14))
-                                }
-                            }
-                    }
-                }
-                .padding(8)
+            // The native sidebar list: v0.4's hand-built column of buttons drew its rows about two rows below where it took
+            // clicks (owner, 25 September 2026: a click on Planets and Moon selected Constellations). The list also brings
+            // the standard arrow keys, type-to-select and VoiceOver selection back.
+            List(sections, id: \.self, selection: Binding(get: { ui.section }, set: { if let s = $0 { ui.section = s; ui.selected = nil } })) { section in
+                sidebarRow(section).tag(section)
             }
-            .focusable()   // the system sidebar is already glass on macOS 26, so no second layer here
-            .onMoveCommand { move($0) }   // arrow keys step through the sections, as the List did
+            .listStyle(.sidebar)
             .safeAreaInset(edge: .bottom) { filters }
             .navigationSplitViewColumnWidth(232)
         } detail: {
@@ -99,7 +83,7 @@ struct TargetsView: View {
                 Label("Dark sites", systemImage: "moon.stars"); Spacer(); Text("\(store.darkSites.count)").foregroundStyle(Tokens.textSecondary)
             }
         }
-        .font(.system(size: 12)).padding(.horizontal, 8).padding(.vertical, 5).contentShape(Rectangle())
+        .font(.system(size: 12))
     }
 
     /// Toggles with the Moon line above them, so "Include Moon-washed" has context (follow-on 5).

@@ -70,3 +70,16 @@ struct TileRow<Content: View>: View {
         HStack(alignment: .top, spacing: spacing) { content() }.fixedSize(horizontal: false, vertical: true)
     }
 }
+
+/// The popover's secondary button (Patrol, All targets): a filled surface.button pill with primary text, so it reads as a
+/// button rather than a caption. One style, so the two can never drift apart.
+struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 11, weight: .medium)).foregroundStyle(Tokens.textPrimary)
+            .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 22)
+            .background(Tokens.surfaceButton.opacity(configuration.isPressed ? 0.6 : 1), in: RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+    }
+}
+

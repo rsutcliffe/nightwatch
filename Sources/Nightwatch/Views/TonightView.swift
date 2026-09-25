@@ -166,7 +166,9 @@ struct TonightView: View {
             HStack {
                 Text(picks(plan).isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                 Spacer()
-                Button("All targets →") { open("targets") }.buttonStyle(.plain).font(.system(size: 10)).foregroundStyle(Tokens.textPrimary)
+                Button("All targets →") { open("targets") }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .help("Open the Targets window: everything up tonight, with timelines, sorting and dark sites")
             }
             if plan.mode == .bright, plan.brightTargets.isEmpty {
                 Text("No Moon or planet in a clear window tonight.").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
@@ -213,11 +215,8 @@ struct TonightView: View {
                 .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).fixedSize()
                 Spacer()
                 if store.refreshing { ProgressView().controlSize(.small) }
-                Button { Task { await store.refresh(force: true) } } label: {
-                    Text(store.copy.refresh).font(.system(size: 11)).padding(.horizontal, 10).frame(minWidth: 44, minHeight: 19)
-                }
-                .buttonStyle(.plain)
-                .background(Tokens.surfaceButton, in: RoundedRectangle(cornerRadius: 5))
+                Button(store.copy.refresh) { Task { await store.refresh(force: true) } }
+                .buttonStyle(SecondaryButtonStyle())
                 .help("Fetch the forecast now and recompute tonight")
             }
             if let f = store.forecast, let s = store.site {
