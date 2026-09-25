@@ -1,4 +1,5 @@
 import SwiftUI
+import NightwatchUI
 import SkyCore
 
 enum BrowserSection: Hashable { case group(TargetGroup), darkSites }
@@ -151,7 +152,7 @@ struct TargetsView: View {
                     .pickerStyle(.segmented).fixedSize()
                 }
                 if let p = store.plan, let s = store.site {
-                    ClearSkyBars(plan: p, site: s, trackHeight: 14, labels: false).frame(maxWidth: 360)
+                    ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
                     if p.darkSpan == nil {
                         Text("No astronomical darkness tonight.").font(.caption).foregroundStyle(Tokens.textSecondary)
                     } else if p.primary == nil {

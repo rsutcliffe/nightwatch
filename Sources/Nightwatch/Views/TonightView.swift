@@ -1,4 +1,5 @@
 import SwiftUI
+import NightwatchUI
 import SkyCore
 
 struct TonightView: View {
@@ -10,7 +11,7 @@ struct TonightView: View {
             header
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
-                ClearSkyBars(plan: plan, site: site, source: store.forecast?.cloudSource ?? "Open-Meteo")
+                ClearSkyBars(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site), source: store.forecast?.cloudSource ?? "Open-Meteo")
                 notice(site)
                 tiles(plan, site)
                 best(plan, site)
@@ -48,18 +49,8 @@ struct TonightView: View {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// The plain reason under the no-window verdict: astronomical darkness and the go rule on a dark night,
-    /// nautical darkness and the bright rule on a bright one.
     private func noWindowReason(_ plan: NightPlan, _ site: Site) -> String? {
-        if plan.mode == .bright {
-            guard let ns = plan.night.nauticalStart, let ne = plan.night.nauticalEnd else { return nil }
-            let r = store.config.goRule
-            return Planner.noWindowReason(darkHours: plan.darkHours, darkStart: ns, darkEnd: ne,
-                                          rule: GoRule(minHours: store.config.brightNights.minHours, maxCloudPct: r.maxCloudPct, minAltitudeDeg: r.minAltitudeDeg),
-                                          site: site, mode: .bright, brightTargetsUp: Planner.anyBrightTargetUp(from: ns, to: ne, site: site))
-        }
-        guard let ds = plan.night.darkStart, let de = plan.night.darkEnd else { return nil }
-        return Planner.noWindowReason(darkHours: plan.darkHours, darkStart: ds, darkEnd: de, rule: store.config.goRule, site: site)
+        Planner.noWindowReasonText(plan: plan, rule: store.config.goRule, bright: store.config.brightNights, site: site)
     }
 
     private func verdict(_ plan: NightPlan, _ site: Site) -> some View {

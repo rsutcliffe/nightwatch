@@ -1,14 +1,6 @@
 import SwiftUI
+import NightwatchUI
 import SkyCore
-
-/// Amber warning dot with a soft glow. Always sits beside a text label: colour is never the only signal.
-struct WarningDot: View {
-    var size: CGFloat = 5
-    var body: some View {
-        Circle().fill(Tokens.statusWarning).frame(width: size, height: size)
-            .shadow(color: Tokens.statusWarning.opacity(0.7), radius: 2).accessibilityHidden(true)
-    }
-}
 
 /// A popover stat tile: label over value, an optional amber hint, and a warning state (amber outline and dot).
 /// A missing value reads "No data" in the secondary colour. Values wrap rather than truncate.

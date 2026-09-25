@@ -2,10 +2,12 @@ import SwiftUI
 import SkyCore
 
 /// Sky score inside a 60-tick 12-hour bezel (handover shape table: outer radius 45.5 pt, hour ticks 8 × 1.7, minute ticks 4.5 × 1.1).
-struct ScoreBezel: View {
+public struct ScoreBezel: View {
     let score: Int
     let slots: [BezelSlot]
     let label: String
+
+    public init(score: Int, slots: [BezelSlot], label: String) { self.score = score; self.slots = slots; self.label = label }
 
     private func colour(_ s: BezelSlot) -> Color {
         switch s { case .clear: Tokens.accentClear; case .partCloud: Tokens.tickPartCloud; case .cloudy: Tokens.tickCloudy; case .daylight: Tokens.tickDaylight }
@@ -27,7 +29,7 @@ struct ScoreBezel: View {
         }
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             Circle().stroke(Color.white.opacity(0.09), lineWidth: 0.75).frame(width: 66, height: 66)
             ticks { $0 != .clear }

@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "SkyCore", targets: ["SkyCore"]),
+        .library(name: "NightwatchUI", targets: ["NightwatchUI"]),
         .executable(name: "Nightwatch", targets: ["Nightwatch"])
     ],
     dependencies: [
@@ -19,7 +20,8 @@ let package = Package(
             path: "Sources/SkyCore",
             resources: [.copy("Resources")]
         ),
-        .executableTarget(name: "Nightwatch", dependencies: ["SkyCore"], path: "Sources/Nightwatch", exclude: ["Info.plist"]),
+        .target(name: "NightwatchUI", dependencies: ["SkyCore"], path: "Sources/NightwatchUI"),
+        .executableTarget(name: "Nightwatch", dependencies: ["SkyCore", "NightwatchUI"], path: "Sources/Nightwatch", exclude: ["Info.plist"]),
         .testTarget(
             name: "SkyCoreTests",
             dependencies: ["SkyCore"],

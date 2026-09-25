@@ -1,4 +1,5 @@
 import SwiftUI
+import NightwatchUI
 import SkyCore
 
 enum Theme {
@@ -17,14 +18,5 @@ enum Theme {
         return now >= w.start.addingTimeInterval(-1800) && now < w.end ? "star.fill" : "star.circle"
     }
 
-    static func glyph(for group: TargetGroup) -> String {
-        switch group {
-        case .nebulae: "cloud.fill"
-        case .galaxies: "hurricane"
-        case .clusters: "sparkles"
-        case .planets: "circle.circle"
-        case .events: "calendar"
-        case .constellations: "point.3.connected.trianglepath.dotted"
-        }
-    }
+    static func glyph(for group: TargetGroup) -> String { group.symbolName }
 }

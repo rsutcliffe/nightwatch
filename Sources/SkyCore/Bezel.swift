@@ -1,6 +1,6 @@
 import Foundation
 
-public enum BezelSlot: Sendable, Equatable { case clear, partCloud, cloudy, daylight }
+public enum BezelSlot: String, Codable, Sendable, Equatable { case clear, partCloud, cloudy, daylight }
 
 extension NightPlan {
     /// The darkness the plan is measured in: nautical on a bright plan, astronomical otherwise.

@@ -1,4 +1,5 @@
 import SwiftUI
+import NightwatchUI
 
 /// Liquid Glass on macOS 26 and later with Reduce Transparency off; the solid `fill` otherwise (spec §3).
 /// Apply it after every other appearance modifier, as Apple's guidance asks.

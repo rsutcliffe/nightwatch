@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import NightwatchUI
 import SkyCore
 
 /// Real Moon image for the hour in question, from NASA SVS Dial-a-Moon, cached per UTC hour.
