@@ -265,3 +265,115 @@ private func bright(_ p: NightPlan) -> NightPlan {
     #expect(String(decoding: data, as: UTF8.self).contains("\"requireAgreement\":true"))
     #expect(try JSONDecoder().decode(AlertSettings.self, from: data) == s)
 }
+
+// After a heads-up or go, the message follows both forecasts (owner ruling, 25 September 2026): both lose the window →
+// stand down; they split → "less certain", saying what each one sees.
+private func with(_ p: NightPlan, _ a: Agreement?) -> NightPlan { var q = p; q.agreement = a; return q }
+private let optIn: AlertSettings = { var s = AlertSettings(); s.requireAgreement = true; return s }()
+
+@Test func standDownWhenBothForecastsLoseTheWindow() throws {
+    let (_, _, bad, _) = try fixtures()
+    let r = AlertEngine.step(now: bad.night.sunset, tonight: with(bad, .agreeNoWindow), tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
+                             settings: settings, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
+    #expect(r.notification?.kind == .cancel && r.state.stage == .cancelled)
+    #expect(r.notification?.title == "Stand down. Clouds moving in")
+    #expect(r.notification?.body == "Apple Weather and Open-Meteo both see cloud.")
+    // With no second opinion the only forecast decides, as before.
+    let solo = AlertEngine.step(now: bad.night.sunset, tonight: bad, tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
+                                settings: settings, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
+    #expect(solo.notification?.kind == .cancel && solo.notification?.body == copy.noWindow)
+}
+
+@Test func lessCertainWhenOnlyAppleWeatherLosesTheWindow() throws {
+    let (_, good, bad, _) = try fixtures()
+    let run = (good.primary!.start, good.primary!.end)
+    let r = AlertEngine.step(now: bad.night.sunset, tonight: with(bad, .clearRun(run.0, run.1)), tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
+                             settings: settings, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
+    #expect(r.notification?.kind == .lessCertain && r.state.stage == .doubted)
+    #expect(r.notification?.title == "Hold fire. Forecasts disagree")
+    #expect(r.notification?.body == "Apple Weather now sees cloud. Open-Meteo has a clear run \(Copy.hhmm(run.0, site: site))–\(Copy.hhmm(run.1, site: site)).")
+    #expect(Copy(flavour: .plain).lessCertainTitle == "Less certain. Forecasts disagree")
+}
+
+@Test func lessCertainWhenOnlyOpenMeteoDisagreesAndTheOptInHoldsTheGo() throws {
+    let (_, good, _, _) = try fixtures()
+    let split = with(good, .noWindow), now = good.night.sunset
+    let r = AlertEngine.step(now: now, tonight: split, tomorrow: nil, state: AlertState(nightKey: good.night.key, stage: .headsUpSent),
+                             settings: optIn, forecastFetchedAt: now, site: site, copy: copy)
+    #expect(r.notification?.kind == .lessCertain && r.state.stage == .doubted)
+    #expect(r.notification?.body == "Apple Weather still sees clear from \(Copy.hhmm(good.primary!.start, site: site)). Open-Meteo sees no clear window.")
+    // Opt-in off: nothing is held back, so no message; the go nudge still fires and carries Open-Meteo's line.
+    let off = AlertEngine.step(now: now, tonight: split, tomorrow: nil, state: AlertState(nightKey: good.night.key, stage: .headsUpSent),
+                               settings: settings, forecastFetchedAt: now, site: site, copy: copy)
+    #expect(off.notification == nil && off.state.stage == .headsUpSent)
+    // Once only: a second patrol with the same split says nothing.
+    let again = AlertEngine.step(now: now.addingTimeInterval(600), tonight: split, tomorrow: nil, state: r.state, settings: optIn, forecastFetchedAt: now, site: site, copy: copy)
+    #expect(again.notification == nil && again.state.stage == .doubted)
+}
+
+@Test func lessCertainResolves() throws {
+    let (_, good, bad, _) = try fixtures()
+    let doubted = AlertState(nightKey: good.night.key, stage: .doubted)
+    // Both lose the window: stand down.
+    let down = AlertEngine.step(now: bad.night.sunset, tonight: with(bad, .agreeNoWindow), tomorrow: nil, state: doubted, settings: optIn,
+                                forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
+    #expect(down.notification?.kind == .cancel && down.state.stage == .cancelled)
+    // Both agree again: the go nudge fires at its time.
+    let due = good.primary!.start.addingTimeInterval(-29 * 60)
+    let go = AlertEngine.step(now: due, tonight: with(good, .agree), tomorrow: nil, state: doubted, settings: optIn, forecastFetchedAt: due, site: site, copy: copy)
+    #expect(go.notification?.kind == .go && go.state.stage == .goSent)
+}
+
+@Test func lessCertainAfterGo() throws {
+    let (_, good, bad, _) = try fixtures()
+    let run = (good.primary!.start, good.primary!.end), now = good.primary!.start
+    let r = AlertEngine.step(now: now, tonight: with(bad, .clearRun(run.0, run.1)), tomorrow: nil, state: AlertState(nightKey: good.night.key, stage: .goSent),
+                             settings: settings, forecastFetchedAt: now, site: site, copy: copy)
+    #expect(r.notification?.kind == .lessCertain && r.state.stage == .doubted)
+}
+
+@Test func noSecondGoAndOneHoldFirePerNightWhenForecastsFlipFlop() throws {
+    let (_, good, _, _) = try fixtures()
+    let now = good.primary!.start.addingTimeInterval(600)
+    var st = AlertState(nightKey: good.night.key, stage: .goSent, goFired: true)
+    var notes: [AlertNotification.Kind] = []
+    for a in [Agreement.noWindow, .agree, .noWindow, .agree] {
+        let r = AlertEngine.step(now: now, tonight: with(good, a), tomorrow: nil, state: st, settings: optIn, forecastFetchedAt: now, site: site, copy: copy)
+        if let n = r.notification { notes.append(n.kind) }
+        st = r.state
+    }
+    #expect(notes == [.lessCertain])            // one "Hold fire", no second "All's well"
+    #expect(st.stage == .goSent)
+}
+
+@Test func nothingFiresAfterTheWindowHasClosed() throws {
+    let (_, good, _, _) = try fixtures()
+    let after = good.primary!.end.addingTimeInterval(600)
+    let late = AlertEngine.step(now: after, tonight: with(good, .agree), tomorrow: nil, state: AlertState(nightKey: good.night.key, stage: .doubted),
+                                settings: optIn, forecastFetchedAt: after, site: site, copy: copy)
+    #expect(late.notification == nil)
+    let split = AlertEngine.step(now: after, tonight: with(good, .noWindow), tomorrow: nil, state: AlertState(nightKey: good.night.key, stage: .goSent),
+                                 settings: optIn, forecastFetchedAt: after, site: site, copy: copy)
+    #expect(split.notification == nil && split.state.stage == .done)
+}
+
+@Test func lessCertainAfterGoWhileAppleIsStillClear() throws {
+    let (_, good, _, _) = try fixtures()
+    let now = good.primary!.start.addingTimeInterval(600)
+    let r = AlertEngine.step(now: now, tonight: with(good, .noWindow), tomorrow: nil, state: AlertState(nightKey: good.night.key, stage: .goSent),
+                             settings: optIn, forecastFetchedAt: now, site: site, copy: copy)
+    #expect(r.notification?.kind == .lessCertain && r.state.stage == .doubted)
+}
+
+@Test func holdFireRespectsTheSwitchAndQuietHours() throws {
+    let (_, good, bad, _) = try fixtures()
+    let run = with(bad, .clearRun(good.primary!.start, good.primary!.end))
+    var off = settings; off.cancelOnDowngrade = false
+    let r = AlertEngine.step(now: bad.night.sunset, tonight: run, tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
+                             settings: off, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
+    #expect(r.notification == nil && r.state.stage == .headsUpSent)
+    var quiet = settings; quiet.quietStartHour = 0; quiet.quietEndHour = 23
+    let q = AlertEngine.step(now: bad.night.sunset, tonight: run, tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
+                             settings: quiet, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
+    #expect(q.notification == nil && q.state.stage == .doubted)   // dropped, not deferred, as every alert
+}

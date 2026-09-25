@@ -12,6 +12,7 @@ public struct Copy: Sendable {
     public var siteNoun: String { watch ? "Beat" : "Site" }
     public var noWindow: String { watch ? "Nothing to see here. Move along." : "No clear window tonight." }
     public var cancelTitle: String { watch ? "Stand down. Clouds moving in" : "Cancelled. Clouds moving in" }
+    public var lessCertainTitle: String { watch ? "Hold fire. Forecasts disagree" : "Less certain. Forecasts disagree" }
     public func offlineSince(_ time: String) -> String { watch ? "Off the beat since \(time)" : "Offline since \(time)" }
     public func goTitle(windowStart: String) -> String { watch ? "All's well. Clear from \(windowStart)" : "Clear from \(windowStart)" }
     public func headsUpTitle(windowStart: String, hours: Double) -> String {

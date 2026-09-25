@@ -26,16 +26,22 @@ public struct AlertSettings: Codable, Equatable, Sendable {
 }
 
 public struct AlertState: Codable, Equatable, Sendable {
-    public enum Stage: String, Codable, Sendable { case idle, previewSent, headsUpSent, goSent, cancelled, done }
+    /// `doubted`: the two forecasts split after a heads-up or go, and the "less certain" message went out.
+    public enum Stage: String, Codable, Sendable { case idle, previewSent, headsUpSent, goSent, doubted, cancelled, done }
     public var nightKey: String
     public var stage: Stage
     /// The plan mode the current stage was reached under; nil in files from 0.3.0 and earlier.
     public var mode: PlanMode?
-    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil) { self.nightKey = nightKey; self.stage = stage; self.mode = mode }
+    /// The go nudge went out tonight, and the "Hold fire" message went out tonight (v0.6.3). Optional, so older files decode.
+    public var goFired: Bool?
+    public var doubtSent: Bool?
+    public init(nightKey: String, stage: Stage, mode: PlanMode? = nil, goFired: Bool? = nil, doubtSent: Bool? = nil) {
+        self.nightKey = nightKey; self.stage = stage; self.mode = mode; self.goFired = goFired; self.doubtSent = doubtSent
+    }
 }
 
 public struct AlertNotification: Equatable, Sendable {
-    public enum Kind: Sendable { case headsUp, tomorrowPreview, go, cancel, aurora }
+    public enum Kind: Sendable { case headsUp, tomorrowPreview, go, cancel, lessCertain, aurora }
     public let kind: Kind
     public let title: String
     public let body: String
@@ -67,11 +73,42 @@ public enum AlertEngine {
         func window(_ p: NightPlan) -> (String, Double) {
             (Copy.hhmm(p.primary!.start, site: site), p.primary!.hours)
         }
-        /// Fires go when tonight qualifies and the nudge time has passed; true when it fired.
+        /// Fires go when tonight qualifies, the nudge time has passed and the window is still open; true when it fired.
+        /// Forecasts agreeing again after a "Hold fire" that followed a go send nothing: the go already went out.
         func goIfDue() -> Bool {
-            guard let g = goAt, tonight.qualifies, agreed, now >= g else { return false }
+            guard let g = goAt, let w = tonight.primary, agreed, now >= g, now < w.end else { return false }
+            if s.goFired == true, s.stage == .doubted { s.stage = .goSent; return true }
+            s.goFired = true
             note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site))
             s.stage = .goSent
+            return true
+        }
+
+        /// After a heads-up or go, the message follows both forecasts (owner ruling, 25 September 2026). Apple Weather has no
+        /// window and Open-Meteo agrees, or there is no second opinion: stand down. They split (one still sees a clear run
+        /// the other does not): "less certain", once, saying what each sees. A split where only Open-Meteo doubts matters
+        /// only with the opt-in on, because only then does it hold the go nudge back. True when it decided the tick.
+        func downgrade() -> Bool {
+            guard settings.cancelOnDowngrade, s.stage != .cancelled else { return false }
+            let split: String?
+            if let w = tonight.primary {
+                guard settings.requireAgreement, !Planner.agreementHolds(tonight.agreement), let a = tonight.agreement else { return false }
+                split = "Apple Weather still sees clear from \(Copy.hhmm(w.start, site: site)). \(Copy.agreementText(a, site: site))."
+            } else if let a = tonight.agreement, case .clearRun = a {
+                split = "Apple Weather now sees cloud. \(Copy.agreementText(a, site: site))."
+            } else {
+                split = nil
+            }
+            if let body = split {
+                // Once a night: forecasts flipping either side of the rule must not send "Hold fire" on every patrol.
+                if s.doubtSent != true { note = AlertNotification(kind: .lessCertain, title: copy.lessCertainTitle, body: body) }
+                s.doubtSent = true
+                s.stage = .doubted
+            } else {
+                let body = tonight.agreement == .agreeNoWindow ? "Apple Weather and Open-Meteo both see cloud." : copy.noWindow
+                note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: body)
+                s.stage = .cancelled
+            }
             return true
         }
 
@@ -94,21 +131,12 @@ public enum AlertEngine {
         case .previewSent:
             // Preview already sent for tomorrow; tonight can still clear late. Go only, never a second preview or heads-up.
             _ = goIfDue()
-        case .headsUpSent, .cancelled:
-            // cancelled recovers straight to go when the forecast clears again; no second heads-up
-            if !tonight.qualifies, s.stage == .headsUpSent, settings.cancelOnDowngrade {
-                note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: copy.noWindow)
-                s.stage = .cancelled
-            } else {
-                _ = goIfDue()
-            }
+        case .headsUpSent, .doubted, .cancelled:
+            // cancelled and doubted recover straight to go when both forecasts clear again; no second heads-up
+            if !downgrade() { _ = goIfDue() }
         case .goSent:
-            if !tonight.qualifies, settings.cancelOnDowngrade {
-                note = AlertNotification(kind: .cancel, title: copy.cancelTitle, body: copy.noWindow)
-                s.stage = .cancelled
-            } else if now >= (tonight.primary?.end ?? tonight.night.sunrise) {
-                s.stage = .done
-            }
+            // Once the window has closed the night is over: no stand-down or "Hold fire" for a window already used.
+            if now >= (tonight.primary?.end ?? tonight.night.sunrise) { s.stage = .done } else { _ = downgrade() }
         case .done:
             break
         }

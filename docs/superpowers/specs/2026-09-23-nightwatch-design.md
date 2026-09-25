@@ -184,6 +184,7 @@ Nightwatch takes its name from the City Watch. Owner's brief: subtle, in key wit
 | Saved site | Beat | Site |
 | Go alert title | All's well. Clear from 22:40 | Clear from 22:40 |
 | Cancel alert title | Stand down. Clouds moving in | Cancelled. Clouds moving in |
+| Less-certain alert title (v0.6.3: the two forecasts split after a heads-up or nudge) | Hold fire. Forecasts disagree | Less certain. Forecasts disagree |
 | No-window empty state | Nothing to see here. Move along. | No clear window tonight. |
 | Stale / offline | Off the beat since 19:32 | Offline since 19:32 |
 | About window | A small original turtle glyph beneath the credits, unlabelled | Credits only |

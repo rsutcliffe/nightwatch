@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.2 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.3 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -61,7 +61,9 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 - Evening heads-up, one hour before sunset, when tonight qualifies. On a signed build it, and the nudge before the window, end with Open-Meteo's second opinion, and the opt-in "Alert only when Open-Meteo agrees" holds it back when Open-Meteo is not clear enough inside the window.
 - Tomorrow preview.
 - A nudge 30 minutes before the window opens.
-- Stand-down if the forecast turns and the night no longer qualifies.
+- After a heads-up or nudge, if the forecast turns:
+  - **Stand-down** ("Stand down. Clouds moving in") when Apple Weather and Open-Meteo both lose the window, or when there is no second opinion.
+  - **Less certain** ("Hold fire. Forecasts disagree") when they split, saying what each sees. For example, "Apple Weather still sees clear from 21:00. Open-Meteo sees no clear window." Where only Open-Meteo doubts, it is sent only with the opt-in "Alert only when Open-Meteo agrees" on. It is sent at most once a night. If both clear again before the nudge, the nudge still fires; if the nudge has already gone, nothing more is sent. Nothing is sent after the window has closed.
 - Aurora alert (opt-in): AuroraWatch UK at or above the chosen level after dark, with this hour clear.
 - Quiet hours, default 00:00 to 07:00.
 - Nothing fires from a forecast older than six hours.
@@ -101,7 +103,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (203 Swift Testing tests at 0.6.2).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (212 Swift Testing tests at 0.6.3).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -136,6 +138,7 @@ Tags follow the City Watch novels.
 | 0.6.0 | Night Watch | 25 September 2026 | Desktop widgets (small, medium, large) drawn from the patrol snapshot; clicking opens Targets or a target's detail; Targets sidebar rebuilt on a native list; "All targets" is a button; windows open centred |
 | 0.6.1 | Night Watch, patch 1 | 25 September 2026 | The popover's aurora line in AuroraWatch UK's own colours (yellow, amber, red), the owner's choice over the night palette |
 | 0.6.2 | Night Watch, patch 2 | 25 September 2026 | Constellation artwork for all 88 constellations, a figure with its star plot on top, in place of the stick figures |
+| 0.6.3 | Night Watch, patch 3 | 25 September 2026 | After a heads-up, a stand-down only when both forecasts lose the window; when they split, "Hold fire. Forecasts disagree", saying what each sees |
 
 ## Install
 
