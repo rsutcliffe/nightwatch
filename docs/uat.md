@@ -37,7 +37,7 @@ Run on each Mac after `scripts/build-app.sh`.
 33. After a Patrol the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
 34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
 35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
-36. About shows version 0.6.6.
+36. About shows version 0.6.7.
 37. Targets › Constellations: every card shows its figure artwork with the star plot on top, not a stick figure; opening one shows the same art larger, with no "dashed = your field of view" note. → pass.
 38. Signed build, after a heads-up or nudge: when Apple Weather and Open-Meteo both lose the window, "Stand down. Clouds moving in" arrives with "Apple Weather and Open-Meteo both see cloud."; when only one does, "Hold fire. Forecasts disagree" arrives at most once a night, saying what each sees; if both clear again before the nudge, the nudge still fires. → pass.
 39. Targets: open a nebula, a large nebula (NGC 7000), a constellation and a planet. Each image fills the page with its text in black caption boxes. The large nebula's dashed box sits fully inside the clear space above the caption. On a clear night the caption shows the four figures and a labelled altitude chart, red only inside the window. → pass.
@@ -48,3 +48,7 @@ Run on each Mac after `scripts/build-app.sh`.
 44. Aurora alerts on, AuroraWatch UK at or above the chosen level: the small widget's second line reads "● Aurora <level>" and the medium and large widgets show "● AURORA <LEVEL>" at the end of the header line, in AuroraWatch's colour; it clears at the next patrol when the level drops below yours or aurora alerts are turned off, and an hour after AuroraWatch UK's last publication if the status goes stale. → pass.
 45. An aurora notification plays the alert sound. → pass.
 46. Large widget on a clear night with three targets: the footer ("Notify at …", "Updated …") is fully visible. → pass.
+47. A first launch with no settings opens "Welcome to Nightwatch": choosing a telescope sets the field of view; "Use this Mac's location" asks macOS for permission; "Add a site…" opens the sheet; "Start watching" closes it and it never returns. Nobody already set up sees it: an existing settings file, or a forecast cached by an earlier version. → pass.
+48. A target's detail page › "How to shoot this" opens the card for your telescope: for a DWARF and an emission nebula, "Duo-Band", "15–60 s per frame at gain 60–80" and frames sized to tonight's window, with the source named. → pass.
+49. When a newer release is on GitHub, the popover footer reads "Nightwatch <version> is available  Download ↗" (checked at most once a day; Settings › Updates turns it off). → pass.
+50. About shows Website, Send feedback and Report a problem links, each opening the right page. → pass.

@@ -70,6 +70,7 @@ import Foundation
     var expected = Config.default
     expected.flavour = .plain
     expected.goRule = GoRule(minHours: 2, maxCloudPct: 40, minAltitudeDeg: 30)
+    expected.welcomed = true   // a config file that already exists belongs to someone who is already set up (v0.6.7)
     #expect(c == expected)
 }
 

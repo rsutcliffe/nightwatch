@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.6 "Night Watch", the first public download. Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.7 "Night Watch". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -22,7 +22,7 @@ A night qualifies under the default go rule when there is a contiguous run of at
 
 On summer nights without proper darkness, an opt-in bright-night mode keeps the heads-up coming: a one-hour clear run in nautical darkness (Sun 12° down) with the Moon or a naked-eye planet at least 15° up. The Moon no longer counts against the score on a bright night, because it is the target.
 
-Nothing leaves the Mac except the forecast requests (for the active site, home while observing elsewhere, and the nearest dark sites), sky-survey image fetches, the comet and ISS element downloads, and, when aurora alerts are on, AuroraWatch UK's status after dark. Every request names the app and its version.
+Nothing leaves the Mac except the forecast requests (for the active site, home while observing elsewhere, and the nearest dark sites), sky-survey image fetches, the comet and ISS element downloads, and, when aurora alerts are on, AuroraWatch UK's status after dark, plus one request a day to GitHub for the latest version (switchable off). Every request names the app and its version.
 
 ## What it shows
 
@@ -52,12 +52,17 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
   - Deep-sky survey photos fill the page, fetched sharp at 1600 px. A pill says "Shown at your field of view", or, for an object bigger than the field, a dashed box marks what you would capture, with extra sky around it.
   - The Moon, planet photographs and constellation artwork are fitted above the caption.
   - The caption holds the name, type and coordinates, and the survey image's credit where one is shown. On a night with a clear window it adds best time, time above the minimum altitude, Moon separation, a suggested stack, and an altitude chart from sunset to sunrise. The chart shows the window shaded and the minimum altitude dashed, and the curve is red only where the target is up inside the window.
+  - **How to shoot this:** a button in the caption opens the settings for the user's own telescope and this kind of target: the filter and why, exposure and gain, frames sized to the time the target is up inside tonight's window, and when to start. The numbers come from DWARFLAB's user manual (DWARF Mini, DWARF 3) and ZWO's Seestar S50 FAQ, named on the card; for a camera and lens, the untracked exposure limit and star-tracker ranges. Where no verified figure exists (planets, ISO), it gives guidance without numbers.
 
 **Desktop widgets.** Small, medium and large widgets for the macOS desktop, included in the download (building them from source needs Xcode and xcodegen). The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. With aurora alerts on, "● Aurora amber" in AuroraWatch UK's colour shows while the status is at or above the chosen level and less than an hour old: on the small widget's second line, and at the end of the header line on the medium and large ones. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
 **Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Observe from here" makes a site the active site for the whole app without saving it; the popover and the Dark sites page then offer "Back to" home in one click. Each card compares tonight's score and sky with home ("vs 20 at <home> (home)" while away), as does the popover's "Clearer sky" line, which opens that site's card.
 
-**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login. Every numeric setting is a menu that shows its value.
+**First launch.** A welcome window asks what you image with (the telescope presets, or something else) and where you observe from ("Use this Mac's location", which is when macOS asks for permission, or "Add a site…"), then "Start watching". Anyone already set up skips it: an existing settings file, or a forecast cached by an earlier version.
+
+**About.** Website, "Send feedback" (GitHub Discussions) and "Report a problem" (GitHub Issues), and a line when a newer version is out.
+
+**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.6.8 is available  Download ↗".
 
 ## Alerts
 
@@ -108,7 +113,7 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 ## Architecture
 
 - A Swift package with four targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `NightwatchUI` (the views the app and the widget share) and `Nightwatch` (the SwiftUI menu-bar app). The widget extension is the one Xcode project, generated from `Widget/project.yml` with xcodegen; it reads a snapshot the app writes to a shared App Group after each patrol.
-- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (229 Swift Testing tests at 0.6.6).
+- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (235 Swift Testing tests at 0.6.7).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -148,6 +153,7 @@ Tags follow the City Watch novels.
 | 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption; dark-site cards say "Observe from here" instead of "Use as beat" |
 | 0.6.5 | Night Watch, patch 5 | 25 September 2026 | Where you observe: home, one-click "Back to" home from the popover and Dark sites, dark sites visited without being saved, honest comparison with home, an "Add a site" sheet with named sky darkness, and menus in place of up/down arrows throughout Settings |
 | 0.6.6 | Night Watch, patch 6 | 25 September 2026 | The first public download: a signed, notarised DMG on the GitHub release. Aurora on the desktop widgets; aurora alerts play a sound; the large widget no longer overflows on a clear night (measured at the real 344 × 344 size); AuroraWatch UK linked and the sky survey credited as their terms ask; `scripts/release.sh` builds a Developer ID signed, notarised download |
+| 0.6.7 | Night Watch, patch 7 | 25 September 2026 | First-run welcome (telescope and place); "How to shoot this" on every detail page, from the makers' own settings; a once-a-day update check with a popover line; website, feedback and problem links in About; the Targets page repaints on every sidebar click; constellations carry their Moon separation |
 
 ## Install
 

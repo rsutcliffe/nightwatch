@@ -9,6 +9,8 @@ struct DetailView: View {
     let target: RankedTarget
     let onBack: () -> Void
     @StateObject private var hero = ThumbnailLoader()
+    @StateObject private var tipsUI = TipsState()
+    private static let presets = (try? TelescopePresets.bundled()) ?? []
 
     /// Photographs and artwork that must be seen whole; everything else is a survey image to fill the page.
     private var fitted: Bool { target.group == .constellations || target.group == .planets }
@@ -36,7 +38,11 @@ struct DetailView: View {
                             }
                         }
                     }
+                    // The card floats above the caption rather than taking a row, so opening it never resizes the image.
                     caption.zIndex(1)
+                        .overlay(alignment: .topTrailing) {
+                            if tipsUI.shown, let s = store.site { tipsCard(site: s).alignmentGuide(.top) { $0[.bottom] + 12 } }
+                        }
                 }
                 .padding(16)
             }
@@ -122,6 +128,16 @@ struct DetailView: View {
             Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? ""))
                 .font(.system(size: 13)).foregroundStyle(Theme.text.opacity(0.85))
             Text(String(format: "RA %.2fh · Dec %+.1f°", target.raHours, target.decDeg)).font(.system(size: 11)).foregroundStyle(Theme.dim)
+            if store.site != nil { Button { tipsUI.shown.toggle() } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "camera.aperture").accessibilityHidden(true)
+                    Text("How to shoot this")
+                    Image(systemName: tipsUI.shown ? "chevron.down" : "chevron.up").font(.system(size: 9, weight: .semibold)).accessibilityHidden(true)
+                }
+            }
+            .buttonStyle(.plain).font(.system(size: 11)).padding(.horizontal, 9).padding(.vertical, 5)
+            .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6)).padding(.top, 4)
+            .help("Filter, exposure and frames for your telescope and this target") }
             // The credit CDS and STScI ask for, on the page that shows their image (ODbL 1.0; STScI non-profit use).
             if !fitted { Text("Image: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS").font(.system(size: 9.5)).foregroundStyle(Theme.dim) }
         }
@@ -143,6 +159,31 @@ struct DetailView: View {
         }
     }
 }
+
+extension DetailView {
+    /// "How to shoot this" (v0.6.7, owner-approved mockup): the settings for the user's own telescope and this kind of
+    /// target, sized to tonight's window, with where the numbers come from.
+    func tipsCard(site: Site) -> some View {
+        let preset = Self.presets.first { $0.id == store.config.fovPresetID }
+        let tip = ShootingTips.tip(for: target, presetID: preset?.id, presetName: preset?.name,
+                                   stackMinutes: target.viewable.map { min($0.hours, 3) * 60 }, site: site)
+        return VStack(alignment: .leading, spacing: 8) {
+            Label(tip.title, systemImage: "camera.aperture").font(.system(size: 13, weight: .semibold))
+            ForEach(tip.rows, id: \.label) { r in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(r.label).font(.system(size: 11)).foregroundStyle(Theme.dim).frame(width: 64, alignment: .leading)
+                    Text(r.text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if let src = tip.source { Text(src).font(.system(size: 10)).foregroundStyle(Theme.dim) }
+        }
+        .padding(12)
+        .frame(width: 360, alignment: .leading)
+        .captionBacking(cornerRadius: 10)
+    }
+}
+
+final class TipsState: ObservableObject { @Published var shown = false }
 
 /// The target's altitude from sunset to sunrise: the clear window shaded, the minimum altitude dashed, the curve grey and
 /// red only where the target is above the minimum inside the window (as on the Targets cards), a dot at the best moment.
