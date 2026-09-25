@@ -6,7 +6,7 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Se
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<Site?, Never>?
     private var request = 0   // numbers each requestOnce, so an earlier request's timeout never ends a later one
-    /// A fix that arrives with no `requestOnce` waiting: authorisation granted after the 15 s timeout.
+    /// A fix that arrives with no `requestOnce` waiting: authorisation granted after the timeout (60 s while asking, 15 s otherwise).
     var onSite: ((Site) -> Void)?
 
     private var allowed: Bool { [.authorizedAlways, .authorized].contains(manager.authorizationStatus) }
@@ -15,7 +15,7 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate, @unchecked Se
     /// When macOS has not asked yet, this asks and waits for the answer (up to a minute, time to read the prompt) before
     /// requesting a fix: a fix requested before the answer fails at once, which showed "not available" while the prompt
     /// was still on screen (v0.6.10).
-    func requestOnce() async -> Site? {
+    @MainActor func requestOnce() async -> Site? {   // on main, with the delegate calls and the timeout
         guard continuation == nil else { return nil }   // one request in flight; a second would leak its continuation
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyKilometer

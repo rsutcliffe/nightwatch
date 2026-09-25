@@ -64,7 +64,6 @@ struct WelcomeView: View {
                 Spacer()
                 Button("Start watching") {
                     store.config.welcomed = true; store.saveConfig()
-                    Task { await Notifier.requestAuthorisation() }   // now that the welcome has said what alerts are for
                     dismissWindow(id: "welcome")
                 }
                 .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
@@ -76,6 +75,9 @@ struct WelcomeView: View {
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store) }
+        // Notifications are asked for as the welcome closes, after it has said what they are for: from Start watching
+        // or the close button alike, so nobody is left never asked.
+        .onDisappear { Task { await Notifier.requestAuthorisation() } }
     }
 
     private func useThisMac() {

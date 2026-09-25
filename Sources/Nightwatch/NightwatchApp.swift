@@ -78,11 +78,14 @@ struct NightwatchApp: App {
             }
         }
         location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
-        // A first launch asks for notifications from the welcome's Start watching, after it has said what they are for.
+        // A first launch asks for notifications as the welcome closes, after it has said what they are for.
         if store.config.welcomed { await Notifier.requestAuthorisation() }
         store.requestLocationFix = { [location] in await location.requestOnce() }
         // A first launch asks for location from the welcome's own button, with the reason beside it, not at once.
-        if store.config.activeSiteName == nil, store.config.welcomed { store.autoSite = await location.requestOnce() }
+        // Not awaited: while macOS asks, this can wait a minute, and the first refresh and the scheduler must not.
+        if store.config.activeSiteName == nil, store.config.welcomed {
+            Task { @MainActor in store.autoSite = await location.requestOnce(); await store.refresh(force: false) }
+        }
         else if store.config.welcomed { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
         await store.refresh(force: false)
         let s = Scheduler { [location] in

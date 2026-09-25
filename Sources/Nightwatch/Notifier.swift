@@ -6,6 +6,12 @@ enum Notifier {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
+    /// Whether macOS will deliver a notification now. Alerts are only worked out, and recorded as sent, when it will: a
+    /// notification posted before the person has answered the prompt is dropped, and must not count as sent (v0.6.10).
+    static func authorised() async -> Bool {
+        [.authorized, .provisional].contains(await UNUserNotificationCenter.current().notificationSettings().authorizationStatus)
+    }
+
     static func post(_ n: AlertNotification) {
         let content = UNMutableNotificationContent()
         content.title = n.title
