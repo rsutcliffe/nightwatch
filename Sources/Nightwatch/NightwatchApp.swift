@@ -22,7 +22,10 @@ struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         Image(systemName: store.iconName)
-            .task { await boot() }
+            .task {
+                await boot()
+                if !store.config.welcomed { NSApp.activate(); openWindow(id: "welcome") }   // first launch only
+            }
             .onChange(of: store.targetsRequest) { _, r in
                 guard r != nil else { return }
                 NSApp.activate()
@@ -53,7 +56,9 @@ struct NightwatchApp: App {
             .defaultSize(width: 980, height: 640).defaultPosition(.center)
         Window("Settings", id: "settings") { SettingsView().environmentObject(store) }
             .defaultSize(width: 520, height: 560).defaultPosition(.center)
-        Window("About Nightwatch", id: "about") { AboutView() }
+        Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store) }
+            .windowResizability(.contentSize).defaultPosition(.center)
+        Window("About Nightwatch", id: "about") { AboutView().environmentObject(store) }
             .defaultSize(width: 420, height: 420).defaultPosition(.center)
     }
 
@@ -74,13 +79,16 @@ struct NightwatchApp: App {
         }
         location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
         await Notifier.requestAuthorisation()
-        if store.config.activeSiteName == nil { store.autoSite = await location.requestOnce() }
-        else { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
+        store.requestLocationFix = { [location] in await location.requestOnce() }
+        // A first launch asks for location from the welcome's own button, with the reason beside it, not at once.
+        if store.config.activeSiteName == nil, store.config.welcomed { store.autoSite = await location.requestOnce() }
+        else if store.config.welcomed { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
         await store.refresh(force: false)
         let s = Scheduler { [location] in
             Task { @MainActor in
                 if store.site == nil, let fix = await location.requestOnce() { store.autoSite = fix }   // retry location until we have a site
                 await store.refresh(force: false)
+                await store.checkForUpdate()   // at most once a day; attemptDue gates it
             }
         }
         s.start()
@@ -89,5 +97,6 @@ struct NightwatchApp: App {
         a.start()
         store.auroraScheduler = a
         await store.pollAurora()
+        await store.checkForUpdate()
     }
 }

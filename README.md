@@ -8,7 +8,7 @@ Silent macOS menu-bar app: tells you when tonight is clear enough for a long ima
 
 ## Download
 
-Signed, notarised releases are attached to each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases): open `Nightwatch-<version>.dmg` and drag Nightwatch to Applications. How a release is made is in [docs/releasing.md](docs/releasing.md).
+Signed, notarised releases are attached to each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases): open `Nightwatch-<version>.dmg` and drag Nightwatch to Applications. A first launch asks what you image with and where you observe from. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md).
 
 ## Build and install (any Mac, macOS 14+, no Xcode needed)
 

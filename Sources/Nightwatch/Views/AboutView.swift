@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AboutView: View {
+    @EnvironmentObject var store: Store
     private let notice = (try? String(contentsOfFile: Bundle.main.path(forResource: "NOTICE", ofType: nil) ?? "", encoding: .utf8)) ?? ""
 
     var body: some View {
@@ -8,6 +9,15 @@ struct AboutView: View {
             Image(systemName: "star").font(.system(size: 36)).foregroundStyle(Theme.accent)
             Text("Nightwatch").font(.title2.weight(.semibold))
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev") · MIT licence").font(.caption).foregroundStyle(Theme.dim)
+            if let u = store.availableUpdate { Link("Nightwatch \(u.version) is available ↗", destination: u.url).font(.caption) }
+            // The only way the project hears from the people using it (v0.6.7).
+            HStack(spacing: 14) {
+                Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
+                Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
+                Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
+            }
+            .font(.callout)
+            Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(.caption2).foregroundStyle(Theme.dim)
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(.caption).frame(maxWidth: .infinity, alignment: .leading) }
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
             Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").font(.caption2).foregroundStyle(Theme.dim).multilineTextAlignment(.center)

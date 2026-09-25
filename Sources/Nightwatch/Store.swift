@@ -10,6 +10,10 @@ final class Store: ObservableObject {
     @Published var tomorrow: NightPlan?
     /// Tonight at home while observing from somewhere else, for the dark-site cards' comparison; the same as `plan` at home.
     @Published var homePlan: NightPlan?
+    /// A newer release on GitHub, when there is one (v0.6.7).
+    @Published var availableUpdate: ReleaseCheck.Latest?
+    /// Asks Location Services for one fix; set at launch, used by the welcome's "Use this Mac's location".
+    var requestLocationFix: (() async -> Site?)?
     @Published var events: [SkyEvent] = []
     @Published var forecast: Forecast?
     @Published var alertState: AlertState?
@@ -308,6 +312,15 @@ final class Store: ObservableObject {
         saveConfig()
     }
     func keepVisiting() { config.keepVisiting(); saveConfig() }
+
+    /// Once a day, when allowed: is there a newer Nightwatch on GitHub? Downloads do not update themselves.
+    func checkForUpdate(now: Date = Date()) async {
+        guard config.checkForUpdates else { availableUpdate = nil; return }
+        guard attemptDue("update-check", every: ReleaseCheck.interval, now: now),
+              let data = try? await fetcher.get(ReleaseCheck.latestURL), let latest = ReleaseCheck.parse(data) else { return }
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        availableUpdate = ReleaseCheck.isNewer(latest.version, than: current) ? latest : nil
+    }
     func goHome() { config.goHome(); saveConfig() }
 
     /// While away, tonight's plan at home. Home's forecast is cached for 30 minutes, as a dark site's is, and never asks for

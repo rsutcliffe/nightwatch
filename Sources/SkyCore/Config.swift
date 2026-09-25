@@ -27,6 +27,10 @@ public struct Config: Codable, Equatable, Sendable {
     public var homeIsThisMac = false
     /// A dark site being tried from the Targets window: active while set, never added to `sites` unless kept (v0.6.5).
     public var visiting: Site? = nil
+    /// The first-run welcome has been completed (v0.6.7). A config written before it existed counts as welcomed.
+    public var welcomed = false
+    /// Look for a newer release on GitHub once a day (v0.6.7).
+    public var checkForUpdates = true
     public var fov = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     public var fovPresetID: String? = "dwarf-mini"
     public var goRule = GoRule()
@@ -104,7 +108,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites, brightNights, aurora
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites, brightNights, aurora
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -117,6 +121,8 @@ public struct Config: Codable, Equatable, Sendable {
         // A config from before v0.6.5 that was on Automatic keeps this Mac as home, so saved dark sites do not become it.
         homeIsThisMac = try c.decodeIfPresent(Bool.self, forKey: .homeIsThisMac) ?? (homeSiteName == nil && activeSiteName == nil && !sites.isEmpty)
         visiting = try c.decodeIfPresent(Site.self, forKey: .visiting)
+        welcomed = try c.decodeIfPresent(Bool.self, forKey: .welcomed) ?? true   // an existing config: already set up
+        checkForUpdates = try c.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? true
         fov = try c.decodeIfPresent(FieldOfView.self, forKey: .fov) ?? FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
         fovPresetID = try c.decodeIfPresent(String.self, forKey: .fovPresetID) ?? "dwarf-mini"
         goRule = try c.decodeIfPresent(GoRule.self, forKey: .goRule) ?? GoRule()

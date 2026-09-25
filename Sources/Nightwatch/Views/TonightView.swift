@@ -223,6 +223,14 @@ struct TonightView: View {
                 .buttonStyle(SecondaryButtonStyle())
                 .help("Fetch the forecast now and recompute tonight")
             }
+            if let u = store.availableUpdate {
+                HStack(spacing: 5) {
+                    Circle().fill(Tokens.controlOn).frame(width: 6, height: 6).accessibilityHidden(true)
+                    Text("Nightwatch \(u.version) is available").foregroundStyle(Tokens.textPrimary)
+                    Link("Download ↗", destination: u.url)
+                }
+                .font(.system(size: 10.5))
+            }
             if let f = store.forecast, let s = store.site {
                 HStack(spacing: 6) {
                     if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }

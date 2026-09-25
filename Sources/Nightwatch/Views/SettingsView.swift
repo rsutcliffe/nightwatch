@@ -111,6 +111,11 @@ struct SettingsView: View {
                 choiceRow("Minimum clear run", bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: "%.1f h", $0) }
                 Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(.caption).foregroundStyle(Theme.dim)
             }
+            Section("Updates") {
+                Toggle("Check for a new version once a day", isOn: bind(\.checkForUpdates))
+                Text("Asks GitHub for the latest release and shows a line in the popover when there is a newer one. Nothing else is sent.")
+                    .font(.caption).foregroundStyle(Theme.dim)
+            }
             Section("Aurora") {
                 Toggle("Alert me to aurora when the sky is clear", isOn: bind(\.aurora.enabled))
                 Picker("Alert from", selection: bind(\.aurora.threshold)) {
