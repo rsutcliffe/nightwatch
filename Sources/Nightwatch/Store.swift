@@ -28,6 +28,7 @@ final class Store: ObservableObject {
     /// Set by the popover so the Targets window opens on a section, scrolled to a dark-site card.
     @Published var targetsRequest: TargetsRequest? = nil
     var booting = false                // set synchronously by boot() so a second label .task cannot boot twice
+    var awaitingFix = false            // boot is waiting for this Mac's location: no refresh for a saved site meanwhile
     var scheduler: Scheduler?          // not @Published: doesn't drive UI, just needs stable storage across boot()
     var auroraScheduler: Scheduler?
     /// Last AuroraWatch UK status fetched (only while aurora alerts are on and the Sun is down).
@@ -140,7 +141,7 @@ final class Store: ObservableObject {
     /// and treats a forecast for other coordinates as stale.
     func refresh(force: Bool) async {
         if let m = Store.configModDate(), m > (configModDate ?? .distantPast) { loadConfig() }
-        guard !refreshing else { return }
+        guard !refreshing, !awaitingFix else { return }
         guard let site else {
             if !configLoadFailed { lastError = "No site. Add one in Settings or allow location access." }
             return
@@ -276,7 +277,7 @@ final class Store: ObservableObject {
         // overlapping polls (a wake and the timer) must not both send the same alert.
         guard config.notifyEnabled, await Notifier.authorised() else { return }
         // The same six-hour rule as every other alert, and never another site's forecast.
-        guard let status = aurora, let fc = forecast, forecastMatches(site), now.timeIntervalSince(fc.fetchedAt) <= 6 * 3600,
+        guard let site = self.site, let status = aurora, let fc = forecast, forecastMatches(site), now.timeIntervalSince(fc.fetchedAt) <= 6 * 3600,
               let key = plan?.night.key else { return }
         let r = AuroraAlert.decide(status: status, now: now, site: site, nightKey: key, hours: fc.hours, rule: config.goRule,
                                    settings: config.aurora, alerts: config.alerts, state: auroraState, copy: copy)

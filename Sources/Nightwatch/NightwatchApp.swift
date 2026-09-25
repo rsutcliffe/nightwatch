@@ -85,7 +85,13 @@ struct NightwatchApp: App {
         // Not awaited: while macOS asks, this can wait a minute, and the scheduler must not. Observing from this Mac, the
         // first refresh waits for the fix instead, so it never forecasts (or alerts) for a saved site in the meantime.
         let fixPending = store.config.activeSiteName == nil && store.config.welcomed
-        if fixPending { Task { @MainActor in store.autoSite = await location.requestOnce(); await store.refresh(force: false) } }
+        if fixPending {
+            store.awaitingFix = true   // a popover opened meanwhile must not refresh for a saved site either
+            Task { @MainActor in
+                store.autoSite = await location.requestOnce(); store.awaitingFix = false
+                await store.refresh(force: false)
+            }
+        }
         else if store.config.welcomed { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
         if !fixPending { await store.refresh(force: false) }
         let s = Scheduler { [location] in

@@ -76,8 +76,9 @@ struct WelcomeView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store) }
         // Notifications are asked for as the welcome closes, after it has said what they are for: from Start watching
-        // or the close button alike, so nobody is left never asked. Once answered, the alerts are worked out straight away.
-        .onDisappear { Task { @MainActor in await Notifier.requestAuthorisation(); await store.refresh(force: false) } }
+        // or the close button alike, so nobody is left never asked. Once answered, the alerts are worked out straight away
+        // (recompute, not refresh: a refresh already in flight would make a refresh return early).
+        .onDisappear { Task { @MainActor in await Notifier.requestAuthorisation(); await store.recompute(now: Date()) } }
     }
 
     private func useThisMac() {
