@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.0 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.1 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -101,7 +101,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (202 Swift Testing tests at 0.6.0).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (203 Swift Testing tests at 0.6.1).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -134,6 +134,7 @@ Tags follow the City Watch novels.
 | 0.5.1 | The Fifth Elephant, patch 1 | 25 September 2026 | App icon: a star over a red-lit horizon, as a Liquid Glass icon when built with Xcode and a classic icon otherwise |
 | 0.5.2 | The Fifth Elephant, patch 2 | 25 September 2026 | App icon replaced with the owner's favourite: a porthole onto the night sky with a red-lit horizon, full-bleed for macOS 27 |
 | 0.6.0 | Night Watch | 25 September 2026 | Desktop widgets (small, medium, large) drawn from the patrol snapshot; clicking opens Targets or a target's detail; Targets sidebar rebuilt on a native list; "All targets" is a button; windows open centred |
+| 0.6.1 | Night Watch, patch 1 | 25 September 2026 | The popover's aurora line in AuroraWatch UK's own colours (yellow, amber, red), the owner's choice over the night palette |
 
 ## Install
 

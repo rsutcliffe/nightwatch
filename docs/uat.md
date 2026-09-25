@@ -37,4 +37,4 @@ Run on each Mac after `scripts/build-app.sh`.
 33. After a Patrol the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
 34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
 35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
-36. About shows version 0.6.0. → pass.
+36. About shows version 0.6.1. → pass.
