@@ -35,7 +35,8 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let s = snap(p, t)
     #expect(s.headline == "Clear window tonight")
     #expect(s.window == "20:00 → 02:00 · 6.0 h" && s.windowShort == "Clear 20:00–02:00")
-    #expect(s.slots.count == 60 && !s.bars.isEmpty && s.notify == "Notify at 19:30")
+    #expect(s.slots.count == 60 && !s.bars.isEmpty && s.notify == "Notify at 19:30" && s.notifyShort == "notify 19:30")
+    #expect(s.brightList == nil && s.source == nil)
     #expect(s.targets.count <= 3 && s.siteName == "Test site" && s.tomorrow == nil)
 }
 
@@ -44,7 +45,7 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let (p, t) = try plans(november, cloudy)
     #expect(p.primary == nil)
     let s = snap(p, t)
-    #expect(s.headline == copy.noWindow && s.window == nil && s.reasonWarns == false)
+    #expect(s.headline == copy.noWindow && s.window == nil && s.reasonWarns == false && s.notifyShort == nil)
     #expect(s.reason == Planner.noWindowReasonText(plan: p, rule: GoRule(), bright: BrightSettings(), site: testSite))
     #expect(s.tomorrow == nil)                                                    // tomorrow is cloudy too
     let (clearTomorrow, _) = try plans(november.addingTimeInterval(86_400), clearMiddle)
@@ -69,6 +70,26 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(s.headline == "Bright night: Moon and planets")
     #expect(s.windowShort?.hasPrefix("Bright ") == true)
     #expect(s.targets.map(\.id) == Array(p.brightTargets.prefix(3)).map(\.id))
+    #expect(s.brightList == Copy.brightList(p.brightTargets) && s.brightList?.isEmpty == false)
+}
+
+@Test func snapshotCarriesSourceAndDecodesWithoutNewFields() throws {
+    let (p, t) = try plans(november, clearMiddle)
+    let s = WidgetSnapshot.make(plan: p, tomorrow: t, fetchedAt: november, site: testSite, rule: GoRule(), bright: BrightSettings(),
+                                alerts: AlertSettings(), copy: copy, source: "Apple Weather")
+    #expect(s.source == "Apple Weather")
+    // A widget.json written by the first v0.6 build has no notifyShort, brightList or source: it must still decode.
+    let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
+    var obj = try JSONSerialization.jsonObject(with: e.encode(s)) as! [String: Any]
+    for k in ["notifyShort", "brightList", "source"] { obj.removeValue(forKey: k) }
+    let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
+    let old = try d.decode(WidgetSnapshot.self, from: JSONSerialization.data(withJSONObject: obj))
+    #expect(old.source == nil && old.headline == s.headline)
+}
+
+@Test func sampleSnapshotIsWellFormed() {
+    let s = WidgetSnapshot.sample
+    #expect(s.slots.count == 60 && s.bars.count == 8 && s.bars.filter(\.peak).count == 1 && s.windowShort != nil)
 }
 
 @Test func snapshotCarriesAgreement() throws {

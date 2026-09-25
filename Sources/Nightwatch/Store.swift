@@ -183,7 +183,7 @@ final class Store: ObservableObject {
         plan = p; tomorrow = t
         events = buildEvents(night: night, site: site, now: now)
         Store.write(p, "plan.json")
-        writeWidgetSnapshot(plan: p, tomorrow: t, fetchedAt: fc.fetchedAt, site: site)
+        writeWidgetSnapshot(plan: p, tomorrow: t, fetchedAt: fc.fetchedAt, site: site, source: fc.cloudSource)
         if config.notifyEnabled {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
                                      forecastFetchedAt: fc.fetchedAt, site: site, copy: copy)
@@ -196,11 +196,12 @@ final class Store: ObservableObject {
 
     /// The desktop widget's snapshot (v0.6), written into the App Group the build script names in Info.plist, then WidgetKit
     /// is asked to redraw. Builds without the widget (no Xcode, or unsigned) have no group key and write nothing.
-    private func writeWidgetSnapshot(plan: NightPlan, tomorrow: NightPlan, fetchedAt: Date, site: Site) {
+    private func writeWidgetSnapshot(plan: NightPlan, tomorrow: NightPlan, fetchedAt: Date, site: Site, source: String?) {
         guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
               let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return }
         let snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fetchedAt, site: site, rule: config.goRule,
-                                       bright: config.brightNights, alerts: config.alerts, copy: copy)
+                                       bright: config.brightNights, alerts: config.alerts, copy: copy,
+                                       source: source ?? "Open-Meteo")
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let data = try? enc.encode(snap) else { return }
         try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)

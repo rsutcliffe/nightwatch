@@ -33,9 +33,14 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var targets: [WidgetTarget]
     public var tomorrow: String?
     public var notify: String?
+    /// The small widget's second line: "notify 20:30" on a clear night, "Moon 62%, Saturn" on a bright one (the canvas).
+    public var notifyShort: String?
+    public var brightList: String?
+    /// Which service supplied the cloud hours ("Apple Weather" or "Open-Meteo"), for the large widget's footer.
+    public var source: String?
 
     public static func make(plan: NightPlan, tomorrow: NightPlan?, fetchedAt: Date, site: Site, rule: GoRule,
-                            bright: BrightSettings, alerts: AlertSettings, copy: Copy) -> WidgetSnapshot {
+                            bright: BrightSettings, alerts: AlertSettings, copy: Copy, source: String? = nil) -> WidgetSnapshot {
         func hm(_ d: Date) -> String { Copy.hhmm(d, site: site) }
         let w = plan.primary
         let noDarkness = w == nil && !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness)
@@ -59,8 +64,24 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
                              best: "Best \(hm(t.peakTime)) · \(Int(t.peakAltDeg.rounded()))° up", group: t.group)
             },
             tomorrow: w == nil && !noDarkness ? tomorrow?.primary.map { "Tomorrow \(hm($0.start))–\(hm($0.end))" } : nil,
-            notify: Copy.notifyLabel(plan, site: site, settings: alerts))
+            notify: Copy.notifyLabel(plan, site: site, settings: alerts),
+            notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },
+            brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
+            source: source)
     }
+
+    /// The gallery's preview: a made-up clear night at a made-up site, so the widget picker shows the real layout.
+    public static let sample = WidgetSnapshot(
+        siteName: "Dark Site", fetchedAt: Date(), score: 78, mode: .dark, headline: "Clear window tonight",
+        window: "21:10 → 01:40 · 4.5 h", windowShort: "Clear 21:10–01:40", reason: "Held back by a 40% moon", reasonWarns: true,
+        agreement: "Open-Meteo agrees", agreementWarns: false,
+        slots: Array(repeating: .cloudy, count: 10) + Array(repeating: .clear, count: 27) + Array(repeating: .partCloud, count: 11) + Array(repeating: .daylight, count: 12),
+        bezelLabel: "Sky score 78", bars: [20, 35, 80, 92, 88, 76, 40, 25].enumerated().map { i, c in
+            ClearSkyBar(hour: String(format: "%02d", (20 + i) % 24), clearPct: c, lit: (2...5).contains(i), peak: i == 3)
+        }, barsLabel: "Clear sky by hour.",
+        targets: [WidgetTarget(id: "M13", catalogueID: "M13", name: "Hercules Cluster", best: "Best 21:30 · 71° up", group: .clusters),
+                  WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)],
+        tomorrow: nil, notify: "Notify at 20:40", notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo")
 
     /// "Forecast 7 h old" once the snapshot's forecast is more than six hours old at `now` (the alerts' stale rule); else nil.
     public func staleText(now: Date) -> String? {

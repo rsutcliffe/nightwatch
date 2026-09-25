@@ -83,9 +83,13 @@ public struct Copy: Sendable {
 
     /// The popover switch: "Notify at HH:MM" for the nudge before the window, unless quiet hours would drop that nudge.
     public static func notifyLabel(_ plan: NightPlan?, site: Site, settings: AlertSettings) -> String {
-        guard let w = plan?.primary else { return "Notify when clear" }
+        notifyTime(plan, site: site, settings: settings).map { "Notify at \($0)" } ?? "Notify when clear"
+    }
+    /// The heads-up's "20:30", or nil when there is no window or it falls in quiet hours.
+    public static func notifyTime(_ plan: NightPlan?, site: Site, settings: AlertSettings) -> String? {
+        guard let w = plan?.primary else { return nil }
         let at = w.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60)
-        return AlertEngine.inQuietHours(at, site: site, settings: settings) ? "Notify when clear" : "Notify at \(hhmm(at, site: site))"
+        return AlertEngine.inQuietHours(at, site: site, settings: settings) ? nil : hhmm(at, site: site)
     }
 
     /// The neutral frame chip on a Targets card (follow-on 1).

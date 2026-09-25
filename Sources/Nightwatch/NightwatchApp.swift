@@ -20,11 +20,11 @@ struct NightwatchApp: App {
         .menuBarExtraStyle(.window)
 
         Window("Targets", id: "targets") { TargetsView().environmentObject(store) }
-            .defaultSize(width: 980, height: 640)
+            .defaultSize(width: 980, height: 640).defaultPosition(.center)
         Window("Settings", id: "settings") { SettingsView().environmentObject(store) }
-            .defaultSize(width: 520, height: 560)
+            .defaultSize(width: 520, height: 560).defaultPosition(.center)
         Window("About Nightwatch", id: "about") { AboutView() }
-            .defaultSize(width: 420, height: 420)
+            .defaultSize(width: 420, height: 420).defaultPosition(.center)
     }
 
     @MainActor

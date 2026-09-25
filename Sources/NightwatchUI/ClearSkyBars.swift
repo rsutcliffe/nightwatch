@@ -9,9 +9,11 @@ public struct ClearSkyBars: View {
     var trackHeight: CGFloat
     var labels: Bool
     var source: String?
+    var caption: Bool
 
-    public init(bars: [ClearSkyBar], label: String, trackHeight: CGFloat = 37, labels: Bool = true, source: String? = nil) {
-        self.bars = bars; self.label = label; self.trackHeight = trackHeight; self.labels = labels; self.source = source
+    /// `caption`: the "Clear sky by hour" line under the hour labels (the large widget names its source in its footer instead).
+    public init(bars: [ClearSkyBar], label: String, trackHeight: CGFloat = 37, labels: Bool = true, source: String? = nil, caption: Bool = true) {
+        self.bars = bars; self.label = label; self.trackHeight = trackHeight; self.labels = labels; self.source = source; self.caption = caption
     }
 
     @ViewBuilder public var body: some View {
@@ -41,7 +43,7 @@ public struct ClearSkyBars: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            if labels {
+            if labels, caption {
                 Text("Clear sky by hour" + (source.map { " · \($0)" } ?? "")).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary)
             }
         }

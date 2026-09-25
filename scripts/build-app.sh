@@ -41,6 +41,26 @@ if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
   security cms -D -i "$PROFILE" > build/profile.plist
   TEAM=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' build/profile.plist)
   cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+  # Desktop widget (v0.6): the app and widget share tonight's snapshot through an App Group named with the team ID (no
+  # portal registration needed, spike 25 Sep 2026). The widget is built only when Xcode and xcodegen are present.
+  GROUP="$TEAM.$BUNDLE_ID"
+  /usr/libexec/PlistBuddy -c "Add :NightwatchAppGroup string $GROUP" "$APP/Contents/Info.plist"
+  # The generated project gets the root Package.resolved, so the widget links exactly the dependency versions the app does.
+  WIDGET_SKIP=""
+  command -v xcodegen >/dev/null || WIDGET_SKIP="xcodegen not installed: brew install xcodegen"
+  xcrun --find xcodebuild >/dev/null 2>&1 || WIDGET_SKIP="Xcode not installed"
+  PINS=Widget/NightwatchWidget.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+  if [[ -z "$WIDGET_SKIP" ]] && (cd Widget && xcodegen generate --quiet) \
+     && mkdir -p "$PINS" && cp Package.resolved "$PINS/" \
+     && xcodebuild -project Widget/NightwatchWidget.xcodeproj -scheme NightwatchWidget -configuration Release \
+          -derivedDataPath build/widget -onlyUsePackageVersionsFromResolvedFile DEVELOPMENT_TEAM="$TEAM" \
+          -allowProvisioningUpdates build > build/widget.log 2>&1; then
+    mkdir -p "$APP/Contents/PlugIns"
+    cp -R build/widget/Build/Products/Release/NightwatchWidget.appex "$APP/Contents/PlugIns/"
+    echo "Widget: built and embedded"
+  else
+    echo "Widget: skipped (${WIDGET_SKIP:-the Xcode build failed; see build/widget.log})"
+  fi
   cat > build/Nightwatch.entitlements <<ENT
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -48,6 +68,7 @@ if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
   <key>com.apple.developer.weatherkit</key><true/>
   <key>com.apple.application-identifier</key><string>$TEAM.$BUNDLE_ID</string>
   <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
+  <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
 </dict></plist>
 ENT
   codesign --force --sign "$IDENTITY" --entitlements build/Nightwatch.entitlements --options runtime "$APP"
