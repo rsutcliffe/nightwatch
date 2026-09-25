@@ -56,6 +56,8 @@ if (( PUBLISH )); then
   [[ "$(git rev-parse "v$VERSION^{commit}")" == "$(git rev-parse HEAD)" ]] && git diff --quiet HEAD \
     || fail "check out v$VERSION with no uncommitted changes before publishing"
   command -v gh >/dev/null || fail "--publish needs the GitHub CLI (gh)"
+  # The notes come from this version's row in the product overview's release history: no row, no release.
+  scripts/release-notes.sh "$VERSION" > "$WORK/notes.md" || fail "add a $VERSION row to the release history in docs/product-overview.md first"
 fi
 
 # 2. Build with the everyday script (it embeds the widget), then re-sign both bundles with the Developer ID.
@@ -138,8 +140,11 @@ print "SHA-256: $(cut -d' ' -f1 "$DMG.sha256")"
 
 # 5. Optional: attach to the GitHub release for the tag, creating the release if it does not exist yet.
 if (( PUBLISH )); then
-  gh release view "v$VERSION" >/dev/null 2>&1 \
-    || gh release create "v$VERSION" --verify-tag --title "Nightwatch $VERSION" --notes "Download Nightwatch-$VERSION.dmg, open it and drag Nightwatch to Applications. Signed with a Developer ID and notarised by Apple. SHA-256 in Nightwatch-$VERSION.dmg.sha256."
+  if gh release view "v$VERSION" >/dev/null 2>&1; then
+    gh release edit "v$VERSION" --notes-file "$WORK/notes.md" >/dev/null
+  else
+    gh release create "v$VERSION" --verify-tag --title "Nightwatch $VERSION" --notes-file "$WORK/notes.md" >/dev/null
+  fi
   gh release upload "v$VERSION" "$DMG" "$DMG.sha256" --clobber
   print "Attached to https://github.com/rsutcliffe/nightwatch/releases/tag/v$VERSION"
 fi

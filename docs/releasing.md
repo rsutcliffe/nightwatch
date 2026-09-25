@@ -46,7 +46,9 @@ from a website or a GitHub release.
      (the app copied out of it is covered by the same notarisation; opened for the first time with no network, macOS
      looks the ticket up when it next can);
    - writes the SHA-256 checksum beside it;
-   - with `--publish`, attaches the DMG and checksum to the GitHub release for the tag, creating the release if needed.
+   - with `--publish`, attaches the DMG and checksum to the GitHub release for the tag, creating the release if needed,
+     with notes written by `scripts/release-notes.sh` from the version's row in the release history of
+     `docs/product-overview.md`. Add that row before releasing: without it, `--publish` stops.
 3. Link the website's download button to the GitHub release asset, or copy the DMG to the site.
 
 Without `--publish` the DMG stays in `build/release/`. `scripts/release.sh --skip-notarize` checks signing and packaging
