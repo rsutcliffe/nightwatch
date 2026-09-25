@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 24 September 2026, version 0.4.0 "Jingo". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.4.1 "Jingo". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -127,6 +127,7 @@ Tags follow the City Watch novels.
 | 0.3.0 | Feet of Clay | 24 September 2026 | Bright-night mode; aurora alerts from AuroraWatch UK; best-spot completion (Clearer sky line lands on the card, cards compare with home); site-cache pruning |
 | 0.3.1 | Feet of Clay, patch 1 | 24 September 2026 | Fixes from the release review: stale aurora statuses never alert; the bright reason line matches the rule; toggling Bright nights mid-evening no longer sends a stand-down |
 | 0.4.0 | Jingo | 24 September 2026 | Liquid Glass redesign: sky-score bezel, "Held back by" reason line, clear-sky bars, dew warning tile, notify switch; Targets viewability timeline, frame-fill chips, sort control, glass sidebar, Moon line |
+| 0.4.1 | Jingo, patch 1 | 25 September 2026 | Tiles in each popover row share one height; tile contrast measured live and fixed (tiles are a fill on the glass panel) |
 
 ## Install
 
