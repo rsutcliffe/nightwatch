@@ -182,6 +182,7 @@ Nightwatch takes its name from the City Watch. Owner's brief: subtle, in key wit
 |---|---|---|
 | Background refresh (menu item, logs) | Patrol | Refresh |
 | Saved site | Beat | Site |
+| Dark-site card button (v0.6.4: the owner ruled that "Use as beat" lost people, so this action is plain in both modes) | Observe from here | Observe from here |
 | Go alert title | All's well. Clear from 22:40 | Clear from 22:40 |
 | Cancel alert title | Stand down. Clouds moving in | Cancelled. Clouds moving in |
 | Less-certain alert title (v0.6.3: the two forecasts split after a heads-up or nudge) | Hold fire. Forecasts disagree | Less certain. Forecasts disagree |

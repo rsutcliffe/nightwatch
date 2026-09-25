@@ -54,7 +54,7 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 
 **Desktop widgets.** Small, medium and large widgets for the macOS desktop, built when Xcode and xcodegen are installed. The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
-**Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Use as beat" makes a site the active site for the whole app. Each card compares tonight's score and sky with home, and the popover's "Clearer sky" line opens that site's card.
+**Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Observe from here" makes a site the active site for the whole app. Each card compares tonight's score and sky with home, and the popover's "Clearer sky" line opens that site's card.
 
 **Settings.** Sites (automatic via Location Services or manual, with Bortle class), telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login.
 
@@ -143,7 +143,7 @@ Tags follow the City Watch novels.
 | 0.6.1 | Night Watch, patch 1 | 25 September 2026 | The popover's aurora line in AuroraWatch UK's own colours (yellow, amber, red), the owner's choice over the night palette |
 | 0.6.2 | Night Watch, patch 2 | 25 September 2026 | Constellation artwork for all 88 constellations, a figure with its star plot on top, in place of the stick figures |
 | 0.6.3 | Night Watch, patch 3 | 25 September 2026 | After a heads-up, a stand-down only when both forecasts lose the window; when they split, "Hold fire. Forecasts disagree", saying what each sees |
-| 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption |
+| 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption; dark-site cards say "Observe from here" instead of "Use as beat" |
 
 ## Install
 

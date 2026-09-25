@@ -12,7 +12,7 @@ Run on each Mac after `scripts/build-app.sh`.
 8. Plain wording: Settings › Wording › Plain. Refresh button reads "Refresh". → pass.
 9. Targets › Dark sites lists the Yorkshire Dales and North York Moors from the Sheffield test site at 120 km, each with tonight's score. → pass.
 10. Settings › Dark sites › radius 20 km → the list empties or shrinks within one Patrol. → pass.
-11. A card's "Use as beat" adds the site under Beats and the popover header changes to it. → pass.
+11. A card's "Observe from here" adds the site under Beats and the popover header changes to it. → pass.
 12. With the grid installed, at least one "Dark spot" card appears within 50 km of a rural site. → pass.
 13. Settings › Bright nights on, on a night with no astronomical darkness (or with Go rule hours set above tonight's darkness): the popover says "Bright night: Moon and planets" with a window when the Moon or a planet is 15° up in a clear run. → pass.
 14. Bright nights off: the same night shows "Nothing to see here" with the reason line, as 0.2.2. → pass.

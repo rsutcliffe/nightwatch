@@ -262,7 +262,8 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
-                Button("Use as \(store.copy.siteNoun.lowercased())") { store.adoptAsBeat(s) }.font(.caption)
+                // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
+                Button("Observe from here") { store.adoptAsBeat(s) }.font(.caption)
             }
         }
         .padding(12)
