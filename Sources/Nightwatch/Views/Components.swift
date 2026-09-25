@@ -25,7 +25,7 @@ struct StatTile: View {
                 .foregroundStyle(value == nil ? Tokens.textSecondary : Tokens.textPrimary).fixedSize(horizontal: false, vertical: true)
             if let hint { Text(hint).font(.system(size: 9)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true) }
         }
-        .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, alignment: .leading)
+        .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, maxHeight: .infinity, alignment: .topLeading)   // fills its TileRow
         .overlay(alignment: .topTrailing) { if warning { WarningDot(size: 5).padding(7) } }
         .overlay { if warning { RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning.opacity(0.59), lineWidth: 0.75) } }
         .accessibilityElement(children: .combine)
@@ -59,5 +59,14 @@ struct Chip: View {
         .foregroundStyle(warning ? Tokens.statusWarning : Tokens.textPrimary)
         .padding(.horizontal, 7).padding(.vertical, 3)
         .nightwatchGlass(in: Capsule(), fill: Color.black.opacity(0.55))
+    }
+}
+
+/// One row of tiles, every tile as tall as the tallest: the row takes its ideal height, and each tile's flexible frame fills it.
+struct TileRow<Content: View>: View {
+    var spacing: CGFloat = 8.5
+    @ViewBuilder let content: () -> Content
+    var body: some View {
+        HStack(alignment: .top, spacing: spacing) { content() }.fixedSize(horizontal: false, vertical: true)
     }
 }

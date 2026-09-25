@@ -129,14 +129,18 @@ struct TonightView: View {
         let transp = plan.darkHours.compactMap(\.transparency)
         let transpText = transp.isEmpty ? nil : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8.5), count: 3), spacing: 8.5) {
-            StatTile(label: "Dark", value: dark)
-            MoonTile(value: moon == .down ? "Down tonight" : pct, line: moon.flatMap { $0 == .down ? nil : Copy.moonText($0, site: site) }, at: moonAt)
-            StatTile(label: "Seeing", value: seeingText)
-            StatTile(label: "Wind", value: windText)
-            StatTile(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName,
-                     hint: dew == .high ? "Dew heater advised" : nil, warning: dew == .high)
-            StatTile(label: "Transparency", value: transpText)
+        return VStack(spacing: 8.5) {
+            TileRow {
+                StatTile(label: "Dark", value: dark)
+                MoonTile(value: moon == .down ? "Down tonight" : pct, line: moon.flatMap { $0 == .down ? nil : Copy.moonText($0, site: site) }, at: moonAt)
+                StatTile(label: "Seeing", value: seeingText)
+            }
+            TileRow {
+                StatTile(label: "Wind", value: windText)
+                StatTile(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName,
+                         hint: dew == .high ? "Dew heater advised" : nil, warning: dew == .high)
+                StatTile(label: "Transparency", value: transpText)
+            }
         }
     }
 

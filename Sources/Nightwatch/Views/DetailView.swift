@@ -27,7 +27,7 @@ struct DetailView: View {
                 Text(target.name).font(.title2.weight(.semibold))
                 Text(target.subtitle + (target.sizeArcmin.map { String(format: " · %.0f′", $0) } ?? "") + (target.magnitude.map { String(format: " · mag %.1f", $0) } ?? "")).foregroundStyle(Theme.dim)
                 if let s = store.site, let w = store.plan?.primary {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                    TileRow(spacing: 8) {
                         StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
                         StatTile(label: "Above \(Int(store.config.goRule.minAltitudeDeg))°", value: "\(Int(target.visibleFraction * 100))% of window")
                         StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°")
