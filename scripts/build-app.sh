@@ -81,6 +81,9 @@ else
 fi
 if [[ "${1:-}" == "--no-install" ]]; then echo "Built $APP"; exit 0; fi
 pkill -x Nightwatch || true
+# macOS keeps a widget's process alive across reinstalls and goes on drawing with the code it first loaded (on 25 Sep 2026
+# the desktop showed a build three hours old). Ending it makes the system relaunch the widget from the new copy.
+pkill -f "Nightwatch.app/Contents/PlugIns/NightwatchWidget.appex/" || true
 rm -rf /Applications/Nightwatch.app
 cp -R "$APP" /Applications/Nightwatch.app
 open /Applications/Nightwatch.app
