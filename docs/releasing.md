@@ -12,7 +12,14 @@ from a website or a GitHub release.
    Only the account holder can create one. It lands in your login keychain; keep a backup, since it signs every release.
 2. **A Developer ID provisioning profile for the app.** At developer.apple.com › Certificates, Identifiers & Profiles ›
    Profiles › +, choose Developer ID, the App ID `io.github.rsutcliffe.nightwatch` (it already has WeatherKit), and the
-   certificate from step 1. Download it and double-click it. See [Create a Developer ID provisioning profile](https://developer.apple.com/help/account/provisioning-profiles/create-a-developer-id-provisioning-profile/).
+   certificate from step 1. Download it, then copy it where Xcode keeps profiles, which is where the script looks
+   (double-clicking installs it under System Settings › General › Device Management instead, which the script cannot read):
+
+   ```bash
+   P=~/Downloads/Nightwatch.provisionprofile; cp "$P" ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/"$(security cms -D -i "$P" | plutil -extract UUID raw -)".provisionprofile
+   ```
+
+   See [Create a Developer ID provisioning profile](https://developer.apple.com/help/account/provisioning-profiles/create-a-developer-id-provisioning-profile/).
    WeatherKit needs this profile outside the App Store. The widget needs none: its sandbox and team-prefixed App Group are
    not restricted entitlements.
 3. **Notarisation credentials in the keychain.** Make an app-specific password at account.apple.com › Sign-In and
