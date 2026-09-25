@@ -201,6 +201,8 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var limiting: [LimitingFactor] = []
     /// The share of hourly samples in the plan's darkness with the Moon up; nil when there is no darkness.
     public var moonUpFraction: Double? = nil
+    /// Open-Meteo's view of tonight under the same rule (v0.5); nil without a second opinion.
+    public var agreement: Agreement? = nil
 }
 
 extension Planner {
@@ -351,11 +353,12 @@ extension Planner {
         // still shows what is up on a cloudy night. "Best tonight" only exists when a clear window exists.
         let rankingWindow = primary ?? darkness.map { ClearWindow(start: $0.0, end: $0.1) }
         let targets = rankingWindow.map { rank(catalog: catalog, constellations: constellations, window: $0, site: site, fov: fov, rule: rule) } ?? []
-        let darkPlan = NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
+        var darkPlan = NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
                                  moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
                                  darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets),
                                  seeingAvailable: dark.contains { $0.seeing != nil },
                                  limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: darkness == nil ? nil : aboveFraction)
+        darkPlan.agreement = agreement(plan: darkPlan, second: forecast.secondOpinion, rule: rule)
         // Bright-night mode only takes over when the dark rule cannot be met at all tonight (too little darkness).
         if let b = bright, b.enabled, !darkPlan.qualifies {
             let darkLen = darkness.map { $0.1.timeIntervalSince($0.0) / 3600 } ?? 0
@@ -441,11 +444,13 @@ extension Planner {
         // The Moon is the target on a bright night, so its score term is not taken away.
         let inputs = ScoreInputs(darkHours: span, windows: windows, darkness: (ns, ne), moonIllumination: 0, moonAboveFraction: 0, maxCloudPct: rule.maxCloudPct)
         let score = Planner.score(inputs)
-        return NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
+        var p = NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
                          moonIllumination: moon.illumination, moonRise: moon.rise, moonSet: moon.set,
                          darkHours: span, targets: [], best: [], seeingAvailable: span.contains { $0.seeing != nil },
                          mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site, fov: fov) } ?? [],
                          limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: moonUpFraction(from: ns, to: ne, site: site))
+        p.agreement = agreement(plan: p, second: forecast.secondOpinion, rule: brightRule)
+        return p
     }
 }
 
