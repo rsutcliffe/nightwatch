@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.3 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.4 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -47,6 +47,10 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 - **Header:** a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness).
 - **Sidebar:** glass, with the filters as switches under an amber Moon line.
 - **Events:** meteor showers, eclipses, conjunctions, comets and ISS passes.
+- **Detail page:** the image fills the window and the text sits on it in black caption boxes.
+  - Deep-sky survey photos fill the page, fetched sharp at 1600 px. A pill says "Shown at your field of view", or, for an object bigger than the field, a dashed box marks what you would capture, with extra sky around it.
+  - The Moon, planet photographs and constellation artwork are fitted above the caption.
+  - The caption holds the name, type and coordinates. On a night with a clear window it adds best time, time above the minimum altitude, Moon separation, a suggested stack, and an altitude chart from sunset to sunrise. The chart shows the window shaded and the minimum altitude dashed, and the curve is red only where the target is up inside the window.
 
 **Desktop widgets.** Small, medium and large widgets for the macOS desktop, built when Xcode and xcodegen are installed. The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
@@ -103,7 +107,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (212 Swift Testing tests at 0.6.3).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (212 Swift Testing tests at 0.6.4).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -139,6 +143,7 @@ Tags follow the City Watch novels.
 | 0.6.1 | Night Watch, patch 1 | 25 September 2026 | The popover's aurora line in AuroraWatch UK's own colours (yellow, amber, red), the owner's choice over the night palette |
 | 0.6.2 | Night Watch, patch 2 | 25 September 2026 | Constellation artwork for all 88 constellations, a figure with its star plot on top, in place of the stick figures |
 | 0.6.3 | Night Watch, patch 3 | 25 September 2026 | After a heads-up, a stand-down only when both forecasts lose the window; when they split, "Hold fire. Forecasts disagree", saying what each sees |
+| 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption |
 
 ## Install
 

@@ -162,6 +162,15 @@ struct LargeView: View {
 struct NightwatchWidgetView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
+    @Environment(\.widgetContentMargins) private var margins
+    /// The system's content margins, made symmetric left to right for the centred layouts (Apple's documented pattern with
+    /// contentMarginsDisabled). On the owner's desktop the small widget sat a few points left of centre (25 September 2026)
+    /// although the view measures centred offscreen; this did not cure it, so the cause is still open.
+    private var padding: EdgeInsets {
+        guard entry.snapshot == nil || family == .systemSmall else { return margins }
+        let side = max(margins.leading, margins.trailing)
+        return EdgeInsets(top: margins.top, leading: side, bottom: margins.bottom, trailing: side)
+    }
     var body: some View {
         Group {
             if let s = entry.snapshot {
@@ -180,6 +189,7 @@ struct NightwatchWidgetView: View {
         }
         // The small widget and the empty state are centred, as on the canvas; medium and large read from the top left.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: entry.snapshot == nil || family == .systemSmall ? .center : .topLeading)
+        .padding(padding)
         .containerBackground(for: .widget) { Tokens.targetsCard }
         .widgetURL(WidgetLink.targets.url)
     }
@@ -192,5 +202,6 @@ struct NightwatchWidget: Widget {
             .configurationDisplayName("Nightwatch")
             .description("Tonight's sky at a glance")
             .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+            .contentMarginsDisabled()   // the view applies the system's margins itself, symmetric where it is centred
     }
 }

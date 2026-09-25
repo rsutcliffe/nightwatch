@@ -11,36 +11,53 @@ enum Thumbnails {
         return max(fov.widthDeg, objectDeg * 1.5, 0.05)
     }
 
-    static func url(for t: RankedTarget, fov: FieldOfView) -> URL {
+    /// Cards use 480 px; the detail page fills the window, so it fetches 1600 px (hips2fits serves it, checked 25 Sep 2026).
+    static let cardWidth = ThumbnailFiles.cardWidth, detailWidth = 1600
+
+    /// `context` widens the view around the target (the detail page's dashed-box case).
+    static func url(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) -> URL {
         var c = URLComponents(string: "https://alasky.cds.unistra.fr/hips-image-services/hips2fits")!
-        let f = fovDeg(for: t, fov: fov)
+        let f = fovDeg(for: t, fov: fov) * context
         c.queryItems = [
             .init(name: "hips", value: "CDS/P/DSS2/color"),
             .init(name: "ra", value: String(format: "%.5f", t.raHours * 15)),
             .init(name: "dec", value: String(format: "%.5f", t.decDeg)),
             .init(name: "fov", value: String(format: "%.3f", f)),
-            .init(name: "width", value: "480"),
-            .init(name: "height", value: String(Int(480 * max(0.05, fov.heightDeg) / max(0.05, fov.widthDeg)))),
+            .init(name: "width", value: String(width)),
+            .init(name: "height", value: String(Int(Double(width) * max(0.05, fov.heightDeg) / max(0.05, fov.widthDeg)))),
             .init(name: "projection", value: "TAN"),
             .init(name: "format", value: "jpg")
         ]
         return c.url!
     }
 
-    static func file(for t: RankedTarget, fov: FieldOfView) -> URL {
-        dir.appendingPathComponent("\(t.id)-\(String(format: "%.2fx%.2f", fov.widthDeg, fov.heightDeg)).jpg")
+    /// Card images keep their original names, so the existing cache stays valid; larger ones add their width.
+    static func file(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) -> URL {
+        dir.appendingPathComponent(ThumbnailFiles.name(id: t.id, fovWidthDeg: fov.widthDeg, fovHeightDeg: fov.heightDeg, width: width, context: context))
     }
 
-    static func image(for t: RankedTarget, fov: FieldOfView) async -> NSImage? {
+    /// Drops detail images not opened for 30 days; run after each new detail image is saved.
+    static func pruneDetailImages(now: Date = Date()) {
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: dir.path) else { return }
+        var modified: [String: Date] = [:]
+        for n in names { modified[n] = (try? fm.attributesOfItem(atPath: dir.appendingPathComponent(n).path))?[.modificationDate] as? Date }
+        for n in ThumbnailFiles.staleDetailImages(names: names, modified: modified, now: now) { try? fm.removeItem(at: dir.appendingPathComponent(n)) }
+    }
+
+    static func image(for t: RankedTarget, fov: FieldOfView, width: Int = cardWidth, context: Double = 1) async -> NSImage? {
         // Planets and the Moon get real photographs, not a survey cutout.
         if t.id == "moon" { return await MoonImages.image(at: t.peakTime) }
         if let p = PlanetImages.planet(forTargetID: t.id) { return PlanetImages.url(for: p).flatMap { NSImage(contentsOf: $0) } }
         guard t.group != .constellations, t.group != .planets else { return nil }
-        let f = file(for: t, fov: fov)
+        let f = file(for: t, fov: fov, width: width, context: context)
         if let img = NSImage(contentsOf: f) { return img }
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        guard let data = try? await URLSessionFetcher().get(url(for: t, fov: fov)), let img = NSImage(data: data) else { return nil }
+        // hips2fits took 12.5 s for a 1600 px image with extra sky (25 Sep 2026), so the large fetch gets more than the usual 20 s.
+        let fetcher = URLSessionFetcher(timeout: width == cardWidth ? 20 : 45)
+        guard let data = try? await fetcher.get(url(for: t, fov: fov, width: width, context: context)), let img = NSImage(data: data) else { return nil }
         try? data.write(to: f, options: .atomic)
+        if width != cardWidth { pruneDetailImages() }
         return img
     }
 }
@@ -48,6 +65,8 @@ enum Thumbnails {
 /// `art`: a constellation's artwork, loaded once per card in the same task as the photo thumbnails, never in `body`.
 final class ThumbnailLoader: ObservableObject {
     @Published var image: NSImage?
+    /// How many degrees `image` spans across, so the detail page can size the dashed box on it.
+    @Published var imageFovDeg: Double?
     @Published var art: ConstellationArt?
 }
 

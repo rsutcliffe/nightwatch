@@ -27,6 +27,17 @@ struct StatTile: View {
     }
 }
 
+/// Black caption backing for text laid over an image (the detail page, v0.6.4), so white text stays legible on any photo.
+extension View {
+    func captionBacking(cornerRadius: CGFloat = 6) -> some View {
+        background(Color.black.opacity(0.62), in: RoundedRectangle(cornerRadius: cornerRadius))
+    }
+    /// An 11 pt label in a caption backing: the detail page's back button and field-of-view note.
+    func captionPill() -> some View {
+        font(.system(size: 11)).foregroundStyle(Tokens.textPrimary).padding(.horizontal, 9).padding(.vertical, 5).captionBacking()
+    }
+}
+
 /// Amber dot and "{n} h ago" beside any timestamp older than the six-hour stale rule.
 struct StaleBadge: View {
     let fetchedAt: Date

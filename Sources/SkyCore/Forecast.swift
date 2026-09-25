@@ -75,9 +75,10 @@ public protocol Fetcher: Sendable {
 }
 
 public struct URLSessionFetcher: Fetcher {
-    public init() {}
+    public var timeout: TimeInterval
+    public init(timeout: TimeInterval = 20) { self.timeout = timeout }
     public func get(_ url: URL) async throws -> Data {
-        var req = URLRequest(url: url, timeoutInterval: 20)
+        var req = URLRequest(url: url, timeoutInterval: timeout)
         req.setValue("Nightwatch/0.1 (https://github.com/rsutcliffe/nightwatch)", forHTTPHeaderField: "User-Agent")
         let (data, response) = try await URLSession.shared.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

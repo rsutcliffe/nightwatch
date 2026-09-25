@@ -19,3 +19,16 @@ import Foundation
     #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).sorted() == ["keep.json"])
     CachePruning.prune(directory: dir.appendingPathComponent("missing"), keepIDs: [], now: Date())   // no throw on a missing folder
 }
+
+@Test func cardThumbnailNamesAreUnchanged() {
+    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2) == "NGC7000-2.10x1.20.jpg")   // the pre-v0.6.4 name
+    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600) == "NGC7000-2.10x1.20-w1600.jpg")
+    #expect(ThumbnailFiles.name(id: "NGC7000", fovWidthDeg: 2.1, fovHeightDeg: 1.2, width: 1600, context: 1.6) == "NGC7000-2.10x1.20-w1600-c1.6.jpg")
+}
+
+@Test func onlyOldDetailImagesArePruned() {
+    let now = Date(), old = now.addingTimeInterval(-31 * 86_400), recent = now.addingTimeInterval(-86_400)
+    let names = ["M31-2.10x1.20.jpg", "M31-2.10x1.20-w1600.jpg", "NGC7000-2.10x1.20-w1600-c1.6.jpg", "M42-2.10x1.20-w1600.jpg"]
+    let modified = [names[0]: old, names[1]: old, names[2]: old, names[3]: recent]
+    #expect(ThumbnailFiles.staleDetailImages(names: names, modified: modified, now: now) == [names[1], names[2]])
+}

@@ -60,7 +60,8 @@ struct TargetsView: View {
             .navigationSplitViewColumnWidth(232)
         } detail: {
             if let selected = ui.selected {
-                DetailView(target: selected) { ui.selected = nil }
+                // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
+                DetailView(target: selected) { ui.selected = nil }.id(selected.id)
             } else {
                 switch ui.section {
                 case .group(.events): eventsList
