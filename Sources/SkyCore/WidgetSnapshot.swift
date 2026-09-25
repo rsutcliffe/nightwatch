@@ -38,6 +38,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var brightList: String?
     /// Which service supplied the cloud hours ("Apple Weather" or "Open-Meteo"), for the large widget's footer.
     public var source: String?
+    /// "Updated 21:10" in the site's time zone and 24-hour form, as the popover shows it.
+    public var updated: String?
 
     public static func make(plan: NightPlan, tomorrow: NightPlan?, fetchedAt: Date, site: Site, rule: GoRule,
                             bright: BrightSettings, alerts: AlertSettings, copy: Copy, source: String? = nil) -> WidgetSnapshot {
@@ -67,7 +69,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             notify: Copy.notifyLabel(plan, site: site, settings: alerts),
             notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },
             brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
-            source: source)
+            source: source, updated: "Updated \(hm(fetchedAt))")
     }
 
     /// The gallery's preview: a made-up clear night at a made-up site, so the widget picker shows the real layout.
@@ -81,7 +83,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         }, barsLabel: "Clear sky by hour.",
         targets: [WidgetTarget(id: "M13", catalogueID: "M13", name: "Hercules Cluster", best: "Best 21:30 · 71° up", group: .clusters),
                   WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)],
-        tomorrow: nil, notify: "Notify at 20:40", notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo")
+        tomorrow: nil, notify: "Notify at 20:40", notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo", updated: "Updated 18:05")
 
     /// "Forecast 7 h old" once the snapshot's forecast is more than six hours old at `now` (the alerts' stale rule); else nil.
     public func staleText(now: Date) -> String? {

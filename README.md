@@ -17,7 +17,7 @@ The app icon comes from `Resources/AppIcon/Nightwatch.icon`, an Icon Composer do
 
 ## Desktop widget (optional)
 
-Nightwatch has small, medium and large desktop widgets showing tonight's sky score and verdict. The medium and large ones add the clear-sky bars, and the large one the best three targets. They draw a snapshot the app writes after each patrol, so they always match the popover, and they never fetch anything themselves.
+Nightwatch has small, medium and large desktop widgets showing tonight's sky score and verdict. The medium and large ones add the clear-sky bars, and the large one the best three targets. They draw a snapshot the app writes after each patrol, so they always match the popover, and they never fetch anything themselves. Clicking one opens the Targets window; clicking a target on the large one opens its detail.
 
 The widget is built only on a signed build with Xcode and xcodegen installed (`brew install xcodegen`): `scripts/build-app.sh` then generates `Widget/NightwatchWidget.xcodeproj` from `Widget/project.yml`, builds the extension with `xcodebuild` and embeds it. With the Command Line Tools alone the app builds exactly as before, without the widget.
 
@@ -93,4 +93,4 @@ See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0). 7Timer data is for non
 
 ## Release names
 
-Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 1.0 Night Watch.
+Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 0.6 Night Watch, then Thud! and Snuff.

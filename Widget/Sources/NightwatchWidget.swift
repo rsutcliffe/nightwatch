@@ -151,7 +151,7 @@ struct LargeView: View {
                 Text(s.notify ?? "").font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary)
                 Spacer()
                 if let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true, lines: 1) } else {
-                Text((["Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))", s.source].compactMap { $0 }).joined(separator: " · "))
+                Text(([s.updated ?? "Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))", s.source].compactMap { $0 }).joined(separator: " · "))
                     .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary)
                 }
             }

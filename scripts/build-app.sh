@@ -76,6 +76,7 @@ ENT
 else
   codesign --force --sign - "$APP"
   echo "Signed ad hoc (no Apple Development identity or profile for $BUNDLE_ID): Open-Meteo only"
+  echo "Widget: skipped (unsigned build; the widget needs the App Group a signed build carries)"
 fi
 if [[ "${1:-}" == "--no-install" ]]; then echo "Built $APP"; exit 0; fi
 pkill -x Nightwatch || true

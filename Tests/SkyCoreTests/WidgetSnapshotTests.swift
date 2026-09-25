@@ -81,7 +81,7 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     // A widget.json written by the first v0.6 build has no notifyShort, brightList or source: it must still decode.
     let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
     var obj = try JSONSerialization.jsonObject(with: e.encode(s)) as! [String: Any]
-    for k in ["notifyShort", "brightList", "source"] { obj.removeValue(forKey: k) }
+    for k in ["notifyShort", "brightList", "source", "updated"] { obj.removeValue(forKey: k) }
     let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
     let old = try d.decode(WidgetSnapshot.self, from: JSONSerialization.data(withJSONObject: obj))
     #expect(old.source == nil && old.headline == s.headline)
@@ -109,6 +109,8 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
 @Test func snapshotRoundTrips() throws {
     let (p, t) = try plans(november, clearMiddle)
     let s = snap(p, t, fetchedAt: november)
+    // The popover's clock: the site's time zone, 24-hour (12:00 UTC is 12:00 in London in November).
+    #expect(s.updated == "Updated 12:00")
     let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
     let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
     #expect(try d.decode(WidgetSnapshot.self, from: e.encode(s)) == s)

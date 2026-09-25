@@ -172,6 +172,7 @@ final class Store: ObservableObject {
         guard forecastMatches(site) else {
             plan = nil; tomorrow = nil; events = []; darkSites = []; sitePlans = []; bestAway = nil
             lastError = "Forecast is for a different site; refreshing"
+            clearWidgetSnapshot()
             return
         }
         let cal = site.calendar
@@ -205,6 +206,15 @@ final class Store: ObservableObject {
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let data = try? enc.encode(snap) else { return }
         try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// After a site change and before the new site's forecast arrives, the widget shows "Open Nightwatch…" rather than the
+    /// old site's night.
+    private func clearWidgetSnapshot() {
+        guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
+              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return }
+        guard (try? FileManager.default.removeItem(at: dir.appendingPathComponent("widget.json"))) != nil else { return }
         WidgetCenter.shared.reloadAllTimelines()
     }
 

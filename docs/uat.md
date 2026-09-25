@@ -31,3 +31,10 @@ Run on each Mac after `scripts/build-app.sh`.
 27. Signed build, after a Patrol: `~/Library/Caches/Nightwatch/forecast.json` contains "secondOpinion" with source "Open-Meteo". → pass.
 28. Popover: under the window time, "Open-Meteo agrees" with a tick, or "Open-Meteo agrees: no clear window" when neither sees one, or an amber-dot line where it differs ("sees cloud from HH:MM", "sees it clear from HH:MM", "has a clear run HH:MM–HH:MM", "sees no clear window"); the evening heads-up and the nudge end with the same sentence. → pass.
 29. Settings › Alerts: "Alert only when Open-Meteo agrees" is off by default and enabled on the signed build; with it on, a night where Open-Meteo is not clear inside the window sends no heads-up. → pass.
+30. Signed build with Xcode and xcodegen: `scripts/build-app.sh` prints "Widget: built and embedded"; with the Command Line Tools only it prints "Widget: skipped (Xcode not installed)", and on an unsigned build "Widget: skipped (unsigned build; …)"; either way the app still builds. → pass.
+31. Right-click the desktop › Edit Widgets… › Nightwatch lists small, medium and large with the porthole icon; before the app has patrolled, the gallery shows a sample night. → pass.
+32. On the desktop, each size shows tonight's score and the popover's verdict with nothing cut off; the small one is centred; medium and large show the reason and Open-Meteo's line. → pass.
+33. After a Patrol the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
+34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
+35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
+36. About shows version 0.6.0. → pass.

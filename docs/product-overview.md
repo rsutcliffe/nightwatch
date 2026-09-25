@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.5.2 "The Fifth Elephant". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.0 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -47,6 +47,8 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 - **Header:** a slim clear-sky strip and a sort control (Best now, Altitude, Size, Brightness).
 - **Sidebar:** glass, with the filters as switches under an amber Moon line.
 - **Events:** meteor showers, eclipses, conjunctions, comets and ISS passes.
+
+**Desktop widgets.** Small, medium and large widgets for the macOS desktop, built when Xcode and xcodegen are installed. The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
 **Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Use as beat" makes a site the active site for the whole app. Each card compares tonight's score and sky with home, and the popover's "Clearer sky" line opens that site's card.
 
@@ -99,7 +101,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (187 Swift Testing tests at 0.5.0).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (202 Swift Testing tests at 0.6.0).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -110,7 +112,7 @@ The app carries a light Terry Pratchett City Watch flavour in its wording (Patro
 ## What it is not
 
 - It does not control a telescope. It tells you when and what; the DwarfLab or Seestar app does the rest.
-- It is Mac-only. There is no iPhone app or widget yet.
+- It is Mac-only. There is no iPhone app or iPhone widget yet.
 - It is not a forecast provider. It reads Apple Weather or Open-Meteo plus 7Timer and applies a rule; it does not claim better accuracy than its sources.
 - It is non-commercial: 7Timer's terms rule out a paid product without replacing that source.
 
@@ -131,6 +133,7 @@ Tags follow the City Watch novels.
 | 0.5.0 | The Fifth Elephant | 25 September 2026 | Open-Meteo as a second opinion beside Apple Weather: one agreement line in the popover and alerts; opt-in "Alert only when Open-Meteo agrees"; nothing logged |
 | 0.5.1 | The Fifth Elephant, patch 1 | 25 September 2026 | App icon: a star over a red-lit horizon, as a Liquid Glass icon when built with Xcode and a classic icon otherwise |
 | 0.5.2 | The Fifth Elephant, patch 2 | 25 September 2026 | App icon replaced with the owner's favourite: a porthole onto the night sky with a red-lit horizon, full-bleed for macOS 27 |
+| 0.6.0 | Night Watch | 25 September 2026 | Desktop widgets (small, medium, large) drawn from the patrol snapshot; clicking opens Targets or a target's detail; Targets sidebar rebuilt on a native list; "All targets" is a button; windows open centred |
 
 ## Install
 
