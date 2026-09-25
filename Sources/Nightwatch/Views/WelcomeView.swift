@@ -47,6 +47,9 @@ struct WelcomeView: View {
                     }
                     if state.locating { ProgressView().controlSize(.small) }
                 }
+                if state.locating {
+                    Text("If macOS asks, choose Allow.").font(.caption).foregroundStyle(Theme.dim)
+                }
                 if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(.caption) }
                 if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
                     Text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
@@ -61,6 +64,7 @@ struct WelcomeView: View {
                 Spacer()
                 Button("Start watching") {
                     store.config.welcomed = true; store.saveConfig()
+                    Task { await Notifier.requestAuthorisation() }   // now that the welcome has said what alerts are for
                     dismissWindow(id: "welcome")
                 }
                 .buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)

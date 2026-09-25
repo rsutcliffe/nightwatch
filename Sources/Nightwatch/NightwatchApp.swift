@@ -78,7 +78,8 @@ struct NightwatchApp: App {
             }
         }
         location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
-        await Notifier.requestAuthorisation()
+        // A first launch asks for notifications from the welcome's Start watching, after it has said what they are for.
+        if store.config.welcomed { await Notifier.requestAuthorisation() }
         store.requestLocationFix = { [location] in await location.requestOnce() }
         // A first launch asks for location from the welcome's own button, with the reason beside it, not at once.
         if store.config.activeSiteName == nil, store.config.welcomed { store.autoSite = await location.requestOnce() }
