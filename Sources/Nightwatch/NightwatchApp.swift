@@ -82,12 +82,12 @@ struct NightwatchApp: App {
         if store.config.welcomed { await Notifier.requestAuthorisation() }
         store.requestLocationFix = { [location] in await location.requestOnce() }
         // A first launch asks for location from the welcome's own button, with the reason beside it, not at once.
-        // Not awaited: while macOS asks, this can wait a minute, and the first refresh and the scheduler must not.
-        if store.config.activeSiteName == nil, store.config.welcomed {
-            Task { @MainActor in store.autoSite = await location.requestOnce(); await store.refresh(force: false) }
-        }
+        // Not awaited: while macOS asks, this can wait a minute, and the scheduler must not. Observing from this Mac, the
+        // first refresh waits for the fix instead, so it never forecasts (or alerts) for a saved site in the meantime.
+        let fixPending = store.config.activeSiteName == nil && store.config.welcomed
+        if fixPending { Task { @MainActor in store.autoSite = await location.requestOnce(); await store.refresh(force: false) } }
         else if store.config.welcomed { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
-        await store.refresh(force: false)
+        if !fixPending { await store.refresh(force: false) }
         let s = Scheduler { [location] in
             Task { @MainActor in
                 // Retry location until there is a site, but never before the welcome has explained why it is asked for.

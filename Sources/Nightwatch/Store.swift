@@ -187,6 +187,9 @@ final class Store: ObservableObject {
     /// The night whose sunset is coming up, or the one in progress: local date of (now − 9 h). ponytail: a fixed 9 h
     /// offset means the previous night stays "tonight" until 09:00 local; sunrise-based switching if anyone minds.
     func recompute(now: Date) async {
+        // Asked first: after this, everything up to the alert step runs without suspending, so two overlapping recomputes
+        // can never step the alerts with an older plan or site.
+        let canNotify = config.notifyEnabled ? await Notifier.authorised() : false
         guard let site, let fc = forecast else { return }
         guard forecastMatches(site) else {
             plan = nil; tomorrow = nil; events = []; darkSites = []; sitePlans = []; bestAway = nil
@@ -204,7 +207,7 @@ final class Store: ObservableObject {
         events = buildEvents(night: night, site: site, now: now)
         Store.write(p, "plan.json")
         writeWidgetSnapshot()
-        if config.notifyEnabled, await Notifier.authorised() {
+        if canNotify {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
                                      forecastFetchedAt: fc.fetchedAt, site: site, copy: copy)
             alertState = r.state
@@ -268,13 +271,15 @@ final class Store: ObservableObject {
                 if widgetAuroraNeedsRewrite(status) { writeWidgetSnapshot() }
             }
         }
+        // Only record a level as sent when it can be: turning notifications on mid-storm then alerts for the current level.
+        // Checked before the state is read, so reading, deciding and writing it never straddle a suspension: two
+        // overlapping polls (a wake and the timer) must not both send the same alert.
+        guard config.notifyEnabled, await Notifier.authorised() else { return }
         // The same six-hour rule as every other alert, and never another site's forecast.
         guard let status = aurora, let fc = forecast, forecastMatches(site), now.timeIntervalSince(fc.fetchedAt) <= 6 * 3600,
               let key = plan?.night.key else { return }
         let r = AuroraAlert.decide(status: status, now: now, site: site, nightKey: key, hours: fc.hours, rule: config.goRule,
                                    settings: config.aurora, alerts: config.alerts, state: auroraState, copy: copy)
-        // Only record a level as sent when it was: turning notifications on mid-storm then alerts for the current level.
-        guard config.notifyEnabled, await Notifier.authorised() else { return }
         auroraState = r.state
         Store.writeFile(r.state, StateFiles.url(StateFiles.aurora))
         if let n = r.notification { Notifier.post(n) }
