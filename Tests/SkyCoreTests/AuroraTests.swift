@@ -82,3 +82,9 @@ private var on: AuroraSettings { var a = AuroraSettings(); a.enabled = true; ret
     try Data(#"{"aurora":{"enabled":true,"threshold":"green"}}"#.utf8).write(to: url)
     #expect(try ConfigStore.load(from: url).aurora.threshold == .yellow)
 }
+
+/// AuroraWatch UK's own colours, from https://aurorawatch-api.lancs.ac.uk/0.2/status-descriptions.xml (owner ruling
+/// 25 September 2026: the popover uses them as published).
+@Test func auroraLevelsUseAuroraWatchColours() {
+    #expect(AuroraLevel.allCases.map(\.hex) == [0x33FF33, 0xFFFF00, 0xFF9900, 0xFF0000])
+}

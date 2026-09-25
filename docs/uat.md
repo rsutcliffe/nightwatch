@@ -19,7 +19,7 @@ Run on each Mac after `scripts/build-app.sh`.
 15. A September night with a clear dark window: the verdict is "Clear window tonight" whatever the Bright nights setting. → pass.
 16. Popover "Clearer sky …" line → Targets opens on Dark sites with that card at the top; cards show "Score N vs M at home". → pass.
 17. `ls ~/Library/Caches/Nightwatch/sites` after a Patrol lists only current sites. → pass.
-18. Settings › Aurora on, threshold Amber: on an amber or red AuroraWatch UK status after dark with a clear sky, outside quiet hours, a notification arrives and the popover shows "Aurora: amber (AuroraWatch UK)"; under cloud, no notification. → pass.
+18. Settings › Aurora on, threshold Amber: on an amber or red AuroraWatch UK status after dark with a clear sky, outside quiet hours, a notification arrives and the popover shows "Aurora: amber (AuroraWatch UK)" in AuroraWatch's amber (#ff9900); under cloud, no notification. → pass.
 19. macOS 26 or later: the popover panel, tiles and Targets cards are frosted glass; with Reduce transparency on they are a solid dark fill with the same layout. → pass.
 20. Popover: the sky score sits in a 60-tick bezel whose ticks glow red across tonight's clear window; with a bright Moon up the line under the window time reads "Held back by a N% moon". → pass.
 21. Popover: clear-sky bars (taller = clearer) with the window hours red; the Moon tile shows the Moon, "N%" and "Sets HH:MM"; on a damp night the Dew risk tile is amber with "Dew heater advised". → pass.

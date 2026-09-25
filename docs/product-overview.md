@@ -33,7 +33,7 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 - **Score:** the sky score inside a 60-tick 12-hour clock bezel. Ticks glow red across the clear window, dim where it is dark but cloudy, and faint in daylight.
 - **Verdict:** the clear window, or "Nothing to see here" with a plain reason, plus a "Held back by a 97% moon and high dew risk" line when something costs the score points, and, on a signed build, Open-Meteo's second opinion ("Open-Meteo agrees", or where it differs).
 - **Clear-sky bars:** one per hour of darkness, with the window hours red.
-- **Notice line:** at most one, for aurora or a clearer dark site nearby.
+- **Notice line:** at most one, for aurora (in AuroraWatch UK's own colours: yellow, amber or red) or a clearer dark site nearby.
 - **Six tiles:** dark hours, the Moon with a real NASA phase image and its set or rise time, seeing, wind, dew or frost risk (amber with "Dew heater advised" when high), and transparency.
 - **Best targets:** the best three, with thumbnails, catalogue ID, name and best time.
 - **Footer:** a "Notify at HH:MM" switch, the Patrol button, and the update time with the cloud source (the Apple Weather mark and legal link, or Open-Meteo), plus an amber dot and "{n} h ago" when the forecast is over six hours old.

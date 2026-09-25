@@ -5,6 +5,11 @@ public enum AuroraLevel: String, Codable, Sendable, Comparable, CaseIterable {
     case green, yellow, amber, red
     public static func < (a: AuroraLevel, b: AuroraLevel) -> Bool { allCases.firstIndex(of: a)! < allCases.firstIndex(of: b)! }
     public var displayName: String { rawValue.capitalized }
+    /// AuroraWatch UK's own colour for the level, as its status-descriptions list publishes it. The owner chose these
+    /// over the night palette (25 September 2026), so the aurora line is the one place Nightwatch shows green or pure red.
+    public var hex: UInt32 {
+        switch self { case .green: 0x33FF33; case .yellow: 0xFFFF00; case .amber: 0xFF9900; case .red: 0xFF0000 }
+    }
 }
 
 public struct AuroraStatus: Codable, Equatable, Sendable {
