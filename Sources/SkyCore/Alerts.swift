@@ -7,7 +7,22 @@ public struct AlertSettings: Codable, Equatable, Sendable {
     public var cancelOnDowngrade = true
     public var quietStartHour = 0
     public var quietEndHour = 7
+    /// v0.5: hold back the heads-up and the nudge when Open-Meteo is not clear enough inside the window. Off by default.
+    public var requireAgreement = false
     public init() {}
+    enum CodingKeys: String, CodingKey { case headsUp, tomorrowPreview, preWindowMinutes, cancelOnDowngrade, quietStartHour, quietEndHour, requireAgreement }
+    /// Each key optional, so a config written before a key existed keeps every other alert setting (v0.5 added requireAgreement).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = AlertSettings()
+        headsUp = try c.decodeIfPresent(Bool.self, forKey: .headsUp) ?? d.headsUp
+        tomorrowPreview = try c.decodeIfPresent(Bool.self, forKey: .tomorrowPreview) ?? d.tomorrowPreview
+        preWindowMinutes = try c.decodeIfPresent(Int.self, forKey: .preWindowMinutes) ?? d.preWindowMinutes
+        cancelOnDowngrade = try c.decodeIfPresent(Bool.self, forKey: .cancelOnDowngrade) ?? d.cancelOnDowngrade
+        quietStartHour = try c.decodeIfPresent(Int.self, forKey: .quietStartHour) ?? d.quietStartHour
+        quietEndHour = try c.decodeIfPresent(Int.self, forKey: .quietEndHour) ?? d.quietEndHour
+        requireAgreement = try c.decodeIfPresent(Bool.self, forKey: .requireAgreement) ?? d.requireAgreement
+    }
 }
 
 public struct AlertState: Codable, Equatable, Sendable {
@@ -45,6 +60,7 @@ public enum AlertEngine {
         guard now.timeIntervalSince(forecastFetchedAt) <= staleAfter else { return (nil, s) }
 
         let headsUpAt = tonight.night.sunset.addingTimeInterval(-3600)
+        let agreed = !settings.requireAgreement || Planner.agreementHolds(tonight.agreement)
         let goAt = tonight.primary?.start.addingTimeInterval(-Double(settings.preWindowMinutes) * 60)
         var note: AlertNotification? = nil
 
@@ -53,7 +69,7 @@ public enum AlertEngine {
         }
         /// Fires go when tonight qualifies and the nudge time has passed; true when it fired.
         func goIfDue() -> Bool {
-            guard let g = goAt, tonight.qualifies, now >= g else { return false }
+            guard let g = goAt, tonight.qualifies, agreed, now >= g else { return false }
             note = AlertNotification(kind: .go, title: tonight.mode == .bright ? copy.brightGoTitle(windowStart: window(tonight).0) : copy.goTitle(windowStart: window(tonight).0), body: copy.notificationBody(plan: tonight, site: site))
             s.stage = .goSent
             return true
@@ -65,7 +81,7 @@ public enum AlertEngine {
             // is skipped: the go notification carries the same window and targets, so a heads-up a minute
             // earlier would just be a second banner for no new information.
             if !goIfDue(), now >= headsUpAt {
-                if tonight.qualifies, settings.headsUp {
+                if tonight.qualifies, settings.headsUp, agreed {
                     let (start, hours) = window(tonight)
                     note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: copy.notificationBody(plan: tonight, site: site))
                     s.stage = .headsUpSent

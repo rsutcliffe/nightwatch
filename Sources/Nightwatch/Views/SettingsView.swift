@@ -87,6 +87,11 @@ struct SettingsView: View {
                 stepperRow("Nudge before the window opens", value: "\(store.config.alerts.preWindowMinutes) min",
                            binding: bind(\.alerts.preWindowMinutes), range: 0...120, step: 15)
                 Toggle("Cancel notice if the forecast turns", isOn: bind(\.alerts.cancelOnDowngrade))
+                Toggle("Alert only when Open-Meteo agrees", isOn: bind(\.alerts.requireAgreement))
+                    .disabled(store.forecast?.secondOpinion == nil)
+                if store.forecast?.secondOpinion == nil {
+                    Text("Needs Apple Weather (signed build)").font(.caption).foregroundStyle(Theme.dim)
+                }
                 stepperRow("Quiet hours start", value: String(format: "%02d:00", store.config.alerts.quietStartHour),
                            binding: bind(\.alerts.quietStartHour), range: 0...23, step: 1)
                 stepperRow("Quiet hours end", value: String(format: "%02d:00", store.config.alerts.quietEndHour),

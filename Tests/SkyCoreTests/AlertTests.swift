@@ -219,3 +219,49 @@ private func bright(_ p: NightPlan) -> NightPlan {
     #expect(r.notification?.title.hasPrefix("Bright night tonight from") == true)
     #expect(r.notification?.body.contains("Moon") == true)
 }
+
+@Test func alertSettingsFromZeroFourDecode() throws {
+    let json = #"{"headsUp":false,"tomorrowPreview":true,"preWindowMinutes":45,"cancelOnDowngrade":true,"quietStartHour":1,"quietEndHour":6}"#
+    let s = try JSONDecoder().decode(AlertSettings.self, from: Data(json.utf8))
+    #expect(s.requireAgreement == false)
+    #expect(s.headsUp == false && s.preWindowMinutes == 45 && s.quietStartHour == 1 && s.quietEndHour == 6)
+}
+
+@Test func requireAgreementHoldsBackTheHeadsUpUntilOpenMeteoAgrees() throws {
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let night = try Ephemeris.night(localDate: utc(2026, 11, 20, 12, 0), site: testSite)
+    let t0 = utc(2026, 11, 20, 17, 0)
+    let hours = (0..<15).map { HourlyConditions(time: t0.addingTimeInterval(Double($0) * 3600), cloudTotal: (3...8).contains($0) ? 10 : 90, cloudLow: nil, cloudMid: nil, cloudHigh: nil,
+                                                 tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil) }
+    var p = Planner.plan(night: night, forecast: Forecast(fetchedAt: t0, latitude: testSite.latitude, longitude: testSite.longitude, hours: hours, seeingSource: nil),
+                         catalog: Catalog(objects: []), constellations: [], site: testSite, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule())
+    var s = AlertSettings(); s.requireAgreement = true
+    let due = night.sunset.addingTimeInterval(-3600 + 60)
+    p.agreement = .noWindow
+    let held = AlertEngine.step(now: due, tonight: p, tomorrow: nil, state: nil, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy(flavour: .watch))
+    #expect(held.notification == nil && held.state.stage == .idle)
+    p.agreement = .agree
+    let sent = AlertEngine.step(now: due.addingTimeInterval(1800), tonight: p, tomorrow: nil, state: held.state, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy(flavour: .watch))
+    #expect(sent.notification?.kind == .headsUp)
+}
+
+@Test func requireAgreementWithoutSecondOpinionStillAlerts() throws {
+    let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let night = try Ephemeris.night(localDate: utc(2026, 11, 20, 12, 0), site: testSite)
+    let t0 = utc(2026, 11, 20, 17, 0)
+    let hours = (0..<15).map { HourlyConditions(time: t0.addingTimeInterval(Double($0) * 3600), cloudTotal: (3...8).contains($0) ? 10 : 90, cloudLow: nil, cloudMid: nil, cloudHigh: nil,
+                                                 tempC: nil, dewPointC: nil, humidityPct: nil, windKmh: nil, gustKmh: nil, visibilityM: nil, seeing: nil, transparency: nil) }
+    let p = Planner.plan(night: night, forecast: Forecast(fetchedAt: t0, latitude: testSite.latitude, longitude: testSite.longitude, hours: hours, seeingSource: nil),
+                         catalog: Catalog(objects: []), constellations: [], site: testSite, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule())
+    #expect(p.agreement == nil)
+    var s = AlertSettings(); s.requireAgreement = true
+    let due = night.sunset.addingTimeInterval(-3600 + 60)
+    #expect(AlertEngine.step(now: due, tonight: p, tomorrow: nil, state: nil, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy(flavour: .watch)).notification?.kind == .headsUp)
+}
+
+@Test func alertSettingsRoundTripKeepsEveryKey() throws {
+    var s = AlertSettings(); s.requireAgreement = true; s.preWindowMinutes = 45; s.quietStartHour = 1
+    let data = try JSONEncoder().encode(s)
+    #expect(String(decoding: data, as: UTF8.self).contains("\"requireAgreement\":true"))
+    #expect(try JSONDecoder().decode(AlertSettings.self, from: data) == s)
+}
