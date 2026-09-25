@@ -50,7 +50,9 @@ struct MoonTile: View {
         }
         .padding(9).frame(maxWidth: .infinity, minHeight: 49.5, alignment: .leading)
         .accessibilityElement(children: .combine).accessibilityLabel("Moon, \(value)\(line.map { ", \($0)" } ?? "")")
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile, tint: Tokens.surfaceTile)
+        // A plain translucent fill on the glass panel, not a second glass layer: measured live (25 Sep 2026), system glass
+        // tinted surface.tile rendered #5A5D63 and left text.secondary at 2.9:1. The fill keeps it near #373A40 (spec §7).
+        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
         .task(id: MoonImage.hourKey(for: at)) { loader.image = await MoonImages.image(at: at) }
     }
 }

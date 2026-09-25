@@ -29,7 +29,9 @@ struct StatTile: View {
         .overlay(alignment: .topTrailing) { if warning { WarningDot(size: 5).padding(7) } }
         .overlay { if warning { RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning.opacity(0.59), lineWidth: 0.75) } }
         .accessibilityElement(children: .combine)
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 8), fill: Tokens.surfaceTile, tint: Tokens.surfaceTile)
+        // A plain translucent fill on the glass panel, not a second glass layer: measured live (25 Sep 2026), system glass
+        // tinted surface.tile rendered #5A5D63 and left text.secondary at 2.9:1. The fill keeps it near #373A40 (spec §7).
+        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
