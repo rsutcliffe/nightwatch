@@ -1,3 +1,4 @@
+import WidgetKit
 import Foundation
 import SkyCore
 import SwiftUI
@@ -182,6 +183,7 @@ final class Store: ObservableObject {
         plan = p; tomorrow = t
         events = buildEvents(night: night, site: site, now: now)
         Store.write(p, "plan.json")
+        writeWidgetSnapshot(plan: p, tomorrow: t, fetchedAt: fc.fetchedAt, site: site)
         if config.notifyEnabled {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
                                      forecastFetchedAt: fc.fetchedAt, site: site, copy: copy)
@@ -190,6 +192,19 @@ final class Store: ObservableObject {
             if let n = r.notification { Notifier.post(n) }
         }
         await recomputeDarkSites(now: now, site: site, night: night)
+    }
+
+    /// The desktop widget's snapshot (v0.6), written into the App Group the build script names in Info.plist, then WidgetKit
+    /// is asked to redraw. Builds without the widget (no Xcode, or unsigned) have no group key and write nothing.
+    private func writeWidgetSnapshot(plan: NightPlan, tomorrow: NightPlan, fetchedAt: Date, site: Site) {
+        guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
+              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return }
+        let snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fetchedAt, site: site, rule: config.goRule,
+                                       bright: config.brightNights, alerts: config.alerts, copy: copy)
+        let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
+        guard let data = try? enc.encode(snap) else { return }
+        try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// Polls AuroraWatch UK while aurora alerts are on and the Sun is at least 12 degrees down (every 5 minutes: their
