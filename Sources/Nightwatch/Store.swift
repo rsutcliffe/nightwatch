@@ -59,11 +59,12 @@ final class Store: ObservableObject {
         grids = LPGrids.bundled()
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
+        StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
         plan = Store.read("plan.json")             // content in the popover before the first fetch
-        alertState = Store.read("alerts-state.json")
+        alertState = Store.readFile(StateFiles.directory.appendingPathComponent("alerts-state.json"))
         aurora = Store.read("aurora.json")
-        auroraState = Store.read("aurora-state.json")
+        auroraState = Store.readFile(StateFiles.directory.appendingPathComponent("aurora-state.json"))
         comets = Store.read("comets.json") ?? []
         tle = Store.read("iss-tle.json")
         auxAttempts = Store.read("aux-attempts.json") ?? [:]
@@ -202,7 +203,7 @@ final class Store: ObservableObject {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
                                      forecastFetchedAt: fc.fetchedAt, site: site, copy: copy)
             alertState = r.state
-            Store.write(r.state, "alerts-state.json")
+            Store.writeFile(r.state, StateFiles.directory.appendingPathComponent("alerts-state.json"))
             if let n = r.notification { Notifier.post(n) }
         }
         await recomputeHomePlan(now: now)   // after the alerts, so a slow home fetch never delays one
@@ -270,7 +271,7 @@ final class Store: ObservableObject {
         // Only record a level as sent when it was: turning notifications on mid-storm then alerts for the current level.
         guard config.notifyEnabled else { return }
         auroraState = r.state
-        Store.write(r.state, "aurora-state.json")
+        Store.writeFile(r.state, StateFiles.directory.appendingPathComponent("aurora-state.json"))
         if let n = r.notification { Notifier.post(n) }
     }
 
