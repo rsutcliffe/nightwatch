@@ -40,9 +40,13 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var source: String?
     /// "Updated 21:10" in the site's time zone and 24-hour form, as the popover shows it.
     public var updated: String?
+    /// AuroraWatch UK's level when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
+    /// from `aurora.updated`, the popover's rule.
+    public var aurora: AuroraStatus?
 
     public static func make(plan: NightPlan, tomorrow: NightPlan?, fetchedAt: Date, site: Site, rule: GoRule,
-                            bright: BrightSettings, alerts: AlertSettings, copy: Copy, source: String? = nil) -> WidgetSnapshot {
+                            bright: BrightSettings, alerts: AlertSettings, copy: Copy, source: String? = nil,
+                            aurora: AuroraStatus? = nil, auroraSettings: AuroraSettings? = nil) -> WidgetSnapshot {
         func hm(_ d: Date) -> String { Copy.hhmm(d, site: site) }
         let w = plan.primary
         let noDarkness = w == nil && !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness)
@@ -69,8 +73,17 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             notify: Copy.notifyLabel(plan, site: site, settings: alerts),
             notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },
             brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
-            source: source, updated: "Updated \(hm(fetchedAt))")
+            source: source, updated: "Updated \(hm(fetchedAt))",
+            aurora: aurora.flatMap { a in auroraSettings?.shows(a) == true ? a : nil })
     }
+
+    /// "Aurora amber" in AuroraWatch UK's colour, or nil when there is none or it is over an hour old at `now`.
+    public func auroraLine(now: Date) -> (text: String, hex: UInt32)? {
+        guard let a = aurora, let end = auroraExpires, now < end else { return nil }
+        return ("Aurora \(a.level.rawValue)", a.level.hex)
+    }
+    /// When the aurora line stops showing, so the widget can redraw then.
+    public var auroraExpires: Date? { aurora.map { $0.updated.addingTimeInterval(AuroraSettings.freshFor) } }
 
     /// The gallery's preview: a made-up clear night at a made-up site, so the widget picker shows the real layout.
     public static let sample = WidgetSnapshot(
@@ -83,7 +96,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         }, barsLabel: "Clear sky by hour.",
         targets: [WidgetTarget(id: "M13", catalogueID: "M13", name: "Hercules Cluster", best: "Best 21:30 · 71° up", group: .clusters),
                   WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)],
-        tomorrow: nil, notify: "Notify at 20:40", notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo", updated: "Updated 18:05")
+        tomorrow: nil, notify: "Notify at 20:40", notifyShort: "notify 20:40", brightList: nil, source: "Open-Meteo", updated: "Updated 18:05", aurora: nil)
 
     /// "Forecast 7 h old" once the snapshot's forecast is more than six hours old at `now` (the alerts' stale rule); else nil.
     public func staleText(now: Date) -> String? {

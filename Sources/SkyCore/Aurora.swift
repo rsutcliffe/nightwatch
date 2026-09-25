@@ -66,8 +66,8 @@ public enum AuroraAlert {
     public static func decide(status: AuroraStatus, now: Date, site: Site, nightKey: String, hours: [HourlyConditions], rule: GoRule,
                               settings: AuroraSettings, alerts: AlertSettings, state: AuroraAlertState?, copy: Copy) -> (notification: AlertNotification?, state: AuroraAlertState) {
         let s = (state?.nightKey == nightKey) ? state! : AuroraAlertState(nightKey: nightKey, lastLevel: nil)
-        guard settings.enabled, status.level >= settings.threshold,
-              now.timeIntervalSince(status.updated) < 3600,   // a status cached from an earlier night must never fire
+        guard settings.shows(status),
+              AuroraSettings.isFresh(status, now: now),   // a status cached from an earlier night must never fire
 
               Ephemeris.sunAltitude(at: now, site: site) <= sunBelowDeg,
               let hour = hours.first(where: { $0.time <= now && now < $0.time.addingTimeInterval(3600) }), hour.cloudTotal <= rule.maxCloudPct,
@@ -78,4 +78,14 @@ public enum AuroraAlert {
                                      body: "AuroraWatch UK reports \(status.level.rawValue). Cloud \(hour.cloudTotal)% this hour.")
         return (note, AuroraAlertState(nightKey: nightKey, lastLevel: status.level))
     }
+}
+
+extension AuroraSettings {
+    /// The one rule for showing aurora anywhere (popover, widget, alerts): alerts on and the level at or above the chosen one.
+    public func shows(_ status: AuroraStatus) -> Bool { enabled && status.level >= threshold }
+    /// A status is news for an hour after AuroraWatch UK publishes it; after that it may be from an earlier night.
+    public static let freshFor: TimeInterval = 3600
+    public static func isFresh(_ status: AuroraStatus, now: Date) -> Bool { now.timeIntervalSince(status.updated) < freshFor }
+    /// How often the app rewrites the widget while it shows aurora: well inside `freshFor`, so a live aurora never lapses.
+    public static let widgetRefresh: TimeInterval = 30 * 60
 }

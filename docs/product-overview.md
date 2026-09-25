@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.5 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.6 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -52,7 +52,7 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
   - The Moon, planet photographs and constellation artwork are fitted above the caption.
   - The caption holds the name, type and coordinates. On a night with a clear window it adds best time, time above the minimum altitude, Moon separation, a suggested stack, and an altitude chart from sunset to sunrise. The chart shows the window shaded and the minimum altitude dashed, and the curve is red only where the target is up inside the window.
 
-**Desktop widgets.** Small, medium and large widgets for the macOS desktop, built when Xcode and xcodegen are installed. The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
+**Desktop widgets.** Small, medium and large widgets for the macOS desktop, built when Xcode and xcodegen are installed. The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. With aurora alerts on, "● Aurora amber" in AuroraWatch UK's colour shows while the status is at or above the chosen level and less than an hour old: on the small widget's second line, and at the end of the header line on the medium and large ones. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
 **Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Observe from here" makes a site the active site for the whole app without saving it; the popover and the Dark sites page then offer "Back to" home in one click. Each card compares tonight's score and sky with home ("vs 20 at <home> (home)" while away), as does the popover's "Clearer sky" line, which opens that site's card.
 
@@ -68,7 +68,7 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 - After a heads-up or nudge, if the forecast turns:
   - **Stand-down** ("Stand down. Clouds moving in") when Apple Weather and Open-Meteo both lose the window, or when there is no second opinion.
   - **Less certain** ("Hold fire. Forecasts disagree") when they split, saying what each sees. For example, "Apple Weather still sees clear from 21:00. Open-Meteo sees no clear window." Where only Open-Meteo doubts, it is sent only with the opt-in "Alert only when Open-Meteo agrees" on. It is sent at most once a night. If both clear again before the nudge, the nudge still fires; if the nudge has already gone, nothing more is sent. Nothing is sent after the window has closed.
-- Aurora alert (opt-in): AuroraWatch UK at or above the chosen level after dark, with this hour clear.
+- Aurora alert (opt-in): AuroraWatch UK at or above the chosen level after dark, with this hour clear. It plays the alert sound, because an aurora does not wait.
 - Quiet hours, default 00:00 to 07:00.
 - Nothing fires from a forecast older than six hours.
 
@@ -107,7 +107,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (223 Swift Testing tests at 0.6.5).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (229 Swift Testing tests at 0.6.6).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -145,6 +145,7 @@ Tags follow the City Watch novels.
 | 0.6.3 | Night Watch, patch 3 | 25 September 2026 | After a heads-up, a stand-down only when both forecasts lose the window; when they split, "Hold fire. Forecasts disagree", saying what each sees |
 | 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption; dark-site cards say "Observe from here" instead of "Use as beat" |
 | 0.6.5 | Night Watch, patch 5 | 25 September 2026 | Where you observe: home, one-click "Back to" home from the popover and Dark sites, dark sites visited without being saved, honest comparison with home, an "Add a site" sheet with named sky darkness, and menus in place of up/down arrows throughout Settings |
+| 0.6.6 | Night Watch, patch 6 | 25 September 2026 | Aurora on the desktop widgets; aurora alerts play a sound; the large widget no longer overflows on a clear night (measured at the real 344 × 344 size) |
 
 ## Install
 

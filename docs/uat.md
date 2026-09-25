@@ -37,7 +37,7 @@ Run on each Mac after `scripts/build-app.sh`.
 33. After a Patrol the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
 34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
 35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
-36. About shows version 0.6.5.
+36. About shows version 0.6.6.
 37. Targets › Constellations: every card shows its figure artwork with the star plot on top, not a stick figure; opening one shows the same art larger, with no "dashed = your field of view" note. → pass.
 38. Signed build, after a heads-up or nudge: when Apple Weather and Open-Meteo both lose the window, "Stand down. Clouds moving in" arrives with "Apple Weather and Open-Meteo both see cloud."; when only one does, "Hold fire. Forecasts disagree" arrives at most once a night, saying what each sees; if both clear again before the nudge, the nudge still fires. → pass.
 39. Targets: open a nebula, a large nebula (NGC 7000), a constellation and a planet. Each image fills the page with its text in black caption boxes. The large nebula's dashed box sits fully inside the clear space above the caption. On a clear night the caption shows the four figures and a labelled altitude chart, red only inside the window. → pass.
@@ -45,3 +45,6 @@ Run on each Mac after `scripts/build-app.sh`.
 41. Settings › Where you observe: click a saved site to observe from it; the star makes it home; "Add a site…" opens a sheet with Name, Latitude, Longitude, "Use this Mac's location" and a named darkness menu; Add site saves and selects it. → pass.
 42. Away from home, a dark-site card reads "Score N vs M at <home> (home)" with M the home site's score, and "Back to <home>" sits beside the Dark sites heading. → pass.
 43. Every numeric setting (go rule, nudge, quiet hours, search radius, minimum clear run) is a menu showing its value. → pass.
+44. Aurora alerts on, AuroraWatch UK at or above the chosen level: the small widget's second line reads "● Aurora <level>" and the medium and large widgets show "● AURORA <LEVEL>" at the end of the header line, in AuroraWatch's colour; it clears at the next patrol when the level drops below yours or aurora alerts are turned off, and an hour after AuroraWatch UK's last publication if the status goes stale. → pass.
+45. An aurora notification plays the alert sound. → pass.
+46. Large widget on a clear night with three targets: the footer ("Notify at …", "Updated …") is fully visible. → pass.

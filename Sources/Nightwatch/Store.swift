@@ -189,7 +189,7 @@ final class Store: ObservableObject {
         plan = p; tomorrow = t
         events = buildEvents(night: night, site: site, now: now)
         Store.write(p, "plan.json")
-        writeWidgetSnapshot(plan: p, tomorrow: t, fetchedAt: fc.fetchedAt, site: site, source: fc.cloudSource)
+        writeWidgetSnapshot()
         if config.notifyEnabled {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
                                      forecastFetchedAt: fc.fetchedAt, site: site, copy: copy)
@@ -203,15 +203,32 @@ final class Store: ObservableObject {
 
     /// The desktop widget's snapshot (v0.6), written into the App Group the build script names in Info.plist, then WidgetKit
     /// is asked to redraw. Builds without the widget (no Xcode, or unsigned) have no group key and write nothing.
-    private func writeWidgetSnapshot(plan: NightPlan, tomorrow: NightPlan, fetchedAt: Date, site: Site, source: String?) {
+    /// The aurora status the widget was last given, when it shows one.
+    private var widgetAurora: AuroraStatus?
+    private func shownAurora(_ a: AuroraStatus?) -> AuroraStatus? {
+        a.flatMap { config.aurora.shows($0) ? $0 : nil }
+    }
+    /// AuroraWatch UK publishes every few minutes and WidgetKit rations reloads, so the widget is rewritten only when its
+    /// aurora line appears, changes level or clears, and every 30 minutes while shown so its one-hour freshness never lapses.
+    private func widgetAuroraNeedsRewrite(_ status: AuroraStatus) -> Bool {
+        let new = shownAurora(status), old = widgetAurora
+        if new?.level != old?.level { return true }
+        if let n = new, let o = old { return n.updated.timeIntervalSince(o.updated) >= AuroraSettings.widgetRefresh }
+        return false
+    }
+
+    /// Written after each patrol and after aurora changes the widget shows, from the current plan, forecast and aurora status.
+    private func writeWidgetSnapshot() {
         guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
-              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return }
-        let snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fetchedAt, site: site, rule: config.goRule,
+              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group),
+              let plan, let tomorrow, let fc = forecast, let site, forecastMatches(site) else { return }
+        let snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
                                        bright: config.brightNights, alerts: config.alerts, copy: copy,
-                                       source: source ?? "Open-Meteo")
+                                       source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let data = try? enc.encode(snap) else { return }
         try? data.write(to: dir.appendingPathComponent("widget.json"), options: .atomic)
+        widgetAurora = shownAurora(aurora)
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -234,6 +251,7 @@ final class Store: ObservableObject {
             if let data = try? await fetcher.get(AuroraWatch.url), let status = try? AuroraWatch.parse(data) {
                 aurora = status
                 Store.write(status, "aurora.json")
+                if widgetAuroraNeedsRewrite(status) { writeWidgetSnapshot() }
             }
         }
         // The same six-hour rule as every other alert, and never another site's forecast.

@@ -35,6 +35,9 @@ struct Provider: TimelineProvider {
         if let s, case let staleAt = s.fetchedAt.addingTimeInterval(6 * 3600 + 60), staleAt > .now {
             entries.append(NightEntry(date: staleAt, snapshot: s))
         }
+        // And when the aurora line stops being current, so it goes on time (the app rewrites it while it is still news).
+        if let end = s?.auroraExpires, end > .now { entries.append(NightEntry(date: end.addingTimeInterval(1), snapshot: s)) }
+        entries.sort { $0.date < $1.date }
         completion(Timeline(entries: entries, policy: .after(.now.addingTimeInterval(1800))))
     }
 }
@@ -66,7 +69,14 @@ struct Headline: View {
     private var noteLines: Int { compact && s.window != nil ? 1 : 2 }
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("TONIGHT · \(s.siteName.uppercased())").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+            // Aurora (v0.6.6) at the end of the header line, where it costs no height.
+            HStack(spacing: 6) {
+                Text("TONIGHT · \(s.siteName.uppercased())").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                if let a = s.auroraLine(now: now) {
+                    Spacer(minLength: 0)
+                    AuroraMark(text: a.text.uppercased(), hex: a.hex, size: 9.5)
+                }
+            }
             Text(s.headline).font(.system(size: 15, weight: .medium)).foregroundStyle(Tokens.textPrimary)
                 .lineLimit(compact ? 1 : 2).minimumScaleFactor(compact ? 0.7 : 0.8)
             if let w = s.window { Text(w).font(.system(size: 13)).foregroundStyle(Tokens.textPrimary) }
@@ -75,6 +85,17 @@ struct Headline: View {
             if let t = s.tomorrow, !(compact && s.reason != nil) { NoteLine(text: t, warns: false) }
             if showStale, let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true) }
         }
+    }
+}
+
+/// "● Aurora amber" in AuroraWatch UK's own colour for the level (owner ruling, v0.6.1).
+struct AuroraMark: View {
+    let text: String
+    let hex: UInt32
+    let size: CGFloat
+    var body: some View {
+        HStack(spacing: 3) { Circle().fill(Color(hex: hex)).frame(width: 5, height: 5); Text(text) }
+            .font(.system(size: size, weight: .semibold)).foregroundStyle(Color(hex: hex)).fixedSize()
     }
 }
 
@@ -88,7 +109,9 @@ struct SmallView: View {
             Text(s.windowShort ?? (s.headline.components(separatedBy: ". ").first ?? s.headline).trimmingCharacters(in: CharacterSet(charactersIn: ".")))
                 .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Tokens.textPrimary)
                 .lineLimit(1).minimumScaleFactor(0.7).multilineTextAlignment(.center)
-            if let stale = s.staleText(now: now) {
+            if let a = s.auroraLine(now: now) {
+                AuroraMark(text: a.text, hex: a.hex, size: 10)
+            } else if let stale = s.staleText(now: now) {
                 NoteLine(text: stale, warns: true)
             } else {
                 Text(s.windowShort == nil ? (s.tomorrow ?? s.siteName)
@@ -110,7 +133,7 @@ struct MediumView: View {
                 Spacer(minLength: 0)
             }
             Spacer(minLength: 0)
-            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 16, labels: false)
+            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false)
         }
     }
 }
@@ -119,13 +142,15 @@ struct LargeView: View {
     let s: WidgetSnapshot
     let now: Date
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        // Measured at the real 344 × 344 pt size, content about 312 pt: 9 pt gaps, 28 pt bars and 34 pt icons ran to 348 pt on
+        // a clear night with three targets and cut off the footer (25 September 2026).
+        VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 14) {
                 ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel)
                 Headline(s: s, now: now, showStale: false)
                 Spacer(minLength: 0)
             }
-            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 28, labels: true, caption: false)
+            ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 20, labels: true, caption: false)
             Rectangle().fill(Color.white.opacity(0.08)).frame(height: 1)
             Text(s.targets.isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             if s.targets.isEmpty {
@@ -133,11 +158,11 @@ struct LargeView: View {
                      : s.mode == .bright ? "No Moon or planet well placed in the window." : "Nothing well placed in the window.")
                     .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             }
-            VStack(alignment: .leading, spacing: 7) { ForEach(s.targets, id: \.id) { t in
+            VStack(alignment: .leading, spacing: 5) { ForEach(s.targets, id: \.id) { t in
                 Link(destination: WidgetLink.target(t.id).url) {
                     HStack(spacing: 10) {
                         Image(systemName: t.group.symbolName).font(.system(size: 14)).foregroundStyle(Tokens.textSecondary)
-                            .frame(width: 34, height: 34).background(Color(hex: 0x0E1018), in: RoundedRectangle(cornerRadius: 7))
+                            .frame(width: 26, height: 26).background(Color(hex: 0x0E1018), in: RoundedRectangle(cornerRadius: 6))
                         VStack(alignment: .leading, spacing: 1) {
                             (Text(t.catalogueID).fontWeight(.bold) + Text("  " + t.name).foregroundColor(Tokens.textSecondary))
                                 .font(.system(size: 11)).foregroundStyle(Tokens.textPrimary).lineLimit(1)

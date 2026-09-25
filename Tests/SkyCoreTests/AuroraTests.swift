@@ -88,3 +88,14 @@ private var on: AuroraSettings { var a = AuroraSettings(); a.enabled = true; ret
 @Test func auroraLevelsUseAuroraWatchColours() {
     #expect(AuroraLevel.allCases.map(\.hex) == [0x33FF33, 0xFFFF00, 0xFF9900, 0xFF0000])
 }
+
+@Test func oneRuleDecidesWhenAuroraShows() {
+    var s = AuroraSettings(); s.enabled = true; s.threshold = .amber
+    let t = Date(), amber = AuroraStatus(level: .amber, updated: t)
+    #expect(s.shows(amber) && !s.shows(AuroraStatus(level: .yellow, updated: t)))
+    s.enabled = false
+    #expect(!s.shows(amber))
+    #expect(AuroraSettings.isFresh(amber, now: t.addingTimeInterval(3599)) && !AuroraSettings.isFresh(amber, now: t.addingTimeInterval(3600)))
+    // The widget is refreshed well inside the freshness window, so a live aurora never drops off it early.
+    #expect(AuroraSettings.widgetRefresh < AuroraSettings.freshFor)
+}

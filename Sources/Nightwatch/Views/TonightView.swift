@@ -116,7 +116,7 @@ struct TonightView: View {
     /// The aurora line needs AuroraWatch UK to have published within the hour: its `updated` time moves on every
     /// publication (live: 20:33:32Z then 20:39:31Z, both green), so an older status is stale.
     @ViewBuilder private func notice(_ site: Site) -> some View {
-        if store.config.aurora.enabled, let a = store.aurora, a.level >= store.config.aurora.threshold, Date().timeIntervalSince(a.updated) < 3600 {
+        if let a = store.aurora, store.config.aurora.shows(a), AuroraSettings.isFresh(a, now: Date()) {
             Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.system(size: 10)).foregroundStyle(Color(hex: a.level.hex))
         } else if let a = store.bestAway, let w = a.primary {
             Button {

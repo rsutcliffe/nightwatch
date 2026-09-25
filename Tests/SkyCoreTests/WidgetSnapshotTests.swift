@@ -127,3 +127,21 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(WidgetLink(url: URL(string: "nightwatch://unknown")!) == nil)
     #expect(WidgetLink(url: URL(string: "nightwatch://target/")!) == nil)
 }
+
+// Aurora on the widget (v0.6.6): the popover's rule — alerts on, at or above the chosen level, published within the hour.
+@Test func snapshotCarriesAuroraAtOrAboveTheThreshold() throws {
+    let (p, t) = try plans(november, clearMiddle)
+    var on = AuroraSettings(); on.enabled = true; on.threshold = .amber
+    func make(_ level: AuroraLevel, _ settings: AuroraSettings) -> WidgetSnapshot {
+        WidgetSnapshot.make(plan: p, tomorrow: t, fetchedAt: november, site: testSite, rule: GoRule(), bright: BrightSettings(), alerts: AlertSettings(),
+                            copy: copy, aurora: AuroraStatus(level: level, updated: november), auroraSettings: settings)
+    }
+    let amber = make(.amber, on)
+    #expect(amber.auroraLine(now: november.addingTimeInterval(600))?.text == "Aurora amber")
+    #expect(amber.auroraLine(now: november.addingTimeInterval(600))?.hex == AuroraLevel.amber.hex)
+    #expect(amber.auroraLine(now: november.addingTimeInterval(3601)) == nil)            // stale after an hour, as in the popover
+    #expect(make(.yellow, on).aurora == nil)                                              // below the chosen level
+    var off = on; off.enabled = false
+    #expect(make(.red, off).aurora == nil)                                                // alerts off
+    #expect(amber.auroraExpires == november.addingTimeInterval(3600))
+}
