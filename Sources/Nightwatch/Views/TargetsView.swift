@@ -4,8 +4,9 @@ import SkyCore
 
 enum BrowserSection: Hashable { case group(TargetGroup), darkSites }
 
-/// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line).
-struct TargetsRequest: Equatable { let section: BrowserSection; let siteID: String? }
+/// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
+/// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
+struct TargetsRequest: Equatable { let section: BrowserSection?; let siteID: String?; var targetID: String? = nil }
 
 final class TargetsViewState: ObservableObject {
     @Published var section: BrowserSection = .group(.nebulae)
@@ -103,9 +104,11 @@ struct TargetsView: View {
     /// Applies a pending request from the popover once, then clears it.
     private func consumeRequest() {
         guard let r = store.targetsRequest else { return }
-        ui.selected = nil
-        ui.section = r.section
-        ui.pendingScrollID = r.siteID
+        if let section = r.section {
+            ui.section = section
+            ui.pendingScrollID = r.siteID
+            ui.selected = r.targetID.flatMap { id in targets.first { $0.id == id } }
+        }
         store.targetsRequest = nil
     }
 

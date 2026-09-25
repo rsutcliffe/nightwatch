@@ -11,6 +11,11 @@
   <key>CFBundleVersion</key><string>11</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
+  <key>CFBundleURLTypes</key>
+  <array><dict>
+    <key>CFBundleURLName</key><string>io.github.rsutcliffe.nightwatch</string>
+    <key>CFBundleURLSchemes</key><array><string>nightwatch</string></array>
+  </dict></array>
   <key>NSLocationUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
   <key>NSLocationWhenInUseUsageDescription</key><string>Nightwatch uses your location to compute sunset, darkness and what is visible from where you are. You can set a site manually instead.</string>
   <key>NSHumanReadableCopyright</key><string>MIT licence. Data attributions in About.</string>

@@ -46,7 +46,7 @@ struct TonightView: View {
     /// whatever the user is working in. Activate first so the window comes to the front.
     private func open(_ id: String) {
         openWindow(id: id)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
     }
 
     private func noWindowReason(_ plan: NightPlan, _ site: Site) -> String? {
@@ -112,6 +112,7 @@ struct TonightView: View {
             Text("Aurora: \(a.level.rawValue) (AuroraWatch UK)").font(.system(size: 10)).foregroundStyle(auroraColour(a.level))
         } else if let a = store.bestAway, let w = a.primary {
             Button {
+                // The menu-bar label also opens the window on any request; opening a single Window twice is harmless.
                 store.targetsRequest = TargetsRequest(section: .darkSites, siteID: a.site.id)
                 open("targets")
             } label: {

@@ -113,3 +113,15 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
     #expect(try d.decode(WidgetSnapshot.self, from: e.encode(s)) == s)
 }
+
+@Test func widgetLinkRoundTrip() throws {
+    for link in [WidgetLink.targets, .target("NGC7000"), .target("moon"), .target("planet-saturn"), .target("C/2023 A3 +x")] {
+        #expect(WidgetLink(url: link.url) == link)
+    }
+    #expect(WidgetLink.targets.url.absoluteString == "nightwatch://targets")
+    #expect(WidgetLink.target("NGC7000").url.absoluteString == "nightwatch://target/NGC7000")
+    #expect(!WidgetLink.target("C/2023 A3 +x").url.absoluteString.dropFirst("nightwatch://target/".count).contains("/"))
+    #expect(WidgetLink(url: URL(string: "https://example.com/targets")!) == nil)
+    #expect(WidgetLink(url: URL(string: "nightwatch://unknown")!) == nil)
+    #expect(WidgetLink(url: URL(string: "nightwatch://target/")!) == nil)
+}

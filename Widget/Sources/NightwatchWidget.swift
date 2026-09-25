@@ -134,7 +134,7 @@ struct LargeView: View {
                     .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             }
             VStack(alignment: .leading, spacing: 7) { ForEach(s.targets, id: \.id) { t in
-                Link(destination: URL(string: "nightwatch://target/\(t.id.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? t.id)")!) {
+                Link(destination: WidgetLink.target(t.id).url) {
                     HStack(spacing: 10) {
                         Image(systemName: t.group.symbolName).font(.system(size: 14)).foregroundStyle(Tokens.textSecondary)
                             .frame(width: 34, height: 34).background(Color(hex: 0x0E1018), in: RoundedRectangle(cornerRadius: 7))
@@ -181,7 +181,7 @@ struct NightwatchWidgetView: View {
         // The small widget and the empty state are centred, as on the canvas; medium and large read from the top left.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: entry.snapshot == nil || family == .systemSmall ? .center : .topLeading)
         .containerBackground(for: .widget) { Tokens.targetsCard }
-        .widgetURL(URL(string: "nightwatch://targets"))
+        .widgetURL(WidgetLink.targets.url)
     }
 }
 

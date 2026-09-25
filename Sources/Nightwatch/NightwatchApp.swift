@@ -1,8 +1,39 @@
 import SwiftUI
 import SkyCore
 
+/// Receives the widget's nightwatch:// links (v0.6). A click can launch the app, so links that arrive before boot() has set
+/// the handler wait in `pending`.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private static var pending: [URL] = []
+    static var onURL: ((URL) -> Void)? {
+        didSet { if let h = onURL { pending.forEach(h); pending = [] } }
+    }
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for u in urls { if let h = Self.onURL { h(u) } else { Self.pending.append(u) } }
+    }
+}
+
+/// The status-bar icon. It is always alive, so it is where a Targets request from outside a window (the widget) opens
+/// the window; a menu-bar agent app is never active, so it activates first.
+struct MenuBarLabel: View {
+    @ObservedObject var store: Store
+    let boot: () async -> Void
+    @Environment(\.openWindow) private var openWindow
+    var body: some View {
+        Image(systemName: store.iconName)
+            .task { await boot() }
+            .onChange(of: store.targetsRequest) { _, r in
+                guard r != nil else { return }
+                NSApp.activate()
+                openWindow(id: "targets")
+            }
+    }
+}
+
 @main
 struct NightwatchApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store = Store()
     private let location = LocationProvider()
 
@@ -14,8 +45,7 @@ struct NightwatchApp: App {
         } label: {
             // The label is the status-bar icon and is always rendered at launch; the popover
             // content above is lazy and only builds once opened, so boot() must start here.
-            Image(systemName: store.iconName)
-                .task { await boot() }
+            MenuBarLabel(store: store, boot: boot)
         }
         .menuBarExtraStyle(.window)
 
@@ -31,6 +61,17 @@ struct NightwatchApp: App {
     private func boot() async {
         guard store.scheduler == nil, !store.booting else { return }
         store.booting = true
+        AppDelegate.onURL = { [store] url in
+            guard let link = WidgetLink(url: url) else { return }
+            switch link {
+            case .targets: store.targetsRequest = TargetsRequest(section: nil, siteID: nil)
+            case .target(let id):
+                // Both lists, so a Moon or planet id finds its group on either kind of night; TargetsView selects it only
+                // when it is in tonight's list, else it opens the section.
+                let group = store.plan.flatMap { p in (p.targets + p.brightTargets).first { $0.id == id }?.group }
+                store.targetsRequest = TargetsRequest(section: .group(group ?? .nebulae), siteID: nil, targetID: id)
+            }
+        }
         location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
         await Notifier.requestAuthorisation()
         if store.config.activeSiteName == nil { store.autoSite = await location.requestOnce() }
