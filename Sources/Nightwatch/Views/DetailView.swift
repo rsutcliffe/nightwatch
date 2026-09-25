@@ -133,7 +133,9 @@ struct DetailView: View {
                 TileRow(spacing: 6) {
                     StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
                     StatTile(label: "Above \(Int(store.config.goRule.minAltitudeDeg))°", value: "\(Int(target.visibleFraction * 100))% of window")
-                    StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°")
+                    // The Moon's own page has no separation to give: it says how much of it is lit instead.
+                    if target.id == "moon" { StatTile(label: "Illuminated", value: target.typeName.components(separatedBy: " ").first) }
+                    else { StatTile(label: "Moon sep.", value: "\(Int(target.moonSepDeg))°") }
                     StatTile(label: "Suggested", value: String(format: "%.0f min stack", min(w.hours, 3) * 60))
                 }
                 AltitudeChart(target: target, night: plan.night, window: w, minAltitude: store.config.goRule.minAltitudeDeg, site: s)

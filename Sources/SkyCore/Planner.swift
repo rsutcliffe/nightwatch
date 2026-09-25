@@ -309,9 +309,11 @@ extension Planner {
         for c in constellations {
             let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20)
             guard tr.fraction >= 0.5 else { continue }
+            // From the constellation's centre; never Moon-washed, since a constellation spans too much sky to be washed out.
+            let sep = Ephemeris.separationDeg(ra1Hours: c.raHours, dec1Deg: c.decDeg, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
             out.append(described(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
                                               raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
-                                              peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: 0, moonWashed: false, visibleFraction: tr.fraction),
+                                              peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep, moonWashed: false, visibleFraction: tr.fraction),
                                  viewable: tr.viewable, site: site, typeName: "Constellation", catalogueID: c.name))
         }
 

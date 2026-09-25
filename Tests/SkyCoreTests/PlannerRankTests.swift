@@ -209,3 +209,16 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(Copy.notifyLabel(plan(utc(2026, 11, 21, 1, 0)), site: sheffieldSite, settings: settings) == "Notify when clear")
     #expect(Copy.notifyLabel(nil, site: sheffieldSite, settings: settings) == "Notify when clear")
 }
+
+/// A constellation's Moon separation is the distance from its centre, not a placeholder 0 (the detail page showed
+/// "Moon sep. 0°" for Cygnus, 25 September 2026).
+@Test func constellationsCarryTheirMoonSeparation() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 23, 12, 0), site: sheffieldSite)
+    let window = ClearWindow(start: night.darkStart!, end: night.darkStart!.addingTimeInterval(4 * 3600))
+    let ranked = Planner.rank(catalog: Catalog(objects: []), constellations: try Constellations.bundled(), window: window, site: sheffieldSite, fov: dwarfMini, rule: GoRule())
+    let cyg = try #require(ranked.first { $0.id == "Cyg" })
+    let moon = try #require(ranked.first { $0.id == "moon" })
+    let expected = Ephemeris.separationDeg(ra1Hours: cyg.raHours, dec1Deg: cyg.decDeg, ra2Hours: moon.raHours, dec2Deg: moon.decDeg)
+    #expect(cyg.moonSepDeg > 1 && abs(cyg.moonSepDeg - expected) < 0.5)
+    #expect(!cyg.moonWashed)   // a constellation is never Moon-washed: it spans too much sky
+}

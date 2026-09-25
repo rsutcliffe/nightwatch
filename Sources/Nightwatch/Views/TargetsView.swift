@@ -52,7 +52,13 @@ struct TargetsView: View {
             // The native sidebar list: v0.4's hand-built column of buttons drew its rows about two rows below where it took
             // clicks (owner, 25 September 2026: a click on Planets and Moon selected Constellations). The list also brings
             // the standard arrow keys, type-to-select and VoiceOver selection back.
-            List(sections, id: \.self, selection: Binding(get: { ui.section }, set: { if let s = $0 { ui.section = s; ui.selected = nil } })) { section in
+            // The selection is applied just after the current view update. Publishing ui.section and ui.selected from inside
+            // it ("Publishing changes from within view updates is not allowed") left the detail pane showing a stale page
+            // while clicks landed on the real one (owner, 25 September 2026).
+            List(sections, id: \.self, selection: Binding(get: { ui.section }, set: { s in
+                guard let s else { return }
+                DispatchQueue.main.async { ui.section = s; ui.selected = nil }
+            })) { section in
                 sidebarRow(section).tag(section)
             }
             .listStyle(.sidebar)
