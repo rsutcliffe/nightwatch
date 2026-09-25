@@ -4,7 +4,7 @@ Run on each Mac after `scripts/build-app.sh`.
 
 1. Menu bar shows a star; no Dock icon. → pass when both true.
 2. Click the star: popover shows site, score ring, window or "Nothing to see here", cloud strip, six tiles, best three targets, updated time. → pass when all visible within one second.
-3. Settings › add your real site, choose it as Active, pick your telescope preset. Close. Popover updates. → pass when the site name changes in the header.
+3. Settings › Where you observe › Add a site… with your real site (it is selected when added), pick your telescope preset. Close. Popover updates. → pass when the site name changes in the header.
 4. Targets window: Nebulae group shows cards with DSS thumbnails; `ls ~/Library/Caches/Nightwatch/thumbs` grows. → pass when at least three jpgs exist.
 5. Events group lists at least one item (a meteor shower is active most of the year). → pass.
 6. Notifications: System Settings › Notifications shows Nightwatch allowed. Force a go alert by setting Go rule "Cloud at most 60%" on a night with any window and quitting/relaunching after 17:00 local. → pass when a banner arrives.
@@ -12,7 +12,7 @@ Run on each Mac after `scripts/build-app.sh`.
 8. Plain wording: Settings › Wording › Plain. Refresh button reads "Refresh". → pass.
 9. Targets › Dark sites lists the Yorkshire Dales and North York Moors from the Sheffield test site at 120 km, each with tonight's score. → pass.
 10. Settings › Dark sites › radius 20 km → the list empties or shrinks within one Patrol. → pass.
-11. A card's "Observe from here" adds the site under Beats and the popover header changes to it. → pass.
+11. A card's "Observe from here" switches the popover to that site without adding it to your saved sites; the popover shows "Observing away from home · Back to <home>", and one click returns. → pass.
 12. With the grid installed, at least one "Dark spot" card appears within 50 km of a rural site. → pass.
 13. Settings › Bright nights on, on a night with no astronomical darkness (or with Go rule hours set above tonight's darkness): the popover says "Bright night: Moon and planets" with a window when the Moon or a planet is 15° up in a clear run. → pass.
 14. Bright nights off: the same night shows "Nothing to see here" with the reason line, as 0.2.2. → pass.
@@ -37,8 +37,11 @@ Run on each Mac after `scripts/build-app.sh`.
 33. After a Patrol the widgets update within a minute; with the forecast over six hours old they show an amber "Forecast N h old". → pass.
 34. Click any widget → the Targets window comes to the front, centred on first open. → pass.
 35. On a clear night, click a target row on the large widget → the Targets window opens on that target's detail. `open nightwatch://target/NGC0147` from Terminal does the same. → pass.
-36. About shows version 0.6.4.
+36. About shows version 0.6.5.
 37. Targets › Constellations: every card shows its figure artwork with the star plot on top, not a stick figure; opening one shows the same art larger, with no "dashed = your field of view" note. → pass.
 38. Signed build, after a heads-up or nudge: when Apple Weather and Open-Meteo both lose the window, "Stand down. Clouds moving in" arrives with "Apple Weather and Open-Meteo both see cloud."; when only one does, "Hold fire. Forecasts disagree" arrives at most once a night, saying what each sees; if both clear again before the nudge, the nudge still fires. → pass.
 39. Targets: open a nebula, a large nebula (NGC 7000), a constellation and a planet. Each image fills the page with its text in black caption boxes. The large nebula's dashed box sits fully inside the clear space above the caption. On a clear night the caption shows the four figures and a labelled altitude chart, red only inside the window. → pass.
 40. The small desktop widget's score bezel and text sit centred left to right. → the earlier skew was a stale widget process still drawing a 12:55 build; `build-app.sh` now restarts it on install.
+41. Settings › Where you observe: click a saved site to observe from it; the star makes it home; "Add a site…" opens a sheet with Name, Latitude, Longitude, "Use this Mac's location" and a named darkness menu; Add site saves and selects it. → pass.
+42. Away from home, a dark-site card reads "Score N vs M at <home> (home)" with M the home site's score, and "Back to <home>" sits beside the Dark sites heading. → pass.
+43. Every numeric setting (go rule, nudge, quiet hours, search radius, minimum clear run) is a menu showing its value. → pass.

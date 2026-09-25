@@ -8,6 +8,8 @@ final class Store: ObservableObject {
     @Published var config: Config = .default
     @Published var plan: NightPlan?
     @Published var tomorrow: NightPlan?
+    /// Tonight at home while observing from somewhere else, for the dark-site cards' comparison; the same as `plan` at home.
+    @Published var homePlan: NightPlan?
     @Published var events: [SkyEvent] = []
     @Published var forecast: Forecast?
     @Published var alertState: AlertState?
@@ -101,6 +103,10 @@ final class Store: ObservableObject {
 
     var copy: Copy { Copy(flavour: config.flavour) }
     var site: Site? { config.activeSite(auto: autoSite) }
+    var homeSite: Site? { config.homeSite(auto: autoSite) }
+    var isAway: Bool { config.isAway(auto: autoSite) }
+    /// "Test site", or "my location" when home is this Mac's location.
+    var homeLabel: String { config.sites.isEmpty ? "my location" : (homeSite?.name ?? "home") }
     var isStale: Bool { (forecast?.fetchedAt).map { Date().timeIntervalSince($0) > 6 * 3600 } ?? true }
     var iconName: String { Theme.icon(for: plan, stale: isStale, now: Date()) }
 
@@ -191,6 +197,7 @@ final class Store: ObservableObject {
             Store.write(r.state, "alerts-state.json")
             if let n = r.notification { Notifier.post(n) }
         }
+        await recomputeHomePlan(now: now)   // after the alerts, so a slow home fetch never delays one
         await recomputeDarkSites(now: now, site: site, night: night)
     }
 
@@ -272,30 +279,34 @@ final class Store: ObservableObject {
         guard gen == darkSitesGeneration else { return }
         darkSites = sites   // set with sitePlans so the Targets grid never sees a new list beside old plans
         sitePlans = SiteComparison.sorted(plans)
-        bestAway = plan.map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil
+        bestAway = (homePlan ?? plan).map { SiteComparison.bestAway(home: $0, sites: plans) } ?? nil   // against home, as the cards are
         CachePruning.prune(directory: Store.siteCacheDir, keepIDs: Set(sites.map(\.id)), now: now)
     }
 
-    /// Makes `s` the active site. A saved site at the same place (within 0.001° in latitude and longitude) is reused;
-    /// otherwise `s` is saved under a name no other saved site has: "X", then "X (dark site)", "X (dark site 2)", …
-    func adoptAsBeat(_ s: DarkSite) {
-        if let existing = config.sites.first(where: { abs($0.latitude - s.coordinate.latitude) <= 0.001 && abs($0.longitude - s.coordinate.longitude) <= 0.001 }) {
-            config.activeSiteName = existing.name
-            saveConfig()
-            return
-        }
-        let tz = site?.timeZoneID ?? TimeZone.current.identifier
-        var new = DarkSites.toSite(s, timeZoneID: tz)
-        let taken = Set(config.sites.map(\.name))
-        var name = s.name, n = 1
-        while taken.contains(name) {
-            name = n == 1 ? "\(s.name) (dark site)" : "\(s.name) (dark site \(n))"
-            n += 1
-        }
-        new.name = name
-        config.sites.append(new)
-        config.activeSiteName = new.name
+    /// "Observe from here" on a dark-site card: observe from it without saving it (v0.6.5). A saved site at the same place
+    /// is selected instead.
+    func visit(_ s: DarkSite) {
+        config.visit(DarkSites.toSite(s, timeZoneID: site?.timeZoneID ?? TimeZone.current.identifier))
         saveConfig()
+    }
+    func keepVisiting() { config.keepVisiting(); saveConfig() }
+    func goHome() { config.goHome(); saveConfig() }
+
+    /// While away, tonight's plan at home. Home's forecast is cached for 30 minutes, as a dark site's is, and never asks for
+    /// the second opinion.
+    private func recomputeHomePlan(now: Date) async {
+        guard isAway, let home = homeSite else { homePlan = plan; return }
+        let url = Store.url("home-forecast.json")
+        var fc: Forecast? = Store.readFile(url)
+        if let f = fc, abs(f.latitude - home.latitude) > 0.01 || abs(f.longitude - home.longitude) > 0.01 { fc = nil }
+        if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, attemptDue("home-forecast", every: 10 * 60, now: now),
+           let fresh = try? await ForecastService.fetch(site: home, fetcher: fetcher, now: now, secondOpinion: false) {
+            fc = fresh; Store.writeFile(fresh, url)
+        }
+        guard let fc, now.timeIntervalSince(fc.fetchedAt) <= 24 * 3600,
+              let night = try? Ephemeris.night(localDate: now.addingTimeInterval(-9 * 3600), site: home) else { homePlan = nil; return }
+        homePlan = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: home,
+                                fov: config.fov, rule: config.goRule, bright: config.brightNights)
     }
 
     private func buildEvents(night: Night, site: Site, now: Date) -> [SkyEvent] {

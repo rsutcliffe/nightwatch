@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.4 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 25 September 2026, version 0.6.5 "Night Watch". Open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -54,9 +54,9 @@ Nothing leaves the Mac except the forecast requests, thumbnail fetches, the come
 
 **Desktop widgets.** Small, medium and large widgets for the macOS desktop, built when Xcode and xcodegen are installed. The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
-**Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Observe from here" makes a site the active site for the whole app. Each card compares tonight's score and sky with home, and the popover's "Clearer sky" line opens that site's card.
+**Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Observe from here" makes a site the active site for the whole app without saving it; the popover and the Dark sites page then offer "Back to" home in one click. Each card compares tonight's score and sky with home ("vs 20 at <home> (home)" while away), as does the popover's "Clearer sky" line, which opens that site's card.
 
-**Settings.** Sites (automatic via Location Services or manual, with Bortle class), telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login.
+**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login.
 
 ## Alerts
 
@@ -107,7 +107,7 @@ Keyless in the plain build; Apple Weather needs a signed build. Full attribution
 ## Architecture
 
 - Swift package, no Xcode project. Three targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `Nightwatch` (the SwiftUI menu-bar app).
-- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (212 Swift Testing tests at 0.6.4).
+- Builds and installs with `scripts/build-app.sh`, which signs ad hoc, or with the WeatherKit entitlement and an embedded provisioning profile when an Apple Development certificate and a profile for the bundle identifier are on the Mac. Tests run with `scripts/test.sh` (223 Swift Testing tests at 0.6.5).
 - Caches under `~/Library/Caches/Nightwatch`. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -144,6 +144,7 @@ Tags follow the City Watch novels.
 | 0.6.2 | Night Watch, patch 2 | 25 September 2026 | Constellation artwork for all 88 constellations, a figure with its star plot on top, in place of the stick figures |
 | 0.6.3 | Night Watch, patch 3 | 25 September 2026 | After a heads-up, a stand-down only when both forecasts lose the window; when they split, "Hold fire. Forecasts disagree", saying what each sees |
 | 0.6.4 | Night Watch, patch 4 | 25 September 2026 | Full-window target detail pages with caption boxes and a labelled altitude chart; sharper survey photos; the dashed field-of-view box kept clear of the caption; dark-site cards say "Observe from here" instead of "Use as beat" |
+| 0.6.5 | Night Watch, patch 5 | 25 September 2026 | Where you observe: home, one-click "Back to" home from the popover and Dark sites, dark sites visited without being saved, honest comparison with home, an "Add a site" sheet with named sky darkness, and menus in place of up/down arrows throughout Settings |
 
 ## Install
 

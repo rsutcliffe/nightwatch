@@ -126,3 +126,98 @@ import Foundation
     try Data(#"{"sites":[]}"#.utf8).write(to: url)
     #expect(try ConfigStore.load(from: url).brightNights == BrightSettings())
 }
+
+// Sites (v0.6.5): home, visiting a dark site, keeping it, and going back.
+private func site(_ n: String, _ lat: Double, _ lon: Double, bortle: Int = 5) -> Site {
+    Site(name: n, latitude: lat, longitude: lon, elevationM: 100, timeZoneID: "Europe/London", bortle: bortle)
+}
+private let testSite = site("Home", 54.0, -1.5), garden = site("Back garden", 54.002, -1.504)
+private let york = site("University of York - Astrocampus", 53.943, -1.060, bortle: 6)
+
+@Test func homeIsTheStarredSiteElseTheFirstSavedElseThisMac() {
+    var c = Config(); let mac = site("Here", 51.5, -0.1)
+    #expect(c.homeSite(auto: mac) == mac)                       // nothing saved: this Mac's location
+    c.sites = [testSite, garden]
+    #expect(c.homeSite(auto: mac) == testSite)                     // not starred: the first saved site
+    c.homeSiteName = "Back garden"
+    #expect(c.homeSite(auto: mac) == garden)
+}
+
+@Test func visitingADarkSiteDoesNotSaveItAndGoingHomeReturns() {
+    var c = Config(); c.sites = [testSite]; c.activeSiteName = "Test site"
+    c.visit(york)
+    #expect(c.sites == [testSite] && c.activeSite(auto: nil) == york && c.isAway(auto: nil))
+    c.goHome()
+    #expect(c.visiting == nil && c.activeSite(auto: nil) == testSite && !c.isAway(auto: nil))
+}
+
+@Test func visitingASavedPlaceSelectsItInstead() {
+    var c = Config(); c.sites = [testSite, york]; c.activeSiteName = "Test site"
+    c.visit(site("Astrocampus", 53.9432, -1.0605))              // within 0.001° of the saved York site
+    #expect(c.visiting == nil && c.activeSiteName == york.name)
+}
+
+@Test func keepingAVisitSavesItUnderAFreeName() {
+    var c = Config(); c.sites = [testSite, site("University of York - Astrocampus", 0, 0)]
+    c.visit(york); c.keepVisiting()
+    #expect(c.visiting == nil && c.sites.count == 3)
+    #expect(c.activeSiteName == "University of York - Astrocampus (dark site)" && c.activeSite(auto: nil)?.latitude == york.latitude)
+}
+
+@Test func choosingASiteOrThisMacEndsAVisit() {
+    var c = Config(); c.sites = [testSite]; c.visit(york)
+    c.choose(savedName: nil)
+    #expect(c.visiting == nil && c.activeSiteName == nil)
+}
+
+@Test func removingHomeOrTheActiveSiteFallsBack() {
+    var c = Config(); c.sites = [testSite, garden]; c.homeSiteName = "Back garden"; c.activeSiteName = "Back garden"
+    c.remove(savedName: "Back garden")
+    #expect(c.sites == [testSite] && c.homeSiteName == nil && c.activeSiteName == nil)
+}
+
+@Test func homeWithNoSavedSiteGoesBackToThisMac() {
+    var c = Config(); c.visit(york)
+    c.goHome()
+    #expect(c.visiting == nil && c.activeSiteName == nil)
+}
+
+@Test func olderConfigsDecodeWithoutTheNewKeys() throws {
+    let json = #"{"sites":[{"name":"Home","latitude":54.0,"longitude":-1.5,"elevationM":100,"timeZoneID":"Europe/London","bortle":5}],"activeSiteName":"Test site"}"#
+    let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
+    #expect(c.homeSiteName == nil && c.visiting == nil && c.homeSite(auto: nil)?.name == "Test site")
+}
+
+@Test func bortleLevelsHavePlainNames() {
+    #expect(Bortle.name(1) == "Pristine" && Bortle.name(5) == "Suburban" && Bortle.name(9) == "Inner city")
+    #expect((1...9).allSatisfy { !Bortle.name($0).isEmpty })
+}
+
+@Test func thisMacCanBeHomeAndIsNeverAwayFromItself() {
+    var c = Config(); c.sites = [testSite]; c.homeIsThisMac = true
+    let mac = site("Here", 51.5, -0.1), moved = site("Here", 51.52, -0.12)
+    #expect(c.homeSite(auto: mac) == mac && !c.isAway(auto: moved))   // on Automatic at home: a moving fix never flickers "away"
+    c.choose(savedName: "Test site")
+    #expect(c.isAway(auto: mac))
+    c.goHome()
+    #expect(c.activeSiteName == nil && c.visiting == nil)
+    c.homeSiteName = "Test site"; c.homeIsThisMac = false
+    #expect(c.homeSite(auto: mac) == testSite)
+}
+
+@Test func olderConfigOnAutomaticKeepsThisMacAsHome() throws {
+    let json = #"{"sites":[{"name":"Dark spot","latitude":54.1,"longitude":-1.6,"elevationM":100,"timeZoneID":"Europe/London","bortle":3}]}"#
+    let c = try JSONDecoder().decode(Config.self, from: Data(json.utf8))
+    #expect(c.homeIsThisMac && !c.isAway(auto: site("Here", 54.1, -1.6)))
+}
+
+@Test func keepingTheFirstVisitLeavesThisMacAsHome() {
+    var c = Config(); c.visit(york); c.keepVisiting()
+    #expect(c.homeIsThisMac && c.sites.count == 1)
+}
+
+@Test func keepingAVisitAvoidsNamesInAnyCase() {
+    var c = Config(); c.sites = [site("university of york - astrocampus", 0, 0)]
+    c.visit(york); c.keepVisiting()
+    #expect(c.sites.last?.name == "University of York - Astrocampus (dark site)")
+}

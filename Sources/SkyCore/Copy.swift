@@ -9,7 +9,6 @@ public struct Copy: Sendable {
     private var watch: Bool { flavour == .watch }
 
     public var refresh: String { watch ? "Patrol" : "Refresh" }
-    public var siteNoun: String { watch ? "Beat" : "Site" }
     public var noWindow: String { watch ? "Nothing to see here. Move along." : "No clear window tonight." }
     public var cancelTitle: String { watch ? "Stand down. Clouds moving in" : "Cancelled. Clouds moving in" }
     public var lessCertainTitle: String { watch ? "Hold fire. Forecasts disagree" : "Less certain. Forecasts disagree" }

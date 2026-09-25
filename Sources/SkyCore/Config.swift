@@ -21,6 +21,12 @@ public enum TelescopePresets {
 public struct Config: Codable, Equatable, Sendable {
     public var sites: [Site] = []
     public var activeSiteName: String? = nil          // nil = automatic location when available
+    /// The site "Back to …" returns to and dark sites are compared with (v0.6.5). nil: the first saved site, else this Mac.
+    public var homeSiteName: String? = nil
+    /// Home is this Mac's location (starred in Settings), whatever is saved.
+    public var homeIsThisMac = false
+    /// A dark site being tried from the Targets window: active while set, never added to `sites` unless kept (v0.6.5).
+    public var visiting: Site? = nil
     public var fov = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     public var fovPresetID: String? = "dwarf-mini"
     public var goRule = GoRule()
@@ -35,14 +41,70 @@ public struct Config: Codable, Equatable, Sendable {
     public init() {}
     public static let `default` = Config()
 
-    /// Manual site wins when named; otherwise the automatic fix; otherwise the first saved site.
+    /// A visited dark site wins; then a named saved site; otherwise the automatic fix; otherwise the first saved site.
     public func activeSite(auto: Site?) -> Site? {
+        if let v = visiting { return v }
         if let n = activeSiteName, let s = sites.first(where: { $0.name == n }) { return s }
         return auto ?? sites.first
     }
 
+    /// The starred site; unstarred, the first saved site; with none saved, this Mac's location.
+    public func homeSite(auto: Site?) -> Site? {
+        if homeIsThisMac { return auto ?? sites.first }
+        if let n = homeSiteName, let s = sites.first(where: { $0.name == n }) { return s }
+        return sites.first ?? auto
+    }
+
+    /// Observing somewhere other than home, so the app offers "Back to …". On Automatic with this Mac as home it is never
+    /// away, however far the fix moves.
+    public func isAway(auto: Site?) -> Bool {
+        if homeIsThisMac, visiting == nil, activeSiteName == nil { return false }
+        guard let a = activeSite(auto: auto), let h = homeSite(auto: auto) else { return false }
+        return !Config.samePlace(a, h)
+    }
+
+    /// Within 0.001° in latitude and longitude, as dark-site adoption has always matched a saved site.
+    public static func samePlace(_ a: Site, _ b: Site) -> Bool {
+        abs(a.latitude - b.latitude) <= 0.001 && abs(a.longitude - b.longitude) <= 0.001
+    }
+
+    /// Observe from a dark site. A saved site at the same place is selected instead; nothing is saved.
+    public mutating func visit(_ s: Site) {
+        if let saved = sites.first(where: { Config.samePlace($0, s) }) { choose(savedName: saved.name) } else { visiting = s }
+    }
+
+    /// Save the visited site, under a name no other saved site has ("X", then "X (dark site)", "X (dark site 2)", …).
+    public mutating func keepVisiting() {
+        guard var v = visiting else { return }
+        if sites.isEmpty, homeSiteName == nil { homeIsThisMac = true }   // keeping a first site must not quietly move home
+        let taken = Set(sites.map { $0.name.lowercased() }), base = v.name
+        var n = 1
+        while taken.contains(v.name.lowercased()) { v.name = n == 1 ? "\(base) (dark site)" : "\(base) (dark site \(n))"; n += 1 }
+        sites.append(v)
+        choose(savedName: v.name)
+    }
+
+    /// Observe from a saved site by name, or from this Mac's location with nil; ends any visit.
+    public mutating func choose(savedName: String?) {
+        visiting = nil
+        activeSiteName = savedName
+    }
+
+    /// Back to home: its name when it is a saved site, else this Mac's location.
+    public mutating func goHome() {
+        if homeIsThisMac { choose(savedName: nil); return }
+        let home = homeSite(auto: nil)
+        choose(savedName: home.flatMap { h in sites.contains(where: { $0.name == h.name }) ? h.name : nil })
+    }
+
+    public mutating func remove(savedName: String) {
+        sites.removeAll { $0.name == savedName }
+        if homeSiteName == savedName { homeSiteName = nil }
+        if activeSiteName == savedName { activeSiteName = nil }
+    }
+
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites, brightNights, aurora
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites, brightNights, aurora
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -51,6 +113,10 @@ public struct Config: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         sites = try c.decodeIfPresent([Site].self, forKey: .sites) ?? []
         activeSiteName = try c.decodeIfPresent(String.self, forKey: .activeSiteName)
+        homeSiteName = try c.decodeIfPresent(String.self, forKey: .homeSiteName)
+        // A config from before v0.6.5 that was on Automatic keeps this Mac as home, so saved dark sites do not become it.
+        homeIsThisMac = try c.decodeIfPresent(Bool.self, forKey: .homeIsThisMac) ?? (homeSiteName == nil && activeSiteName == nil && !sites.isEmpty)
+        visiting = try c.decodeIfPresent(Site.self, forKey: .visiting)
         fov = try c.decodeIfPresent(FieldOfView.self, forKey: .fov) ?? FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
         fovPresetID = try c.decodeIfPresent(String.self, forKey: .fovPresetID) ?? "dwarf-mini"
         goRule = try c.decodeIfPresent(GoRule.self, forKey: .goRule) ?? GoRule()

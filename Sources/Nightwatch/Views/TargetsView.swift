@@ -117,7 +117,11 @@ struct TargetsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Dark sites").font(.title2.weight(.semibold))
-                Text("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)) of \(store.site?.name ?? "home") · sorted by tonight's score").font(.caption).foregroundStyle(Theme.dim)
+                HStack(spacing: 6) {
+                    Text("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)) of \(store.site?.name ?? "home") · sorted by tonight's score").foregroundStyle(Theme.dim)
+                    if store.isAway { Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(.link) }
+                }
+                .font(.caption)
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             if !store.config.darkSites.enabled {
                 Text("Dark sites are off. Turn them on in Settings › Dark sites.").foregroundStyle(Theme.dim).padding(20)
@@ -243,10 +247,12 @@ struct DarkSiteCard: View {
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" + (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? ""))
                 .font(.caption).foregroundStyle(Theme.dim)
-            if let home = store.site {
+            // Compared with home, not with whichever site is active: while away, "at home" would be the wrong place (v0.6.5).
+            if let home = store.homeSite {
                 let siteSky = s.bortle.map { "Bortle \($0)" } ?? s.band?.displayName ?? "darkness unknown"
-                if !plan.forecastMissing, let hp = store.plan {
-                    Text("Score \(plan.score) vs \(hp.score) at home · \(siteSky), home Bortle \(home.bortle)")
+                let atHome = store.isAway ? "at \(store.homeLabel) (home)" : "at home"
+                if !plan.forecastMissing, let hp = store.homePlan {
+                    Text("Score \(plan.score) vs \(hp.score) \(atHome) · \(siteSky), home Bortle \(home.bortle)")
                         .font(.caption).foregroundStyle(plan.score >= hp.score + 20 ? Theme.accent : Theme.dim)
                 } else {
                     Text("\(siteSky), home Bortle \(home.bortle)").font(.caption).foregroundStyle(Theme.dim)
@@ -263,7 +269,7 @@ struct DarkSiteCard: View {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
                 // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
-                Button("Observe from here") { store.adoptAsBeat(s) }.font(.caption)
+                Button("Observe from here") { store.visit(s) }.font(.caption)
             }
         }
         .padding(12)

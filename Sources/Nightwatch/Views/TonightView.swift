@@ -9,6 +9,7 @@ struct TonightView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+            if store.isAway { awayBar }
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
                 ClearSkyBars(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site), source: store.forecast?.cloudSource ?? "Open-Meteo")
@@ -26,6 +27,18 @@ struct TonightView: View {
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
+    }
+
+    /// One click back to home after "Observe from here" or choosing another site (v0.6.5).
+    private var awayBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "location.fill").font(.system(size: 10)).foregroundStyle(Tokens.statusWarning).accessibilityHidden(true)
+            Text("Observing away from home").font(.system(size: 11))
+            Spacer()
+            Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(SecondaryButtonStyle())
+        }
+        .padding(8)
+        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var header: some View {

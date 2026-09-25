@@ -75,6 +75,7 @@ struct NightwatchApp: App {
         location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
         await Notifier.requestAuthorisation()
         if store.config.activeSiteName == nil { store.autoSite = await location.requestOnce() }
+        else { Task { @MainActor in store.autoSite = await location.requestOnce() } }   // so "This Mac's location" is ready in Settings
         await store.refresh(force: false)
         let s = Scheduler { [location] in
             Task { @MainActor in
