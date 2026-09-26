@@ -8,6 +8,12 @@ request.
 The store build also carries no temporary sandbox exceptions: those exist in the download only to copy settings from
 0.6, which a new App Store user never had.
 
+## Before you start
+
+`scripts/appstore.sh` builds the widget through the everyday build, so it needs what `scripts/build-app.sh` needs for a
+signed build with the widget: Xcode, `xcodegen` (`brew install xcodegen`), and the Apple Development certificate and
+development profile already on this Mac.
+
 ## One-off setup
 
 Everything below is at [developer.apple.com](https://developer.apple.com/account) or
@@ -22,8 +28,8 @@ Everything below is at [developer.apple.com](https://developer.apple.com/account
 
 2. **The widget's identifier.** Identifiers › **+** › App IDs › App, platform macOS, bundle ID
    `io.github.rsutcliffe.nightwatch.widget`. The app's own identifier, `io.github.rsutcliffe.nightwatch`, already exists,
-   with WeatherKit. If a later upload is rejected over the App Group, enable **App Groups** on both identifiers with the
-   group `8B44CZ9923.io.github.rsutcliffe.nightwatch`, then make the profiles again.
+   with WeatherKit. The App Group the app and widget share, `8B44CZ9923.io.github.rsutcliffe.nightwatch`, begins with the
+   team ID, so on macOS it needs no registration in the portal.
 
 3. **Two provisioning profiles.** Profiles › **+** › Distribution › **Mac App Store Connect**, once for each identifier.
    Download both and copy each into `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`, named by its UUID, as
@@ -60,7 +66,7 @@ in the name, subtitle and keywords.
 - **Support URL:** https://github.com/rsutcliffe/nightwatch/discussions
 - **Marketing URL:** https://delphi-dolphin.com/nightwatch
 - **Keywords** (100 characters at most):
-  `astronomy,astrophotography,clear sky,telescope,stars,forecast,seeing,dark sky,aurora,menu bar`
+  `astronomy,astrophotography,telescope,stars,forecast,seeing,dark sky,aurora,moon,nebula,menu bar`
 
 **Promotional text:**
 

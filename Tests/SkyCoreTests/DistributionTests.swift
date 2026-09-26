@@ -6,14 +6,14 @@ import Foundation
 /// decide it on purpose and update this test.
 @Test func theAppStoreBuildDiffersInExactlyOnePlace() throws {
     let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-    let files = FileManager.default.enumerator(at: root.appendingPathComponent("Sources"), includingPropertiesForKeys: nil)!
-        .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
+    let files = ["Sources", "Widget/Sources"].flatMap { dir in
+        FileManager.default.enumerator(at: root.appendingPathComponent(dir), includingPropertiesForKeys: nil)!
+            .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
+    }
     let hits = try files.flatMap { url in
         try String(contentsOf: url, encoding: .utf8).components(separatedBy: "\n")
-            .filter { $0.contains("APPSTORE") && $0.trimmingCharacters(in: .whitespaces).hasPrefix("#if") }
-            .map { _ in url.lastPathComponent }
+            .filter { $0.range(of: #"^\s*#(if|elseif)\b.*\bAPPSTORE\b"#, options: .regularExpression) != nil }
+            .map { _ in url.path.replacingOccurrences(of: root.path + "/", with: "") }
     }
-    #expect(hits == ["Distribution.swift"])
-    let widget = try String(contentsOf: root.appendingPathComponent("Widget/Sources/NightwatchWidget.swift"), encoding: .utf8)
-    #expect(!widget.contains("APPSTORE"))
+    #expect(hits == ["Sources/Nightwatch/Distribution.swift"])
 }
