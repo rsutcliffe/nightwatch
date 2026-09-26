@@ -13,28 +13,40 @@ tracking. The developer collects no data about you: nothing is sent to the devel
 - **Caches:** forecasts, tonight's plan and sky-survey images, plus a record of which alerts tonight has already sent, so
   none is sent twice.
 
-All of it is kept in Nightwatch's own folder on your Mac,
-`~/Library/Containers/io.github.rsutcliffe.nightwatch`. Delete the app and that folder, and it is gone.
+It is kept in Nightwatch's own folders on your Mac:
+
+- `~/Library/Containers/io.github.rsutcliffe.nightwatch` (settings, caches and alert records);
+- `~/Library/Containers/io.github.rsutcliffe.nightwatch.widget` and the shared
+  `~/Library/Group Containers/…io.github.rsutcliffe.nightwatch` (the desktop widget's copy of tonight, including your
+  site's name);
+- if you used version 0.6 or earlier, its old folders `~/Library/Application Support/Nightwatch` and
+  `~/Library/Caches/Nightwatch`, which 0.7.0 copies from and leaves untouched.
+
+Delete the app and those folders, and it is gone.
 
 ## What is sent over the internet, and to whom
 
 To fetch forecasts, Nightwatch sends **the coordinates of the place being forecast** (your location or a saved site, and
-nearby dark-sky sites if that feature is on). No name, account, identifier or device information goes with them. They
-go to:
+nearby dark-sky sites if that feature is on). They go to:
 
-- **Apple Weather (WeatherKit)**, on builds signed for it. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
-- **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion.
-- **[7Timer!](https://www.7timer.info)**, for seeing and transparency.
+- **Apple Weather (WeatherKit)**, on builds signed for it. macOS makes these requests on Nightwatch's behalf and
+  identifies the app to Apple, as it does for every app using Apple Weather. See
+  [Apple's privacy policy](https://www.apple.com/legal/privacy/).
+- **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion. No name, account or device
+  identifier goes with the coordinates.
+- **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.
 
 Other requests carry nothing about you or your location:
 
 - **[AuroraWatch UK](https://aurorawatch.lancs.ac.uk)**, for the aurora status, if aurora alerts are on.
 - **The Minor Planet Center and CelesTrak**, for comet and ISS data.
 - **CDS (Strasbourg)**, for sky-survey images. It receives the sky position of the target being shown, not yours.
-- **GitHub**, once a day, to check for a newer version (download from GitHub or delphi-dolphin.com only; Settings ›
-  Updates turns it off). The App Store version does not check; the App Store updates it.
+- **NASA's Scientific Visualization Studio**, for the Moon image. It receives the date and hour, nothing about you.
+- **GitHub**, once a day, to check for a newer version. This is in the download from GitHub or delphi-dolphin.com
+  only, and Settings › Updates turns it off. The Mac App Store version has no update check: the App Store updates it.
 
-Each request identifies itself as Nightwatch and its version, as the services ask. These services receive your IP
+Nightwatch's own requests (all of the above except Apple Weather) identify themselves as Nightwatch and its version, as
+the services ask. These services receive your IP
 address as part of any internet request, and their own privacy policies apply. Nightwatch shares nothing else with them
 or with anyone.
 

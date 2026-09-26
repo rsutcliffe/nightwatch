@@ -98,7 +98,7 @@ public struct Copy: Sendable {
         }
     }
 
-    /// The v0.5 agreement line, the same in both wording modes.
+    /// The v0.5 agreement line.
     public static func agreementText(_ a: Agreement, site: Site) -> String {
         switch a {
         case .agree: "Open-Meteo agrees"

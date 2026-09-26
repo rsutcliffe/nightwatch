@@ -35,11 +35,13 @@ Taken at Northumberland Dark Sky Park.
     scripts/fetch-data.sh         # optional: only to refresh the bundled catalogue; the data is committed
     scripts/build-app.sh          # builds, signs ad hoc, installs to /Applications, launches
 
+Every build runs in Apple's app sandbox, including one signed ad hoc. An ad hoc build gets a new signature each time it is rebuilt; if macOS then asks whether Nightwatch may access its data, choose Allow.
+
 The app icon comes from `Resources/AppIcon/Nightwatch.icon`, an Icon Composer document. With Xcode installed, the build compiles it into a Liquid Glass icon with `actool`; with the Command Line Tools alone, `scripts/make-icns.swift` makes a classic icon from the same artwork.
 
 ## Desktop widget (optional)
 
-Nightwatch has small, medium and large desktop widgets showing tonight's sky score and verdict. The medium and large ones add the clear-sky bars, and the large one the best three targets. They draw a snapshot the app writes after each patrol, so they always match the popover, and they never fetch anything themselves. Clicking one opens the Targets window; clicking a target on the large one opens its detail.
+Nightwatch has small, medium and large desktop widgets showing tonight's sky score and verdict. The medium and large ones add the clear-sky bars, and the large one the best three targets. They draw a snapshot the app writes after each refresh, so they always match the popover, and they never fetch anything themselves. Clicking one opens the Targets window; clicking a target on the large one opens its detail.
 
 The widget is built only on a signed build with Xcode and xcodegen installed (`brew install xcodegen`): `scripts/build-app.sh` then generates `Widget/NightwatchWidget.xcodeproj` from `Widget/project.yml`, builds the extension with `xcodebuild` and embeds it. With the Command Line Tools alone the app builds exactly as before, without the widget.
 
@@ -60,7 +62,7 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
 - The popover (v0.4 "Jingo") shows:
   - the sky score inside a 12-hour clock bezel whose ticks glow red across tonight's clear window
   - the window time, with a "Held back by…" line naming what costs the score points (a bright Moon, dew, wind, seeing, cloud)
-  - on a build signed for Apple Weather, a second-opinion line from Open-Meteo (v0.5 "The Fifth Elephant"): "Open-Meteo agrees", "Open-Meteo agrees: no clear window", or where it differs ("sees cloud from 00:00", "sees it clear from 21:00", "has a clear run 23:00–02:00", "sees no clear window"). The same sentence ends the evening heads-up and the nudge before the window. Settings › Alerts › "Alert only when Open-Meteo agrees" holds an alert back when Open-Meteo is not clear enough inside the window. Nothing is logged: the second opinion lives in the forecast cache and is replaced on every patrol
+  - on a build signed for Apple Weather, a second-opinion line from Open-Meteo (v0.5 "The Fifth Elephant"): "Open-Meteo agrees", "Open-Meteo agrees: no clear window", or where it differs ("sees cloud from 00:00", "sees it clear from 21:00", "has a clear run 23:00–02:00", "sees no clear window"). The same sentence ends the evening heads-up and the nudge before the window. Settings › Alerts › "Alert only when Open-Meteo agrees" holds an alert back when Open-Meteo is not clear enough inside the window. Nothing is logged: the second opinion lives in the forecast cache and is replaced on every refresh
   - clear-sky bars, one per hour of darkness, taller for clearer
   - one notice line (aurora, or a clearer dark site nearby)
   - six tiles, with the dew tile turning amber when a heater is advised

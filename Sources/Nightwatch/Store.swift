@@ -19,6 +19,10 @@ final class Store: ObservableObject {
     @Published var alertState: AlertState?
     @Published var autoSite: Site?
     @Published var lastError: String?
+    /// 0.6.x settings synced by a link the sandbox cannot follow (0.7.0): the welcome offers to import the file.
+    @Published var linkedSettings: URL?
+    /// Why the 0.6.x settings could not be copied in (0.7.0); the welcome shows it, since the welcome then appears.
+    @Published var importError: String?
     @Published var refreshing = false
     /// config.json exists but would not decode: saves are refused so the user's file is never overwritten.
     @Published var configLoadFailed = false
@@ -60,7 +64,11 @@ final class Store: ObservableObject {
         grids = LPGrids.bundled()
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
-        LegacyImport.run(from: LegacyImport.legacyDirectory, to: StateFiles.directory)   // 0.6.x settings into the sandbox, once
+        switch LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) {
+        case .linked(let url): linkedSettings = url        // the welcome offers to import it through a file picker
+        case .failed(let path): importError = "Could not copy your earlier settings from \(path). Set Nightwatch up again, or copy that file into Settings by hand."
+        case .imported, .nothing: break
+        }
         StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
         plan = Store.read("plan.json")             // content in the popover before the first fetch
@@ -165,11 +173,11 @@ final class Store: ObservableObject {
         if self.site != site { await refresh(force: false) }
     }
 
-    /// Comet elements daily, ISS elements every 2 hours (CelesTrak asks for no more). The MPC file is gzip, so it goes through gunzip.
+    /// Comet elements daily, ISS elements every 2 hours (CelesTrak asks for no more). The MPC file is gzip, so it goes through Gzip.decompress.
     /// Gated on the last attempt, not the last success, so a failing server is not hammered every tick.
     private func refreshAuxiliary(now: Date) async {
         if attemptDue("comets", every: 86_400, now: now), let data = try? await fetcher.get(Comets.url) {
-            let unzipped = await Task.detached { Gzip.decompress(data) ?? Data() }.value   // off the main actor
+            let unzipped = await Task.detached { Gzip.decompress(data) ?? data }.value   // off the main actor; already plain if the server sent Content-Encoding: gzip
             if let c = try? Comets.decode(unzipped) { comets = c; Store.write(c, "comets.json") }
         }
         if attemptDue("iss", every: 2 * 3600, now: now), let data = try? await fetcher.get(Satellites.issURL),
@@ -403,5 +411,18 @@ final class Store: ObservableObject {
         guard let value else { return }
         let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
         try? e.encode(value).write(to: url, options: .atomic)
+    }
+}
+
+extension Store {
+    /// Replaces the settings with a file the person chose (the welcome's "Import settings…", for 0.6.x settings synced by
+    /// a link). The file must decode as settings. True when imported.
+    func importSettings(from url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url), (try? JSONDecoder().decode(Config.self, from: data)) != nil,
+              (try? data.write(to: ConfigStore.defaultURL, options: .atomic)) != nil else { return false }
+        loadConfig()
+        linkedSettings = nil
+        saveConfig()
+        return true
     }
 }
