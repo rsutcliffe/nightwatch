@@ -21,15 +21,15 @@ public enum LegacyImport {
     public static func run(from legacy: URL, legacyCaches: URL, to dir: URL) -> Outcome {
         let fm = FileManager.default
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        var failed: String?
+        // An alert record that fails to copy costs at most one repeated alert, so it never fails the import.
         for n in StateFiles.names where !fm.fileExists(atPath: dir.appendingPathComponent(n).path) {
             guard let source = [legacy, legacyCaches].map({ $0.appendingPathComponent(n) }).first(where: { fm.fileExists(atPath: $0.path) }) else { continue }
-            if !copy(source, to: dir.appendingPathComponent(n)) { failed = source.path }
+            _ = copy(source, to: dir.appendingPathComponent(n))
         }
         let target = dir.appendingPathComponent("config.json"), old = legacy.appendingPathComponent("config.json")
-        if fm.fileExists(atPath: target.path) { return failed.map(Outcome.failed) ?? .nothing }
+        if fm.fileExists(atPath: target.path) { return .nothing }
         if (try? fm.attributesOfItem(atPath: old.path)) != nil {           // present, even as a dangling link
-            if copy(old, to: target) { return failed.map(Outcome.failed) ?? .imported }
+            if copy(old, to: target) { return .imported }
             if let link = try? fm.destinationOfSymbolicLink(atPath: old.path) {
                 return .linked(URL(fileURLWithPath: link, relativeTo: legacy).standardizedFileURL)
             }
@@ -38,7 +38,7 @@ public enum LegacyImport {
         if fm.fileExists(atPath: legacyCaches.appendingPathComponent("forecast.json").path) {
             return (try? Data(#"{"welcomed":true}"#.utf8).write(to: target, options: .atomic)) != nil ? .imported : .failed(target.path)
         }
-        return failed.map(Outcome.failed) ?? .nothing
+        return .nothing
     }
 
     /// Contents, not links: a symlinked file arrives as a plain file.

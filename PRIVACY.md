@@ -52,8 +52,9 @@ or with anyone.
 
 ## Permissions
 
-- **Location** is asked for only when you choose "Use this Mac's location". You can refuse it and add a site by hand,
-  or turn it off later in System Settings › Privacy & Security › Location Services.
+- **Location** is asked for when you choose "Use this Mac's location", or at launch when your settings (including
+  those copied from 0.6) observe from this Mac. You can refuse it and add a site by hand, or turn it off later in
+  System Settings › Privacy & Security › Location Services.
 - **Notifications** are used only for Nightwatch's own alerts.
 
 ## Children

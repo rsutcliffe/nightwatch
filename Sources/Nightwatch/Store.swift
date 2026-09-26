@@ -421,6 +421,7 @@ extension Store {
         guard let data = try? Data(contentsOf: url), (try? JSONDecoder().decode(Config.self, from: data)) != nil,
               (try? data.write(to: ConfigStore.defaultURL, options: .atomic)) != nil else { return false }
         loadConfig()
+        config.welcomed = true   // chosen from the welcome, so it is done, whatever a half-finished 0.6.7 file said
         linkedSettings = nil
         saveConfig()
         return true

@@ -104,7 +104,16 @@ struct WelcomeView: View {
         panel.message = "Choose your Nightwatch settings file (\(link.lastPathComponent))"
         panel.prompt = "Import"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        if store.importSettings(from: url) { dismissWindow(id: "welcome") } else { state.importFailed = true }
+        guard store.importSettings(from: url) else { state.importFailed = true; return }
+        // Boot skipped the location fix while the welcome was pending: settings that observe from this Mac need one now.
+        if store.config.activeSiteName == nil || store.config.homeIsThisMac {
+            store.awaitingFix = true
+            Task { @MainActor in
+                store.autoSite = await store.requestLocationFix?(); store.awaitingFix = false
+                await store.refresh(force: false)
+            }
+        }
+        dismissWindow(id: "welcome")
     }
 
     private func useThisMac() {
