@@ -184,13 +184,25 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
         [caldwell.map { "C\($0)" }, commonName ?? typeName].compactMap { $0 }.joined(separator: " · ")
     }
 
-    /// The Targets search: the name or subtitle contains the query, ignoring case and spaces, so "C 43" finds C43 and
-    /// "NGC7814" finds NGC 7814. An empty query matches everything.
+    /// The Targets search, ignoring case. A catalogue number ("C43", "C 43", "NGC7814", "m 31") must begin one of the name's
+    /// " · " parts once spaces are removed, so "C43" does not find NGC 4303; a bare number ("7814") must begin one part's
+    /// digits. Anything else ("veil", "north america", "Peg") is found anywhere in the name or subtitle. Empty matches all.
     public func matches(_ query: String) -> Bool {
-        let q = query.filter { !$0.isWhitespace }
+        let q = query.filter { !$0.isWhitespace }.lowercased()
         guard !q.isEmpty else { return true }
-        return [name, subtitle].contains { $0.filter { !$0.isWhitespace }.localizedCaseInsensitiveContains(q) }
+        let letters = q.prefix { $0.isLetter }, number = q.dropFirst(letters.count)
+        guard let first = number.first, first.isNumber else {
+            return [name, subtitle].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
+        }
+        let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace }.lowercased() }
+        if letters.isEmpty { return parts.contains { $0.drop { $0.isLetter }.hasPrefix(q) } }
+        return parts.contains { $0.hasPrefix(q) }
     }
+
+    /// Hidden while Include Moon-washed is off. Shared by the Targets grid and its search hint so the two cannot disagree.
+    public func hiddenByMoon(includeMoonWashed: Bool) -> Bool { moonWashed && !includeMoonWashed }
+    /// Hidden while Fits my field of view is on.
+    public func hiddenByFit(fitsOnly: Bool) -> Bool { fitsOnly && fit != .fits }
 }
 
 /// `.bright` when the dark rule could not be met and bright-night mode supplied the plan instead.

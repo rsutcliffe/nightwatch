@@ -84,4 +84,7 @@ import Foundation
     #expect(c20.catalogueID == "NGC 7000" && c20.displayName == "NGC 7000 · C20 · North America Nebula")
     let c14 = try #require(tagged.first { $0.caldwell == 14 })
     #expect(c14.catalogueID == "C14" && c14.displayName == "C14 · Double Cluster")
+    let m31 = try #require(try Catalog.bundled().objects.first { $0.messier == 31 })   // Messier names are unchanged
+    #expect(m31.catalogueID == "M31" && m31.displayName == "M31 · NGC 224 · Andromeda Galaxy")
+    #expect(DeepSkyObject.caldwellNumber(name: "C+12") == nil && DeepSkyObject.caldwellNumber(name: "Cl399") == nil)
 }

@@ -40,7 +40,7 @@ public struct DeepSkyObject: Codable, Equatable, Sendable, Identifiable {
 
     /// 43 for an addendum name "C043"; nil for anything else.
     static func caldwellNumber(name: String) -> Int? {
-        guard name.count == 4, name.first == "C", let n = Int(name.dropFirst()) else { return nil }
+        guard name.count == 4, name.first == "C", name.dropFirst().allSatisfy(\.isNumber), let n = Int(name.dropFirst()) else { return nil }
         return n
     }
 

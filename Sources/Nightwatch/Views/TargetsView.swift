@@ -41,8 +41,7 @@ struct TargetsView: View {
     private func visible(at now: Date) -> [RankedTarget] {
         guard case .group(let g) = ui.section, let site = store.site else { return [] }
         let shown = targets.filter { $0.group == g }
-            .filter { !ui.fitsOnly || $0.fit == .fits }
-            .filter { ui.includeMoonWashed || !$0.moonWashed }
+            .filter { !$0.hiddenByFit(fitsOnly: ui.fitsOnly) && !$0.hiddenByMoon(includeMoonWashed: ui.includeMoonWashed) }
             .filter { $0.matches(ui.search) }
         return Planner.sorted(shown, by: ui.sort, now: now, span: store.plan.flatMap { $0.primary ?? $0.darkSpan }, site: site)
     }

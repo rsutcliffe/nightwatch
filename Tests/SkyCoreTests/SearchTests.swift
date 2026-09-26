@@ -15,6 +15,12 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
 @Test func searchMatchesWithOrWithoutSpaces() {
     for q in ["C43", "c43", "C 43", "NGC7814", "ngc 7814", "7814", "", "  "] { #expect(c43.matches(q), "\(q)") }
     for q in ["C44", "M31", "NGC 7815"] { #expect(!c43.matches(q), "\(q)") }
+    // A Caldwell number must not find the NGC and IC numbers that share its digits (the review's catch).
+    let m61 = target("NGC4303", name: "M61 · NGC 4303", group: .galaxies)
+    for q in ["C43", "C 43", "c4"] { #expect(!m61.matches(q), "\(q)") }
+    #expect(m61.matches("4303") && m61.matches("M61") && m61.matches("ngc 43"))
+    let veil = target("NGC6992", name: "NGC 6992 · C33 · Eastern Veil", group: .nebulae, commonName: "Eastern Veil")
+    #expect(veil.matches("veil") && veil.matches("eastern veil") && veil.matches("C33") && veil.matches("Peg"))   // words: anywhere
 }
 
 @Test func cardLineCarriesTheCaldwellNumber() {
@@ -39,6 +45,22 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(hint("C", .clusters, in: [c43, c20]) == "Also in Nebulae (1), Galaxies (1).")
     #expect(hint("C4", .galaxies, washed: false, in: [c43, target("x", name: "C4 · NGC 7023", group: .galaxies, washed: true)])
             == "2 Moon-washed matches hidden: turn on Include Moon-washed.")
+    // Both filters hide it, so both are named.
+    #expect(hint("C43", .galaxies, fitsOnly: true) == "1 Moon-washed match hidden: turn on Include Moon-washed. 1 match hidden by Fits my field of view.")
     #expect(hint("", .galaxies) == nil)
     #expect(hint("zzz", .galaxies) == nil)
+}
+
+@Test func cardLabelNamesTheCaldwellNumber() {
+    var t = c43; t.catalogueID = "NGC 7814"
+    #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: Site(name: "x", latitude: 54, longitude: -1, elevationM: 0,
+                                                                     timeZoneID: "Europe/London", bortle: 4)).hasPrefix("NGC 7814 C43, "))
+}
+
+/// Plans cached before Caldwell numbers existed have no "caldwell" key and must still load.
+@Test func aCachedTargetWithoutACaldwellNumberDecodes() throws {
+    var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(c43)) as! [String: Any]
+    json.removeValue(forKey: "caldwell")
+    let old = try JSONDecoder().decode(RankedTarget.self, from: JSONSerialization.data(withJSONObject: json))
+    #expect(old.caldwell == nil && old.name == c43.name)
 }
