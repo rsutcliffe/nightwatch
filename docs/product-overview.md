@@ -100,7 +100,7 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 | Aurora status (opt-in) | AuroraWatch UK, Lancaster University | Free, non-commercial use, attribution |
 | Ephemeris | Astronomy Engine (vendored C) | MIT |
 | Deep-sky catalogue | OpenNGC | CC BY-SA 4.0 |
-| Constellation artwork | Made for Nightwatch; star lines from d3-celestial | MIT (artwork), BSD-3 (star lines) |
+| Constellation artwork | Original to Nightwatch, created with ChatGPT image generation; star lines from d3-celestial | MIT (artwork), BSD-3 (star lines) |
 | Sky-survey images | Digitized Sky Survey (STScI/NASA), coloured by CDS, via hips2fits | ODbL 1.0 (CDS); STScI permits non-profit use with acknowledgement; plates copyright AAO, SERC, Caltech, AURA |
 | Comets | IAU Minor Planet Center | Public |
 | ISS passes | CelesTrak elements, SatelliteKit SGP4 | MIT |
