@@ -56,9 +56,18 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
 - Every 30 minutes it fetches cloud, dew point, wind and visibility for your site from Apple Weather (WeatherKit) when the app is signed for it, or from Open-Meteo otherwise, plus 7Timer for seeing and transparency. The popover footer says which one drove tonight's verdict.
 - It computes astronomical darkness, Moon, planets and target visibility locally with Astronomy Engine. Nothing leaves your Mac except the forecast requests, thumbnail fetches from CDS, comet/ISS element downloads and, when aurora alerts are on, AuroraWatch UK's status after dark.
 - A night qualifies when there is a contiguous run of at least 3 hours inside astronomical darkness with total cloud at or under 25 % (all adjustable).
-- Alerts: a heads-up one hour before local sunset, a nudge 30 minutes before the window opens, and a stand-down if the forecast turns. Quiet hours default to 00:00–07:00. Nothing fires from a forecast older than six hours.
+- Alerts: a heads-up one hour before local sunset, a nudge 30 minutes before the window opens, and a cancel notice if the forecast turns. Quiet hours default to 00:00–07:00. Nothing fires from a forecast older than six hours.
 - Bright nights (opt-in, Settings › Bright nights): from about early May to early August at British latitudes there is no proper darkness, so the dark rule can never be met. With this on, Nightwatch suggests the Moon and the naked-eye planets instead and alerts for a one-hour clear run in nautical darkness (Sun 12° down) with a target at least 15° up. Deep-sky targets are never suggested on a bright night.
 - Aurora (opt-in, Settings › Aurora): after dark, Nightwatch checks AuroraWatch UK every 5 minutes and alerts when the status reaches your threshold (default amber) and this hour's forecast is clear. Status from AuroraWatch UK, Lancaster University, under its non-commercial terms. Quiet hours apply to aurora alerts too, and around midsummer the default quiet hours (00:00–07:00) cover almost all of the dark part of the night, so shorten them if you want summer aurora alerts.
+- The menu-bar icon shows tonight at a glance:
+
+  | Icon | Meaning |
+  |---|---|
+  | Star outline (☆) | No clear window tonight |
+  | Star in a circle (⊛) | A clear window tonight, still to come |
+  | Filled star (★) | The window is open, or opens within 30 minutes: time to set up |
+  | Star with a slash | The forecast is more than six hours old, for example while offline |
+
 - The popover (v0.4 "Jingo") shows:
   - the sky score inside a 12-hour clock bezel whose ticks glow red across tonight's clear window
   - the window time, with a "Held back by…" line naming what costs the score points (a bright Moon, dew, wind, seeing, cloud)
