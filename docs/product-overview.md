@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 26 September 2026, version 0.7.0 "Thud!". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 26 September 2026, version 0.7.1 "Thud!". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -62,7 +62,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 
 **About.** Website, "Send feedback" (GitHub Discussions) and "Report a problem" (GitHub Issues), and a line when a newer version is out.
 
-**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.7.0 is available  Download ↗".
+**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.7.1 is available  Download ↗".
 
 ## Alerts
 
@@ -113,7 +113,7 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 ## Architecture
 
 - A Swift package with four targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `NightwatchUI` (the views the app and the widget share) and `Nightwatch` (the SwiftUI menu-bar app). The widget extension is the one Xcode project, generated from `Widget/project.yml` with xcodegen; it reads a snapshot the app writes to a shared App Group after each refresh.
-- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (251 Swift Testing tests at 0.7.0).
+- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (252 Swift Testing tests at 0.7.1).
 - Everything lives in the app's sandbox folder, `~/Library/Containers/io.github.rsutcliffe.nightwatch/Data/Library` (0.7.0 and later). Caches (forecasts, plans, images) are rebuilt if a cleaner or macOS empties them. The record of alerts already sent (`alerts-state.json`, `aurora-state.json`) lives with the settings in `Application Support/Nightwatch/`, beside `config.json`, so emptying the caches never sends a notification twice. Settings and alert records from 0.6.x are copied in on first launch, through read-only sandbox exceptions for the old `Application Support/Nightwatch` and `Caches/Nightwatch` folders. A user from 0.6.6 or earlier who never changed a setting is recognised by their cached forecast and gets a settings file, so the welcome never returns. Settings synced by a link into iCloud Drive can't be followed from inside the sandbox; the welcome then offers "Import settings…" to choose the file.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
@@ -158,6 +158,7 @@ Tags follow the City Watch novels.
 | 0.6.9 | Night Watch, patch 9 | 25 September 2026 | Emptying the app caches (a cleaner, or macOS when disk space is low) no longer sends the same notification twice: the record of alerts already sent now lives with the settings, and moves there on first launch; the welcome window no longer comes back after the caches are emptied |
 | 0.6.10 | Night Watch, patch 10 | 25 September 2026 | The location prompt now appears: the signed download lacked the location entitlement Apple requires of hardened-runtime apps, so macOS never showed it and location had to be switched on in System Settings; "Use this Mac's location" waits for the answer instead of reporting "not available" while the prompt is on screen; the notifications prompt comes as the welcome closes, not over it, and alerts wait until notifications are allowed rather than counting as sent; the install steps say that macOS asks once before opening a downloaded app |
 | 0.7.0 | Thud! | 26 September 2026 | Runs in Apple's app sandbox, on the way to the Mac App Store; settings and alert records from 0.6.x are copied in on first launch; plain wording throughout ("Refresh", "Cancelled", "Less certain"), the City Watch lines and the wording setting removed; comet data unzipped inside the app instead of by a separate program; a privacy policy, linked from About |
+| 0.7.1 | Thud!, patch 1 | 26 September 2026 | The first version also built for the Mac App Store, as "Nightwatch: Clear Sky Alerts", from the same code (its only difference: no update check, as the App Store updates it); signed with the renewed Developer ID certificate, valid to 2031; built against the macOS 27 SDK; the README explains the menu-bar icon's four states |
 
 ## Install
 
