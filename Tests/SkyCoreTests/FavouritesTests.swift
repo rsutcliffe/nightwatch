@@ -59,8 +59,8 @@ private func favourites(_ ids: [String], catalog: Catalog = Catalog(objects: [])
     var found = false
     for ra in stride(from: 0.0, to: 24.0, by: 0.5) {
         let o = object("P", ra: ra, dec: 10, mag: 8)
-        let b = Planner.build(.object(o), window: window, site: sheffield, fov: dwarfMini, rule: GoRule(),
-                              moon: Ephemeris.moon(at: window.midpoint, site: sheffield), moonUp: false)
+        let b = try #require(Planner.build(.object(o), window: window, site: sheffield, fov: dwarfMini, rule: GoRule(),
+                                           moon: Ephemeris.moon(at: window.midpoint, site: sheffield), moonUp: false))
         guard b.fraction > 0, b.fraction < 0.5 else { continue }
         let f = try favourites(["P"], catalog: Catalog(objects: [o]), window: window, night: night)
         #expect(f.first?.notTonight == "Above 30° for under half of tonight's window")
@@ -83,13 +83,15 @@ private func favourites(_ ids: [String], catalog: Catalog = Catalog(objects: [])
     }
     let ranked = [t("neb1", .nebulae, alt: 60), t("neb2", .nebulae, alt: 40), t("gal1", .galaxies, alt: 55), t("gal2", .galaxies, alt: 30),
                   t("cl1", .clusters, alt: 50), t("vega", .stars, alt: 70), t("gal3", .galaxies, alt: 80, washed: true)]
-    #expect(Planner.best(from: ranked).map(\.id) == ["neb1", "gal1", "cl1"])
-    #expect(Planner.best(from: ranked, favourites: ["gal2"]).map(\.id) == ["neb1", "gal2", "cl1"])        // in place of its group's pick
-    #expect(Planner.best(from: ranked, favourites: ["vega"]).map(\.id) == ["neb1", "gal1", "vega"])       // no stars pick: the last slot
-    #expect(Planner.best(from: ranked, favourites: ["neb1"]).map(\.id) == ["neb1", "gal1", "cl1"])        // already there
-    #expect(Planner.best(from: ranked, favourites: ["gal3"]).map(\.id) == ["neb1", "gal1", "cl1"])        // Moon-washed: no slot
-    #expect(Planner.best(from: ranked, favourites: ["gal2", "neb2"]).map(\.id) == ["neb2", "gal1", "cl1"]) // the higher favourite wins
-    #expect(Planner.best(from: ranked, favourites: ["not-tonight"]).map(\.id) == ["neb1", "gal1", "cl1"])
+    func best(_ favs: [RankedTarget]) -> [String] { Planner.best(from: ranked, favourites: favs).map(\.id) }
+    let byID = Dictionary(uniqueKeysWithValues: ranked.map { ($0.id, $0) })
+    #expect(best([]) == ["neb1", "gal1", "cl1"])
+    #expect(best([byID["gal2"]!]) == ["neb1", "gal2", "cl1"])                       // in place of its group's pick
+    #expect(best([byID["vega"]!]) == ["neb1", "gal1", "vega"])                      // no stars pick: the last slot
+    #expect(best([byID["neb1"]!]) == ["neb1", "gal1", "cl1"])                       // already there
+    #expect(best([byID["gal3"]!]) == ["neb1", "gal1", "cl1"])                       // Moon-washed: no slot
+    #expect(best([byID["gal2"]!, byID["neb2"]!]) == ["neb2", "gal1", "cl1"])        // the higher favourite wins
+    #expect(best([t("faint", .galaxies, alt: 65)]) == ["neb1", "faint", "cl1"])     // usable though the magnitude cut left it out
 }
 
 @Test func favouritesToggleAndSurviveASave() throws {
@@ -109,4 +111,26 @@ private func favourites(_ ids: [String], catalog: Catalog = Catalog(objects: [])
         let tip = ShootingTips.tip(for: deneb, presetID: preset, presetName: nil, stackMinutes: 120, site: sheffield)
         #expect(tip.rows.map(\.label) == ["Use", "Exposure", "When"] && tip.source == nil)
     }
+}
+
+@Test func aNewMoonFavouriteSaysSoAndRepeatsAreDropped() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 10, 10, 12, 0), site: sheffield)   // new Moon on 10 October 2026
+    let window = ClearWindow(start: try #require(night.darkStart), end: try #require(night.darkEnd))
+    #expect(Ephemeris.moon(at: window.midpoint, site: sheffield).illumination <= 0.05)
+    let f = try favourites(["moon", "HIP102098", "moon"], window: window, night: night)
+    #expect(f.map(\.id) == ["moon", "HIP102098"])
+    #expect(f[0].notTonight == "New Moon tonight")
+}
+
+/// plan.json cached by 1.0.0 has no "favourites" (nor, from older versions, "limiting", "mode" and the rest): it must load.
+@Test func aPlanCachedByAnEarlierVersionLoads() throws {
+    let (night, window) = try septemberNight()
+    var p = NightPlan(night: night, windows: [window], primary: window, score: 70, qualifies: true, moonIllumination: 0.4, moonRise: nil,
+                      moonSet: nil, darkHours: [], targets: [], best: [], seeingAvailable: false)
+    p.favourites = try favourites(["HIP102098"], window: window, night: night)
+    var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(p)) as! [String: Any]
+    for k in ["favourites", "limiting", "mode", "brightTargets", "moonUpFraction", "agreement"] { json.removeValue(forKey: k) }
+    let old = try JSONDecoder().decode(NightPlan.self, from: JSONSerialization.data(withJSONObject: json))
+    #expect(old.favourites.isEmpty && old.mode == .dark && old.score == 70)
+    #expect(try JSONDecoder().decode(NightPlan.self, from: JSONEncoder().encode(p)) == p)   // and a new one round-trips
 }

@@ -132,7 +132,7 @@ struct TargetsView: View {
         if let section = r.section {
             ui.section = section
             ui.pendingScrollID = r.siteID
-            ui.selected = r.targetID.flatMap { id in targets.first { $0.id == id } }
+            ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
         }
         store.targetsRequest = nil
     }
@@ -194,12 +194,14 @@ struct TargetsView: View {
                     Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
-                if store.plan?.mode == .bright, selectedGroup != .planets {
+                if store.plan?.mode == .bright, ui.section != .favourites, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if ui.section == .favourites {
                     if favourites.isEmpty {
                         Text("No favourites yet. Click the heart on any target to add it here.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                    } else if !favourites.contains(where: { $0.target.matches(ui.search) }) {
+                        Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(.caption).foregroundStyle(Tokens.textSecondary)
                     }
                 } else if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
                                                      includeMoonWashed: ui.includeMoonWashed) {
@@ -212,7 +214,8 @@ struct TargetsView: View {
                         ForEach(visible(at: clock.date)) { f in
                             let t = f.target
                             Button { ui.selected = t } label: { card(t, notTonight: f.notTonight) }.buttonStyle(.plain)
-                                .accessibilityLabel(store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
+                                .accessibilityLabel(f.notTonight.map { "\(t.name), \($0)" }
+                                                    ?? store.site.map { Copy.cardLabel(t, lit: store.plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
                                 .overlay(alignment: .topLeading) { heart(t).padding(14) }   // outside the card's button, so it clicks alone
                         }
                     }.padding(20)

@@ -219,7 +219,7 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public let moonSet: Date?
     public let darkHours: [HourlyConditions]
     public let targets: [RankedTarget]
-    public let best: [RankedTarget]
+    public var best: [RankedTarget]
     public let seeingAvailable: Bool
     public var mode: PlanMode = .dark
     /// Moon and planets up during the primary window on a bright night; empty in dark mode.
@@ -232,6 +232,32 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var agreement: Agreement? = nil
     /// Every favourite, usable tonight or not (v1.0.1), in the order they were added.
     public var favourites: [FavouriteTarget] = []
+}
+
+extension NightPlan {
+    /// Fields added after 0.4 fall back to their defaults, so a plan.json cached by an earlier version still loads and the
+    /// popover has content before the first fetch.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        night = try c.decode(Night.self, forKey: .night)
+        windows = try c.decode([ClearWindow].self, forKey: .windows)
+        primary = try c.decodeIfPresent(ClearWindow.self, forKey: .primary)
+        score = try c.decode(Int.self, forKey: .score)
+        qualifies = try c.decode(Bool.self, forKey: .qualifies)
+        moonIllumination = try c.decode(Double.self, forKey: .moonIllumination)
+        moonRise = try c.decodeIfPresent(Date.self, forKey: .moonRise)
+        moonSet = try c.decodeIfPresent(Date.self, forKey: .moonSet)
+        darkHours = try c.decode([HourlyConditions].self, forKey: .darkHours)
+        targets = try c.decode([RankedTarget].self, forKey: .targets)
+        best = try c.decode([RankedTarget].self, forKey: .best)
+        seeingAvailable = try c.decode(Bool.self, forKey: .seeingAvailable)
+        mode = try c.decodeIfPresent(PlanMode.self, forKey: .mode) ?? .dark
+        brightTargets = try c.decodeIfPresent([RankedTarget].self, forKey: .brightTargets) ?? []
+        limiting = try c.decodeIfPresent([LimitingFactor].self, forKey: .limiting) ?? []
+        moonUpFraction = try c.decodeIfPresent(Double.self, forKey: .moonUpFraction)
+        agreement = try c.decodeIfPresent(Agreement.self, forKey: .agreement)
+        favourites = try c.decodeIfPresent([FavouriteTarget].self, forKey: .favourites) ?? []
+    }
 }
 
 /// A favourite as it stands tonight. `notTonight` is nil when it is usable, else why not: "Below 30° in tonight's window".
@@ -309,14 +335,18 @@ extension Planner {
 
     /// One target from its source, tracked across `window`. `minAlt` is the floor its fraction and viewable span use:
     /// the go rule's for deep sky, stars and planets, 20° for a constellation's centre, 10° for the Moon.
-    static func build(_ source: Source, window: ClearWindow, site: Site, fov: FieldOfView, rule: GoRule, moon: MoonState, moonUp: Bool)
-        -> (target: RankedTarget, fraction: Double, minAlt: Double) {
+    /// `needs`: when given, a source whose fraction fails it returns nil straight after tracking, before the rest is built,
+    /// which is what keeps ranking the whole catalogue cheap.
+    static func build(_ source: Source, window: ClearWindow, site: Site, fov: FieldOfView, rule: GoRule, moon: MoonState, moonUp: Bool,
+                      needs: ((Double) -> Bool)? = nil) -> (target: RankedTarget, fraction: Double, minAlt: Double)? {
+        func passes(_ tr: (fraction: Double, peakAlt: Double, peakTime: Date, viewable: ClearWindow?)) -> Bool { needs?(tr.fraction) ?? true }
         func sep(_ ra: Double, _ dec: Double) -> Double {
             Ephemeris.separationDeg(ra1Hours: ra, dec1Deg: dec, ra2Hours: moon.position.raHours, dec2Deg: moon.position.decDeg)
         }
         switch source {
         case .object(let o):
             let tr = track(raHours: o.raHours, decDeg: o.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
+            guard passes(tr) else { return nil }
             let s = sep(o.raHours, o.decDeg)
             let t = described(RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group,
                                            raHours: o.raHours, decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude,
@@ -329,6 +359,7 @@ extension Planner {
         case .star(let st):
             // A bright star is a point that outshines the Moon's glow, so it is never Moon-washed.
             let tr = track(raHours: st.raHours, decDeg: st.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
+            guard passes(tr) else { return nil }
             let t = described(RankedTarget(id: st.id, name: st.name, subtitle: "Star, \(st.designation)", group: .stars,
                                            raHours: st.raHours, decDeg: st.decDeg, sizeArcmin: nil, magnitude: st.magnitude, fit: .small,
                                            peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(st.raHours, st.decDeg), moonWashed: false,
@@ -338,6 +369,7 @@ extension Planner {
         case .planet(let p):
             let pos = Ephemeris.planet(p, at: window.midpoint, site: site)
             let tr = track(raHours: pos.raHours, decDeg: pos.decDeg, window: window, site: site, minAlt: rule.minAltitudeDeg)
+            guard passes(tr) else { return nil }
             let t = described(RankedTarget(id: "planet-\(p.rawValue)", name: p.displayName, subtitle: "Planet", group: .planets,
                                            raHours: pos.raHours, decDeg: pos.decDeg, sizeArcmin: nil, magnitude: pos.magnitude, fit: .small,
                                            peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(pos.raHours, pos.decDeg), moonWashed: false,
@@ -346,6 +378,7 @@ extension Planner {
             return (t, tr.fraction, rule.minAltitudeDeg)
         case .moon:
             let tr = track(raHours: moon.position.raHours, decDeg: moon.position.decDeg, window: window, site: site, minAlt: 10)
+            guard passes(tr) else { return nil }
             let lit = "\(Int((moon.illumination * 100).rounded()))% illuminated"
             let t = described(RankedTarget(id: "moon", name: "Moon", subtitle: lit, group: .planets,
                                            raHours: moon.position.raHours, decDeg: moon.position.decDeg, sizeArcmin: 31, magnitude: nil,
@@ -356,6 +389,7 @@ extension Planner {
         case .constellation(let c):
             // From the constellation's centre; never Moon-washed, since a constellation spans too much sky to be washed out.
             let tr = track(raHours: c.raHours, decDeg: c.decDeg, window: window, site: site, minAlt: 20)
+            guard passes(tr) else { return nil }
             let t = described(RankedTarget(id: c.id, name: c.name, subtitle: "Constellation", group: .constellations,
                                            raHours: c.raHours, decDeg: c.decDeg, sizeArcmin: nil, magnitude: nil, fit: .mosaic,
                                            peakAltDeg: tr.peakAlt, peakTime: tr.peakTime, moonSepDeg: sep(c.raHours, c.decDeg), moonWashed: false,
@@ -369,9 +403,8 @@ extension Planner {
                             fov: FieldOfView, rule: GoRule) -> [RankedTarget] {
         let moon = Ephemeris.moon(at: window.midpoint, site: site)
         let moonUp = moon.position.altDeg > 0 && moon.illumination > 0.1
-        func add(_ source: Source, needs: (Double) -> Bool = { $0 >= 0.5 }) -> RankedTarget? {
-            let b = build(source, window: window, site: site, fov: fov, rule: rule, moon: moon, moonUp: moonUp)
-            return needs(b.fraction) ? b.target : nil
+        func add(_ source: Source, needs: @escaping (Double) -> Bool = { $0 >= 0.5 }) -> RankedTarget? {
+            build(source, window: window, site: site, fov: fov, rule: rule, moon: moon, moonUp: moonUp, needs: needs)?.target
         }
         var out: [RankedTarget] = []
         for o in catalog.objects {
@@ -395,16 +428,16 @@ extension Planner {
         }
     }
 
-    /// Top three across groups, at most one per group, deep sky first. A favourite in tonight's list that is not Moon-washed
-    /// takes a slot (v1.0.1): the highest one, in place of its own group's pick, else of the last.
-    static func best(from ranked: [RankedTarget], favourites: [String] = []) -> [RankedTarget] {
+    /// Top three across groups, at most one per group, deep sky first. The highest usable favourite that is not Moon-washed
+    /// takes a slot (v1.0.1), in place of its own group's pick, else of the last. `favourites` are the usable ones, which
+    /// includes any the list's magnitude cut left out.
+    static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = []) -> [RankedTarget] {
         var picked: [RankedTarget] = []
         for g in [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
             if let t = ranked.first(where: { $0.group == g && !$0.moonWashed }) { picked.append(t) }
             if picked.count == 3 { break }
         }
-        let liked = Set(favourites)
-        guard let fav = ranked.filter({ liked.contains($0.id) && !$0.moonWashed }).max(by: { $0.peakAltDeg < $1.peakAltDeg }),
+        guard let fav = favourites.filter({ !$0.moonWashed }).max(by: { $0.peakAltDeg < $1.peakAltDeg }),
               !picked.contains(where: { $0.id == fav.id }) else { return picked }
         if let i = picked.firstIndex(where: { $0.group == fav.group }) { picked[i] = fav }
         else if picked.count < 3 { picked.append(fav) }
@@ -428,13 +461,14 @@ extension Planner {
             if let c = constellations.first(where: { $0.id == id }) { return .constellation(c) }
             return catalog.objects.first(where: { $0.id == id }).map { .object($0) }
         }
-        return ids.compactMap { id in
+        var seen = Set<String>()   // a hand-edited settings file could repeat one
+        return ids.filter { seen.insert($0).inserted }.compactMap { id in
             if let t = ranked.first(where: { $0.id == id }) { return FavouriteTarget(target: t, notTonight: nil) }
-            guard let src = source(id) else { return nil }
-            let b = build(src, window: span, site: site, fov: fov, rule: rule, moon: moon, moonUp: moonUp)
+            guard let src = source(id), let b = build(src, window: span, site: site, fov: fov, rule: rule, moon: moon, moonUp: moonUp) else { return nil }
             let floor = Int(b.minAlt.rounded())
             let reason: String?
             if window == nil { reason = "No astronomical darkness tonight" }
+            else if case .moon = src, moon.illumination <= 0.05 { reason = "New Moon tonight" }   // too thin for the list
             else if b.fraction >= 0.5 { reason = nil }
             else if b.fraction == 0 { reason = "Below \(floor)° in tonight's window" }
             else { reason = "Above \(floor)° for under half of tonight's window" }
@@ -462,12 +496,13 @@ extension Planner {
         let targets = rankingWindow.map { rank(catalog: catalog, constellations: constellations, stars: stars, window: $0, site: site, fov: fov, rule: rule) } ?? []
         var darkPlan = NightPlan(night: night, windows: windows, primary: primary, score: score, qualifies: primary != nil,
                                  moonIllumination: moonMid.illumination, moonRise: moonMid.rise, moonSet: moonMid.set,
-                                 darkHours: dark, targets: targets, best: primary == nil ? [] : best(from: targets, favourites: favourites),
+                                 darkHours: dark, targets: targets, best: [],
                                  seeingAvailable: dark.contains { $0.seeing != nil },
                                  limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: darkness == nil ? nil : aboveFraction)
         darkPlan.agreement = agreement(plan: darkPlan, second: forecast.secondOpinion, rule: rule)
         darkPlan.favourites = favouriteTargets(favourites, ranked: targets, catalog: catalog, constellations: constellations, stars: stars,
                                                window: rankingWindow, night: night, site: site, fov: fov, rule: rule)
+        if primary != nil { darkPlan.best = best(from: targets, favourites: darkPlan.favourites.filter { $0.notTonight == nil }.map(\.target)) }
         // Bright-night mode only takes over when the dark rule cannot be met at all tonight (too little darkness).
         if let b = bright, b.enabled, !darkPlan.qualifies {
             let darkLen = darkness.map { $0.1.timeIntervalSince($0.0) / 3600 } ?? 0
