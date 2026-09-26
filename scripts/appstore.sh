@@ -48,6 +48,9 @@ APP="$WORK/Nightwatch.app"; ditto "$SRC" "$APP"
 APPEX="$APP/Contents/PlugIns/NightwatchWidget.appex"
 cp "$APP_PROFILE" "$APP/Contents/embedded.provisionprofile"
 cp "$WIDGET_PROFILE" "$APPEX/Contents/embedded.provisionprofile"
+# A downloaded profile is quarantined, and its copy is too (even with cp -X, on macOS 27). App Store Connect rejects a
+# quarantined file anywhere in the app (error 91109), so strip it before signing; step 3 checks it has gone.
+xattr -dr com.apple.quarantine "$APP"
 
 # The store build's entitlements are the everyday build's, minus the temporary sandbox exceptions (they exist only to copy
 # 0.6 settings, which a new App Store user never had) and minus Xcode's debugging entitlement on the widget. Derived rather
@@ -79,6 +82,8 @@ for b in "$APP" "$APPEX"; do
   ents=$(codesign -d --entitlements - --xml "$b" 2>/dev/null)
   [[ "$ents" == *temporary-exception* ]] && fail "the store build must carry no temporary sandbox exception ($b)"
 done
+attrs=$(xattr -r "$APP" 2>/dev/null)
+[[ "$attrs" == *com.apple.quarantine* ]] && fail "a file in the store build is quarantined, which App Store Connect rejects (error 91109)"
 grep -qaF "Check for a new version once a day" "$APP/Contents/MacOS/Nightwatch" && fail "the store build still has the update check: was it built with -DAPPSTORE?"
 sdk=$(vtool -show-build "$APP/Contents/MacOS/Nightwatch" | awk '/ sdk /{print $2; exit}')
 (( ${sdk%%.*} >= 26 )) || fail "the app records macOS SDK $sdk; App Store Connect needs 26 or later"
