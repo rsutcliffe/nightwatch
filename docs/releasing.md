@@ -47,9 +47,11 @@ from a website or a GitHub release.
      looks the ticket up when it next can);
    - writes the SHA-256 checksum beside it;
    - with `--publish`, attaches the DMG and checksum to the GitHub release for the tag, creating the release if needed,
+     plus the same DMG as `Nightwatch.dmg` (with its own checksum), so
+     `https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg` always serves the newest version,
      with notes written by `scripts/release-notes.sh` from the version's row in the release history of
      `docs/product-overview.md`. Add that row before releasing: without it, `--publish` stops.
-3. Link the website's download button to the GitHub release asset, or copy the DMG to the site.
+3. Point a website's download button at `https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg` once; it then needs no change per release.
 
 Without `--publish` the DMG stays in `build/release/`. `scripts/release.sh --skip-notarize` checks signing and packaging
 without notarising; that image is for checking only, never for distribution.
