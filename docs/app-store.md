@@ -89,7 +89,7 @@ Account.
 
 ## Listing text
 
-Nothing here names Terry Pratchett, Discworld or the City Watch (rule 5.2.1). Telescope makers are described, not named,
+Nothing here names Terry Pratchett, Discworld or the City Watch (rule 5.2.1). The description gives no web address: GitHub also offers the app as a download, which rule 2.3.10 (no alternative app marketplaces in metadata) could be read against, so the repository is reached through the Support URL instead. Telescope makers are described, not named,
 in the name, subtitle and keywords.
 
 - **Subtitle** (30 characters at most): Know when the sky is clear
@@ -121,8 +121,7 @@ in the name, subtitle and keywords.
 > • Aurora alerts from AuroraWatch UK
 > • Small, medium and large desktop widgets
 >
-> Free, with no accounts, no advertising and no tracking. Nightwatch is open source:
-> github.com/rsutcliffe/nightwatch
+> Free, with no accounts, no advertising and no tracking. Nightwatch is open source.
 
 ## App privacy answers
 
