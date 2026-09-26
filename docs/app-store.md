@@ -76,16 +76,83 @@ Language **English (U.K.)**; Bundle ID `io.github.rsutcliffe.nightwatch`; SKU `n
 
 ### Step 6: Transporter
 
-Install Apple's free [Transporter](https://apps.apple.com/app/transporter/id1450874784) app and sign in with your Apple
-Account.
+Install Apple's free [Transporter](https://apps.apple.com/app/transporter/id1450874784) app from the Mac App Store, open it
+once and sign in with the Apple Account that belongs to the team. *Until it is installed, `open -a Transporter …` fails
+with "Unable to find application named 'Transporter'".*
+
+## The first submission
+
+**Add for Review** stays unavailable until every page below is complete. Its red "Unable to Add for Review" list names
+what is missing, and each page below clears one or more of its lines. The answers themselves are under *Listing text* and
+*App privacy answers* further down.
+
+### Step 7: upload the build
+
+1. `scripts/appstore.sh`, then `open -a Transporter build/appstore/Nightwatch-<version>.pkg` and **Deliver**.
+2. Transporter shows "The app is processing", then "The app has finished processing" or an **Issue** button. The icon
+   is a blank placeholder until processing finishes, which is normal.
+3. *The first upload failed processing with error 91109: a file in the app carried `com.apple.quarantine`. Downloaded
+   profiles are quarantined, and on macOS 27 a copy stays quarantined even with `cp -X`. `appstore.sh` now removes the
+   attribute before signing and refuses to package a quarantined file.*
+4. *A build that fails processing does not use up its build number: the same 1.0.0 (24) was accepted on the second
+   upload.* Transporter's list is only a local history, so a failed item can stay in it.
+
+### Step 8: App Information (sidebar › General)
+
+- **Subtitle** and **Category**, from *Listing text*.
+- **Content Rights** › **Set Up**: the app shows third-party content (forecasts from Apple Weather, Open-Meteo, 7Timer
+  and AuroraWatch UK, and NASA's public-domain images) › **Yes**; you have the rights to it › **Yes**.
+- **Age Ratings** › **Set Up**: None or No throughout. The result is 4+ in 172 countries, with Brazil, Korea and Vietnam
+  showing their own equivalents (AL, ALL and 00+).
+- Leave **App Encryption Documentation** alone: `ITSAppUsesNonExemptEncryption` is false in `Info.plist`, so nothing is
+  asked about encryption.
+- **Save**.
+
+### Step 9: App Privacy (sidebar › Trust & Safety)
+
+- **Privacy Policy** › **Edit**: the URL. *The "Privacy Policy URL" line in the red list points here, not at App
+  Information.*
+- **Get Started** › data is collected › **Location** › **Precise Location**. *Ticking the type is not enough: "Additional
+  Setup Required" means pressing **Set Up Precise Location** and answering purpose, linked and tracking.*
+- **Publish**, top right. Nothing on this page counts until it is published.
+
+### Step 10: Pricing and Availability (sidebar › Monetization)
+
+- **Price Schedule** › **+**: base country **United Kingdom (GBP)**, price **£0.00**, **Next**, **Next**, **Confirm**.
+- **App Availability**: all countries or regions (175).
+- **App Distribution Methods**: **Public**. The Apple School Manager volume-price box makes no difference to a free app.
+- **Save**.
+
+### Step 11: Digital Services Act (optional)
+
+App Information › App Store Regulations & Permits › Digital Services Act › **Set Up**. It is EU law, so it concerns only
+the 27 EU storefronts: until a trader status is declared they do not list the app, while the UK and everywhere else are
+unaffected. Declaring as a trader publishes an address and phone number on the product page. It is not part of review
+and can be done at any time. Not declared at the 1.0.0 submission (owner's decision, 26 September 2026).
+
+### Step 12: the version page, then submit
+
+Sidebar › macOS App › **1.0.0 Prepare for Submission**. *Add for Review is only on this page.*
+
+1. Screenshots, promotional text, description, keywords, URLs, copyright and review notes, from below. *Check the
+   description against Listing text before submitting: the page still held an older copy with the GitHub address after
+   this document had dropped it.*
+2. **Build** › **+** › the processed build › **Done**.
+3. **Save**. *Add for Review stays grey while anything is unsaved, and the red list stays on screen until the page is
+   reloaded, even after the other pages are fixed.*
+4. **Add for Review**, then **Submit**. The status becomes Waiting for Review, then In Review; Apple says up to 48 hours
+   and emails the result. Version Release is set to automatic, so approval puts it on sale.
+5. *Don't press Cancel Submission.* The text can still be edited while it waits; a different build means removing the
+   version from review first.
 
 ## Each release
 
 1. Release the download as usual (`releasing.md`). Every release raises the build number, which the App Store requires.
 2. From the same tagged commit, run `scripts/appstore.sh`. It stops with a pointer to this page if anything from the setup
    is missing, and refuses to package a build that still has the update check or a sandbox exception.
-3. `open -a Transporter build/appstore/Nightwatch-<version>.pkg`, then **Deliver**.
-4. In App Store Connect, add the build to the version, then **Submit for Review**. Review usually takes a day or two.
+3. `open -a Transporter build/appstore/Nightwatch-<version>.pkg`, then **Deliver** (step 7).
+4. In App Store Connect, create the new version, fill in what changed, and attach the build, then **Save**, **Add for
+   Review** and **Submit** (step 12). Review usually takes a day or two.
 
 ## Listing text
 
@@ -99,6 +166,7 @@ in the name, subtitle and keywords.
 - **Privacy policy URL:** https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md
 - **Support URL:** https://github.com/rsutcliffe/nightwatch/discussions
 - **Marketing URL:** https://delphi-dolphin.com/nightwatch
+- **Copyright:** the year and the name, `2026 Richard Sutcliffe` (Apple adds the ©)
 - **Keywords** (100 characters at most):
   `astronomy,astrophotography,telescope,stars,forecast,seeing,dark sky,aurora,moon,nebula,menu bar`
 
@@ -146,4 +214,5 @@ Nothing else is collected.
 ## Screenshots
 
 Mac screenshots are 16:10: 1280 × 800, 1440 × 900, 2560 × 1600 or 2880 × 1800 pixels, one to ten of them, PNG or JPEG
-with no transparency. Use 2880 × 1800, and take them at Northumberland Dark Sky Park as for the README, never at home.
+with no transparency. Use 2880 × 1800, and take them at a public dark-sky site as for the README (the 1.0 set used the North York Moors),
+never at home.
