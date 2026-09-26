@@ -340,7 +340,7 @@ final class Store: ObservableObject {
 
     /// Once a day, when allowed: is there a newer Nightwatch on GitHub? Downloads do not update themselves.
     func checkForUpdate(now: Date = Date()) async {
-        guard config.checkForUpdates else { availableUpdate = nil; return }
+        guard Distribution.checksForUpdates, config.checkForUpdates else { availableUpdate = nil; return }
         let last: ReleaseCheck.Record? = Store.read("update-check.json")
         showUpdate(last?.latest)   // the last answer, so the line survives a relaunch
         guard ReleaseCheck.due(last, now: now),

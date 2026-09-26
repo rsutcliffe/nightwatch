@@ -2,7 +2,9 @@
 # Builds Nightwatch.app with SwiftPM only, signs it ad hoc, installs to /Applications and launches it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-swift build -c release
+# NIGHTWATCH_APPSTORE=1 (set by scripts/appstore.sh): the Mac App Store variant, which differs only in having no update
+# check (Sources/Nightwatch/Distribution.swift).
+if [[ "${NIGHTWATCH_APPSTORE:-}" == 1 ]]; then swift build -c release -Xswiftc -DAPPSTORE; else swift build -c release; fi
 APP=build/Nightwatch.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
