@@ -147,6 +147,10 @@ if (( PUBLISH )); then
   else
     gh release create "v$VERSION" --verify-tag --title "Nightwatch $VERSION" --notes-file "$WORK/notes.md" >/dev/null
   fi
-  gh release upload "v$VERSION" "$DMG" "$DMG.sha256" --clobber
+  # The same DMG again under a name without the version, so a website can link to
+  # releases/latest/download/Nightwatch.dmg and never change per release.
+  cp "$DMG" "$OUT/Nightwatch.dmg"
+  (cd "$OUT" && shasum -a 256 Nightwatch.dmg > Nightwatch.dmg.sha256)
+  gh release upload "v$VERSION" "$DMG" "$DMG.sha256" "$OUT/Nightwatch.dmg" "$OUT/Nightwatch.dmg.sha256" --clobber
   print "Attached to https://github.com/rsutcliffe/nightwatch/releases/tag/v$VERSION"
 fi
