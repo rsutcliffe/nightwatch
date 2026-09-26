@@ -141,6 +141,9 @@ struct MediumView: View {
 struct LargeView: View {
     let s: WidgetSnapshot
     let now: Date
+    /// In macOS's see-through style (another app in front, or Monochrome) only lightness survives: the dark tile drew as a
+    /// solid white square hiding its symbol, so it becomes a faint tint there (0.7.0).
+    @Environment(\.widgetRenderingMode) private var renderingMode
     var body: some View {
         // Measured at the real 344 × 344 pt size, content about 312 pt: 9 pt gaps, 28 pt bars and 34 pt icons ran to 348 pt on
         // a clear night with three targets and cut off the footer (25 September 2026).
@@ -162,7 +165,8 @@ struct LargeView: View {
                 Link(destination: WidgetLink.target(t.id).url) {
                     HStack(spacing: 10) {
                         Image(systemName: t.group.symbolName).font(.system(size: 14)).foregroundStyle(Tokens.textSecondary)
-                            .frame(width: 26, height: 26).background(Color(hex: 0x0E1018), in: RoundedRectangle(cornerRadius: 6))
+                            .frame(width: 26, height: 26)
+                            .background(renderingMode == .fullColor ? Color(hex: 0x0E1018) : Color.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
                         VStack(alignment: .leading, spacing: 1) {
                             (Text(t.catalogueID).fontWeight(.bold) + Text("  " + t.name).foregroundColor(Tokens.textSecondary))
                                 .font(.system(size: 11)).foregroundStyle(Tokens.textPrimary).lineLimit(1)

@@ -65,8 +65,8 @@ struct SettingsView: View {
                     Text("Custom").tag("custom")
                 }
                 HStack {
-                    TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { store.config.fov.widthDeg = max(0.05, $0); store.config.fovPresetID = nil; store.saveConfig() }), format: .number)
-                    TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { store.config.fov.heightDeg = max(0.05, $0); store.config.fovPresetID = nil; store.saveConfig() }), format: .number)
+                    TextField("Width °", value: Binding(get: { store.config.fov.widthDeg }, set: { setFOV(width: $0) }), format: .number)
+                    TextField("Height °", value: Binding(get: { store.config.fov.heightDeg }, set: { setFOV(height: $0) }), format: .number)
                 }
             }
             Section("Go rule") {
@@ -155,6 +155,16 @@ struct SettingsView: View {
     /// A setting chosen from a menu of values, which says what it is and what it will change to (owner, 25 September 2026:
     /// the old up/down arrows left the value adrift from its control). A value outside the list, from an older or hand-edited
     /// config, is kept as a choice.
+    /// A typed field of view becomes Custom only when the number really changes. The width box has keyboard focus when
+    /// Settings opens, and it writes back on losing focus even unchanged, which silently turned a preset into Custom (0.7.0).
+    private func setFOV(width: Double? = nil, height: Double? = nil) {
+        var f = store.config.fov
+        if let width { f.widthDeg = max(0.05, width) }
+        if let height { f.heightDeg = max(0.05, height) }
+        guard f != store.config.fov else { return }
+        store.config.fov = f; store.config.fovPresetID = nil; store.saveConfig()
+    }
+
     private func choiceRow<V: Hashable & Comparable>(_ label: String, _ binding: Binding<V>, _ options: [V], _ text: @escaping (V) -> String) -> some View {
         Picker(label, selection: binding) {
             ForEach(Array(Set(options + [binding.wrappedValue])).sorted(), id: \.self) { Text(text($0)).tag($0) }
