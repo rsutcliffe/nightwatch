@@ -85,6 +85,8 @@ sdk=$(vtool -show-build "$APP/Contents/MacOS/Nightwatch" | awk '/ sdk /{print $2
 
 # 4. Package for upload.
 PKG="$OUT/Nightwatch-$VERSION.pkg"
+# On macOS 27 productbuild prints "write: Permission denied" a few times and still writes a valid, signed package
+# (seen on 26 September 2026; the same in other projects). The check below is what matters.
 productbuild --component "$APP" /Applications --sign "$INSTALLER" "$PKG"
 pkgutil --check-signature "$PKG" >/dev/null || fail "the package signature does not verify"
 print "Ready: $PKG (version $VERSION, build $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist"))"

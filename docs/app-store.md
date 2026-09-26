@@ -16,34 +16,68 @@ development profile already on this Mac.
 
 ## One-off setup
 
-Everything below is at [developer.apple.com](https://developer.apple.com/account) or
-[App Store Connect](https://appstoreconnect.apple.com), signed in as the team R Sutcliffe (8B44CZ9923).
+Everything below is at [developer.apple.com](https://developer.apple.com/account) › Certificates, Identifiers & Profiles,
+or at [App Store Connect](https://appstoreconnect.apple.com), signed in as the team R Sutcliffe (8B44CZ9923). Done for
+the first time on 26 September 2026; the notes in *italics* are what caught us out then.
 
-1. **Two certificates.** Certificates, Identifiers & Profiles › Certificates › **+**:
-   - **Apple Distribution**, which signs the app;
-   - **Mac Installer Distribution**, which signs the package.
+### Step 1: a certificate request file
 
-   For each, make a certificate request in Keychain Access (Certificate Assistant › Request a Certificate From a
-   Certificate Authority › Saved to disk), upload it, download the certificate and double-click it.
+1. Open **Keychain Access** (Spotlight finds it; macOS keeps it in System › Library › CoreServices › Applications).
+2. Menu bar › **Keychain Access › Certificate Assistant › Request a Certificate From a Certificate Authority…**
+3. User Email Address: your Apple Account email. Common Name: anything (your name is fine; Apple names the certificate
+   after the team, not this). CA Email Address: leave empty.
+4. **Request is: Saved to disk.** *It defaults to "Emailed to the CA", which is wrong here.* **Continue**, and save it to
+   the Desktop. One file serves every certificate below.
 
-2. **The widget's identifier.** Identifiers › **+** › App IDs › App, platform macOS, bundle ID
-   `io.github.rsutcliffe.nightwatch.widget`. The app's own identifier, `io.github.rsutcliffe.nightwatch`, already exists,
-   with WeatherKit. The App Group the app and widget share, `8B44CZ9923.io.github.rsutcliffe.nightwatch`, begins with the
-   team ID, so on macOS it needs no registration in the portal.
+### Step 2: the certificates
 
-3. **Two provisioning profiles.** Profiles › **+** › Distribution › **Mac App Store Connect**, once for each identifier.
-   Download both and copy each into `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`, named by its UUID, as
-   for the Developer ID profile in `releasing.md` (double-clicking installs them where the script can't read them).
+For each one: Certificates › blue **+** › choose the type › **Continue** › **Choose File** (the request from step 1) ›
+**Continue** › **Download** › **double-click the downloaded `.cer`**. *The double-click is what puts it in the keychain;
+a certificate created on the website but not double-clicked is not installed.*
 
-4. **The app record.** App Store Connect › Apps › **+** › New App:
-   - Platform: macOS
-   - Name: **Nightwatch: Clear Sky Alerts**
-   - Primary language: English (UK)
-   - Bundle ID: `io.github.rsutcliffe.nightwatch`
-   - SKU: `nightwatch`
+| Type (under Software) | Signs | Lasts |
+|---|---|---|
+| **Apple Distribution** | the App Store app | 1 year |
+| **Mac Installer Distribution** | the App Store package (it appears in Keychain Access as "3rd Party Mac Developer Installer") | 1 year |
 
-5. **Transporter.** Install Apple's free [Transporter](https://apps.apple.com/app/transporter/id1450874784) app and sign
-   in with your Apple Account.
+The download's own certificate is **Developer ID › Developer ID Application**. *Choose the **G2 Sub-CA** option: the
+"Previous Sub-CA" expires on 1 February 2027 and takes any certificate made from it down with it.* When it is replaced,
+the Developer ID profile must be edited to use the new certificate (Profiles › the Developer ID profile › **Edit**; it
+takes one certificate), downloaded, and installed as in step 4. Only then delete the old certificate in Keychain Access ›
+My Certificates, choosing it by its **Expires** date, since both have the same name. *Check the row carefully: the
+Apple Distribution certificate sits next to it.*
+
+### Step 3: the widget's identifier
+
+Identifiers › blue **+** › **App IDs** › **Continue** › **App** › **Continue**. Description `Nightwatch Widget`, Bundle ID
+**Explicit** `io.github.rsutcliffe.nightwatch.widget`, no capabilities ticked › **Continue** › **Register**. The app's
+own identifier, `io.github.rsutcliffe.nightwatch`, already exists, with WeatherKit. The App Group the app and widget
+share, `8B44CZ9923.io.github.rsutcliffe.nightwatch`, begins with the team ID, so on macOS it needs no registration.
+
+### Step 4: two App Store profiles
+
+Profiles › blue **+** › under Distribution **Mac App Store Connect** › **Continue** › Profile Type **Mac** (not Mac
+Catalyst) › App ID › **Continue** › the **Apple Distribution** certificate › **Continue** › name › **Generate** ›
+**Download**. Once for the app (`Nightwatch App Store`) and once for the widget (`Nightwatch Widget App Store`).
+
+**Don't double-click a profile.** *It opens a System Settings "install profile" dialog, which puts it where the scripts
+can't read it: press Cancel.* Instead copy each into place, named by its UUID:
+
+    for f in ~/Downloads/Nightwatch_App_Store.provisionprofile ~/Downloads/Nightwatch_Widget_App_Store.provisionprofile; do
+      u=$(security cms -D -i "$f" | plutil -extract UUID raw -)
+      cp "$f" ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/"$u".provisionprofile
+    done
+
+### Step 5: the app record
+
+App Store Connect › **Apps** › **+** › **New App**: Platforms **macOS**; Name **Nightwatch: Clear Sky Alerts**; Primary
+Language **English (U.K.)**; Bundle ID `io.github.rsutcliffe.nightwatch`; SKU `nightwatch`; User Access **Full Access**
+› **Create**. Check **Business** (Agreements, Tax, and Banking) shows the Free Apps agreement as active.
+
+### Step 6: Transporter
+
+Install Apple's free [Transporter](https://apps.apple.com/app/transporter/id1450874784) app and sign in with your Apple
+Account.
 
 ## Each release
 
