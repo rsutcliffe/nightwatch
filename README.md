@@ -58,7 +58,7 @@ To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widget
 ## What it does
 
 - Every 30 minutes it fetches cloud, dew point, wind and visibility for your site from Apple Weather (WeatherKit) when the app is signed for it, or from Open-Meteo otherwise, plus 7Timer for seeing and transparency. The popover footer says which one drove tonight's verdict.
-- It computes astronomical darkness, Moon, planets and target visibility locally with Astronomy Engine. Nothing leaves your Mac except the forecast requests, thumbnail fetches from CDS, comet/ISS element downloads and, when aurora alerts are on, AuroraWatch UK's status after dark.
+- It computes astronomical darkness, Moon, planets and target visibility locally with Astronomy Engine. Nothing leaves your Mac except the forecast requests, sky-survey thumbnails from CDS, the Moon image from NASA, comet/ISS element downloads, AuroraWatch UK's status after dark when aurora alerts are on, and the download's once-a-day update check. [PRIVACY.md](PRIVACY.md) says what each one receives.
 - A night qualifies when there is a contiguous run of at least 3 hours inside astronomical darkness with total cloud at or under 25 % (all adjustable).
 - Alerts: a heads-up one hour before local sunset, a nudge 30 minutes before the window opens, and a cancel notice if the forecast turns. Quiet hours default to 00:00–07:00. Nothing fires from a forecast older than six hours.
 - Bright nights (opt-in, Settings › Bright nights): from about early May to early August at British latitudes there is no proper darkness, so the dark rule can never be met. With this on, Nightwatch suggests the Moon and the naked-eye planets instead and alerts for a one-hour clear run in nautical darkness (Sun 12° down) with a target at least 15° up. Deep-sky targets are never suggested on a bright night.
@@ -118,7 +118,7 @@ Certified by DarkSky International or the UK Dark Sky Discovery Sites programme;
 
 ## Apple Weather (optional)
 
-The plain build uses Open-Meteo and needs no account. If an Apple Development certificate and a provisioning profile for `io.github.rsutcliffe.nightwatch` (with the WeatherKit capability) are on your Mac, `scripts/build-app.sh` signs the app with the WeatherKit entitlement and Apple Weather becomes the primary cloud source, with Open-Meteo as the fallback. Nothing secret enters the repo: the certificate stays in your keychain and the profile under `~/Library/Developer`. That bundle id belongs to the maintainer's Apple Developer team, so only the maintainer can get a profile for it; anyone else's build uses Open-Meteo, which needs nothing.
+The download and the Mac App Store version use Apple Weather. A build of your own uses Open-Meteo and needs no account. If an Apple Development certificate and a provisioning profile for `io.github.rsutcliffe.nightwatch` (with the WeatherKit capability) are on your Mac, `scripts/build-app.sh` signs the app with the WeatherKit entitlement and Apple Weather becomes the primary cloud source, with Open-Meteo as the fallback. Nothing secret enters the repo: the certificate stays in your keychain and the profile under `~/Library/Developer`. That bundle id belongs to the maintainer's Apple Developer team, so only the maintainer can get a profile for it; anyone else's build uses Open-Meteo, which needs nothing.
 
 ## Settings sync
 
