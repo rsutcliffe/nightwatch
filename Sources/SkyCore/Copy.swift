@@ -1,25 +1,22 @@
 import Foundation
 
-public enum Flavour: String, Codable, Sendable { case watch, plain }
-
-/// Every flavoured string reads as ordinary English. Spec §6 is the only place new ones may be added.
+/// The app's user-facing sentences, in plain English. The Discworld wording and its setting were removed in 0.7.0
+/// (owner, 26 September 2026: the App Store forbids third-party protected material, rule 5.2.1).
 public struct Copy: Sendable {
-    public let flavour: Flavour
-    public init(flavour: Flavour) { self.flavour = flavour }
-    private var watch: Bool { flavour == .watch }
+    public init() {}
 
-    public var refresh: String { watch ? "Patrol" : "Refresh" }
-    public var noWindow: String { watch ? "Nothing to see here. Move along." : "No clear window tonight." }
-    public var cancelTitle: String { watch ? "Stand down. Clouds moving in" : "Cancelled. Clouds moving in" }
-    public var lessCertainTitle: String { watch ? "Hold fire. Forecasts disagree" : "Less certain. Forecasts disagree" }
-    public func offlineSince(_ time: String) -> String { watch ? "Off the beat since \(time)" : "Offline since \(time)" }
-    public func goTitle(windowStart: String) -> String { watch ? "All's well. Clear from \(windowStart)" : "Clear from \(windowStart)" }
+    public var refresh: String { "Refresh" }
+    public var noWindow: String { "No clear window tonight." }
+    public var cancelTitle: String { "Cancelled. Clouds moving in" }
+    public var lessCertainTitle: String { "Less certain. Forecasts disagree" }
+    public func offlineSince(_ time: String) -> String { "Offline since \(time)" }
+    public func goTitle(windowStart: String) -> String { "Clear from \(windowStart)" }
     public func headsUpTitle(windowStart: String, hours: Double) -> String {
         String(format: "Clear skies tonight from %@ · %.1f h", windowStart, hours)
     }
     public func tomorrowTitle(hours: Double) -> String { String(format: "Tomorrow night looks clear · %.1f h", hours) }
 
-    // Bright nights (v0.3): the same words in both wording modes, no Discworld lines (owner ruling).
+    // Bright nights (v0.3).
     public func brightHeadsUpTitle(windowStart: String, targets: [RankedTarget]) -> String {
         "Bright night tonight from \(windowStart) · \(Copy.brightList(targets))"
     }
@@ -101,7 +98,7 @@ public struct Copy: Sendable {
         }
     }
 
-    /// The v0.5 agreement line, the same in both wording modes.
+    /// The v0.5 agreement line.
     public static func agreementText(_ a: Agreement, site: Site) -> String {
         switch a {
         case .agree: "Open-Meteo agrees"

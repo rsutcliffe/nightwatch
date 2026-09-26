@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import NightwatchUI
 import SkyCore
 
@@ -6,6 +7,7 @@ final class WelcomeState: ObservableObject {
     @Published var presets: [TelescopePreset] = (try? TelescopePresets.bundled()) ?? []
     @Published var locating = false
     @Published var locationFailed = false
+    @Published var importFailed = false
 }
 
 /// First launch only (v0.6.7, owner-approved mockup): what the user images with, and where they observe from, then
@@ -24,6 +26,20 @@ struct WelcomeView: View {
                     Text("Welcome to Nightwatch").font(.title2.weight(.semibold))
                     Text("Two questions, then it watches the sky for you.").font(.callout).foregroundStyle(Theme.dim)
                 }
+            }
+            // 0.6.x settings synced by a link the sandbox cannot follow (0.7.0): choosing the file is allowed.
+            if let link = store.linkedSettings {
+                step("Your earlier settings") {
+                    Text("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices.")
+                        .font(.caption).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                    Button("Import settings…") { importLinked(link) }.buttonStyle(.borderedProminent)
+                    if state.importFailed {
+                        Text("That file isn't Nightwatch settings. Choose config.json, or set up below.").font(.caption).foregroundStyle(Tokens.statusWarning)
+                    }
+                }
+            }
+            if let e = store.importError {
+                Text(e).font(.caption).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
             }
             step("1  What do you image with?") {
                 ForEach(state.presets) { p in
@@ -79,6 +95,25 @@ struct WelcomeView: View {
         // or the close button alike, so nobody is left never asked. Once answered, the alerts are worked out straight away
         // (recompute, not refresh: a refresh already in flight would make a refresh return early).
         .onDisappear { Task { @MainActor in await Notifier.requestAuthorisation(); await store.recompute(now: Date()) } }
+    }
+
+    private func importLinked(_ link: URL) {
+        let panel = NSOpenPanel()
+        panel.directoryURL = link.deletingLastPathComponent()
+        panel.allowedContentTypes = [.json]
+        panel.message = "Choose your Nightwatch settings file (\(link.lastPathComponent))"
+        panel.prompt = "Import"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard store.importSettings(from: url) else { state.importFailed = true; return }
+        // Boot skipped the location fix while the welcome was pending: settings that observe from this Mac need one now.
+        if store.config.activeSiteName == nil || store.config.homeIsThisMac {
+            store.awaitingFix = true
+            Task { @MainActor in
+                store.autoSite = await store.requestLocationFix?(); store.awaitingFix = false
+                await store.refresh(force: false)
+            }
+        }
+        dismissWindow(id: "welcome")
     }
 
     private func useThisMac() {

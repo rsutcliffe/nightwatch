@@ -74,7 +74,7 @@ struct TileRow<Content: View>: View {
     }
 }
 
-/// The popover's secondary button (Patrol, All targets): a filled surface.button pill with primary text, so it reads as a
+/// The popover's secondary button (Refresh, All targets): a filled surface.button pill with primary text, so it reads as a
 /// button rather than a caption. One style, so the two can never drift apart.
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

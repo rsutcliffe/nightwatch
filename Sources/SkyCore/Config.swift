@@ -35,7 +35,6 @@ public struct Config: Codable, Equatable, Sendable {
     public var fovPresetID: String? = "dwarf-mini"
     public var goRule = GoRule()
     public var alerts = AlertSettings()
-    public var flavour: Flavour = .watch
     public var loginItem = false
     public var notifyEnabled = true
     public var darkSites = DarkSiteSettings()
@@ -108,7 +107,7 @@ public struct Config: Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, flavour, loginItem, notifyEnabled, darkSites, brightNights, aurora
+        case sites, activeSiteName, homeSiteName, homeIsThisMac, visiting, welcomed, checkForUpdates, fov, fovPresetID, goRule, alerts, loginItem, notifyEnabled, darkSites, brightNights, aurora
     }
 
     /// Missing keys fall back to the same defaults as `init()`, so a config file written by an
@@ -127,7 +126,6 @@ public struct Config: Codable, Equatable, Sendable {
         fovPresetID = try c.decodeIfPresent(String.self, forKey: .fovPresetID) ?? "dwarf-mini"
         goRule = try c.decodeIfPresent(GoRule.self, forKey: .goRule) ?? GoRule()
         alerts = try c.decodeIfPresent(AlertSettings.self, forKey: .alerts) ?? AlertSettings()
-        flavour = try c.decodeIfPresent(Flavour.self, forKey: .flavour) ?? .watch
         loginItem = try c.decodeIfPresent(Bool.self, forKey: .loginItem) ?? false
         notifyEnabled = try c.decodeIfPresent(Bool.self, forKey: .notifyEnabled) ?? true
         darkSites = try c.decodeIfPresent(DarkSiteSettings.self, forKey: .darkSites) ?? DarkSiteSettings()

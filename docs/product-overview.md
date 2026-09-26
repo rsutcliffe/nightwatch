@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 25 September 2026, version 0.6.10 "Night Watch". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 26 September 2026, version 0.7.0 "Thud!". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -32,12 +32,12 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 - **Header:** the site name, Bortle class and the equatorial set-up line (wedge tilt equals the site latitude, pointed at true north or south).
 - **Away bar:** when observing somewhere other than home, "Observing away from home · Back to <home>", which returns everything to home in one click.
 - **Score:** the sky score inside a 60-tick 12-hour clock bezel. Ticks glow red across the clear window, dim where it is dark but cloudy, and faint in daylight.
-- **Verdict:** the clear window, or "Nothing to see here" with a plain reason, plus a "Held back by a 97% moon and high dew risk" line when something costs the score points, and, on a signed build, Open-Meteo's second opinion ("Open-Meteo agrees", or where it differs).
+- **Verdict:** the clear window, or "No clear window tonight" with a plain reason, plus a "Held back by a 97% moon and high dew risk" line when something costs the score points, and, on a signed build, Open-Meteo's second opinion ("Open-Meteo agrees", or where it differs).
 - **Clear-sky bars:** one per hour of darkness, with the window hours red.
 - **Notice line:** at most one: aurora, in AuroraWatch UK's own colours (yellow, amber or red) and linking to their site, or a clearer dark site nearby.
 - **Six tiles:** dark hours, the Moon with a real NASA phase image and its set or rise time, seeing, wind, dew or frost risk (amber with "Dew heater advised" when high), and transparency.
 - **Best targets:** the best three, with thumbnails, catalogue ID, name and best time.
-- **Footer:** a "Notify at HH:MM" switch, the Patrol button, and the update time with the cloud source (the Apple Weather mark and legal link, or Open-Meteo), plus an amber dot and "{n} h ago" when the forecast is over six hours old.
+- **Footer:** a "Notify at HH:MM" switch, the Refresh button, and the update time with the cloud source (the Apple Weather mark and legal link, or Open-Meteo), plus an amber dot and "{n} h ago" when the forecast is over six hours old.
 
 **Targets window.** Everything above the horizon during tonight's window, grouped into nebulae, galaxies, star clusters, planets and Moon, events, constellations, and dark sites.
 - **Cards:** Digitized Sky Survey images for deep sky, real photographs for the planets and the Moon, and artwork made for Nightwatch for all 88 constellations (the figure with its star points on top).
@@ -54,7 +54,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
   - The caption holds the name, type and coordinates, and the survey image's credit where one is shown. On a night with a clear window it adds best time, time above the minimum altitude, Moon separation, a suggested stack, and an altitude chart from sunset to sunrise. The chart shows the window shaded and the minimum altitude dashed, and the curve is red only where the target is up inside the window.
   - **How to shoot this:** a button in the caption opens the settings for the user's own telescope and this kind of target: the filter and why, exposure and gain, frames sized to the time the target is up inside tonight's window, and when to start. The numbers come from DWARFLAB's user manual (DWARF Mini, DWARF 3) and ZWO's Seestar S50 FAQ, named on the card; for a camera and lens, the untracked exposure limit and star-tracker ranges. Where no verified figure exists (planets, ISO), it gives guidance without numbers.
 
-**Desktop widgets.** Small, medium and large widgets for the macOS desktop, included in the download (building them from source needs Xcode and xcodegen). The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each patrol, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. With aurora alerts on, "● Aurora amber" in AuroraWatch UK's colour shows while the status is at or above the chosen level and less than an hour old: on the small widget's second line, and at the end of the header line on the medium and large ones. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
+**Desktop widgets.** Small, medium and large widgets for the macOS desktop, included in the download (building them from source needs Xcode and xcodegen). The small one shows the sky-score bezel and a one-line verdict; the medium adds the window, the reason, Open-Meteo's line and the clear-sky bars; the large adds the hour labels, the best three targets and the notify time. They draw a snapshot the app writes after each refresh, so they always agree with the popover, and they fetch nothing themselves. A forecast more than six hours old shows an amber warning. With aurora alerts on, "● Aurora amber" in AuroraWatch UK's colour shows while the status is at or above the chosen level and less than an hour old: on the small widget's second line, and at the end of the header line on the medium and large ones. Clicking a widget opens the Targets window; clicking a target on the large one opens its detail. The widget is the glance, the popover says why and whether to go out, and Targets is for planning.
 
 **Dark sites.** Certified places (DarkSky International parks, reserves, sanctuaries and communities, plus 25 UK Dark Sky Discovery Sites near Sheffield) from a bundled list of 76, and up to five computed dark spots from a bundled light-pollution grid, all within a user-set radius (5 to 300 km or miles, default 50). Each card shows distance, bearing, darkness band or Bortle class, tonight's clear window and score. Forecasts are fetched for the nearest eight. "Observe from here" makes a site the active site for the whole app without saving it; the popover and the Dark sites page then offer "Back to" home in one click. Each card compares tonight's score and sky with home ("vs 20 at <home> (home)" while away), as does the popover's "Clearer sky" line, which opens that site's card.
 
@@ -62,7 +62,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
 
 **About.** Website, "Send feedback" (GitHub Discussions) and "Report a problem" (GitHub Issues), and a line when a newer version is out.
 
-**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, wording, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.6.10 is available  Download ↗".
+**Settings.** Where you observe: one list of saved sites and this Mac's location, a click to observe from any of them, a star for home (a saved site or this Mac's location), a visited dark site kept apart until you choose Keep, and "Add a site…" with labelled fields and the sky's darkness chosen by name (Bortle 1 Pristine to 9 Inner city). Then telescope preset or field of view in degrees, go rule, alert options and quiet hours, dark-site radius and unit, bright nights, aurora alerts and threshold, launch at login. Every numeric setting is a menu that shows its value. "Check for a new version once a day" (on by default) asks GitHub for the latest release; when it is newer, the popover footer says "Nightwatch 0.7.0 is available  Download ↗".
 
 ## Alerts
 
@@ -72,8 +72,8 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 - Tomorrow preview.
 - A nudge 30 minutes before the window opens.
 - After a heads-up or nudge, if the forecast turns:
-  - **Stand-down** ("Stand down. Clouds moving in") when Apple Weather and Open-Meteo both lose the window, or when there is no second opinion.
-  - **Less certain** ("Hold fire. Forecasts disagree") when they split, saying what each sees. For example, "Apple Weather still sees clear from 21:00. Open-Meteo sees no clear window." Where only Open-Meteo doubts, it is sent only with the opt-in "Alert only when Open-Meteo agrees" on. It is sent at most once a night. If both clear again before the nudge, the nudge still fires; if the nudge has already gone, nothing more is sent. Nothing is sent after the window has closed.
+  - **Cancelled** ("Cancelled. Clouds moving in") when Apple Weather and Open-Meteo both lose the window, or when there is no second opinion.
+  - **Less certain** ("Less certain. Forecasts disagree") when they split, saying what each sees. For example, "Apple Weather still sees clear from 21:00. Open-Meteo sees no clear window." Where only Open-Meteo doubts, it is sent only with the opt-in "Alert only when Open-Meteo agrees" on. It is sent at most once a night. If both clear again before the nudge, the nudge still fires; if the nudge has already gone, nothing more is sent. Nothing is sent after the window has closed.
 - Aurora alert (opt-in): AuroraWatch UK at or above the chosen level after dark, with this hour clear. It plays the alert sound, because an aurora does not wait.
 - Quiet hours, default 00:00 to 07:00.
 - Nothing fires from a forecast older than six hours.
@@ -112,14 +112,14 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 
 ## Architecture
 
-- A Swift package with four targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `NightwatchUI` (the views the app and the widget share) and `Nightwatch` (the SwiftUI menu-bar app). The widget extension is the one Xcode project, generated from `Widget/project.yml` with xcodegen; it reads a snapshot the app writes to a shared App Group after each patrol.
-- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (238 Swift Testing tests at 0.6.10).
-- Caches under `~/Library/Caches/Nightwatch`: forecasts, plans and images, all rebuilt if a cleaner or macOS empties the folder. The record of alerts already sent (`alerts-state.json`, `aurora-state.json`) lives with the settings instead, so emptying the caches never sends a notification twice. A user from 0.6.6 or earlier who never changed a setting gets a settings file on first launch, so the welcome never returns either. Settings in `~/Library/Application Support/Nightwatch/config.json`, a plain JSON file which can be symlinked into iCloud Drive to share across Macs.
+- A Swift package with four targets: `CAstronomyEngine` (vendored C), `SkyCore` (all logic and bundled data, fully tested), `NightwatchUI` (the views the app and the widget share) and `Nightwatch` (the SwiftUI menu-bar app). The widget extension is the one Xcode project, generated from `Widget/project.yml` with xcodegen; it reads a snapshot the app writes to a shared App Group after each refresh.
+- `scripts/build-app.sh` builds and installs: ad hoc without a certificate, or with the WeatherKit entitlement and the widget when an Apple Development certificate and profile are on the Mac. `scripts/release.sh` builds the public download: a Developer ID signed, notarised and stapled DMG, attached to the GitHub release (`docs/releasing.md`). Tests run with `scripts/test.sh` (251 Swift Testing tests at 0.7.0).
+- Everything lives in the app's sandbox folder, `~/Library/Containers/io.github.rsutcliffe.nightwatch/Data/Library` (0.7.0 and later). Caches (forecasts, plans, images) are rebuilt if a cleaner or macOS empties them. The record of alerts already sent (`alerts-state.json`, `aurora-state.json`) lives with the settings in `Application Support/Nightwatch/`, beside `config.json`, so emptying the caches never sends a notification twice. Settings and alert records from 0.6.x are copied in on first launch, through read-only sandbox exceptions for the old `Application Support/Nightwatch` and `Caches/Nightwatch` folders. A user from 0.6.6 or earlier who never changed a setting is recognised by their cached forecast and gets a settings file, so the welcome never returns. Settings synced by a link into iCloud Drive can't be followed from inside the sandbox; the welcome then offers "Import settings…" to choose the file.
 - Data-building scripts in Python: `build-lp-grid.py` (VIIRS GeoTIFF to a 6.4 MB UK grid with sea masked and 7 x 7 smoothing) and `build-certified.py` (Wikidata plus a hand-verified curated list).
 
 ## Tone
 
-The app carries a light Terry Pratchett City Watch flavour in its wording (Patrol, "All's well", "Hold fire", "Nothing to see here. Move along."), with a plain-wording toggle in Settings for anyone who would rather not. The flavour stays in light touches: anything a newcomer must understand to act, such as "Observe from here" or "Where you observe", is plain in both modes.
+The wording is plain English throughout. The light City Watch touches of earlier versions ("Patrol", "All's well", "Hold fire") were removed in 0.7.0 so the app can go on the Mac App Store, whose rule 5.2.1 bars third-party protected material. Version names still follow the City Watch novels, on GitHub only.
 
 ## What it is not
 
@@ -127,7 +127,7 @@ The app carries a light Terry Pratchett City Watch flavour in its wording (Patro
 - It is Mac-only. There is no iPhone app or iPhone widget yet.
 - It is not a forecast provider. It reads Apple Weather or Open-Meteo plus 7Timer and applies a rule; it does not claim better accuracy than its sources.
 - It is not commercial: its data sources' terms rule out a paid or ad-supported product without replacing them.
-- It is not on the Mac App Store: the app is not sandboxed, which the store requires. It is a signed, notarised download instead.
+- It is not on the Mac App Store yet. It is sandboxed from 0.7.0, as the store requires, and a store version, "Nightwatch: Clear Sky Alerts", is in preparation. Until then it is a signed, notarised download.
 
 ## Releases
 
@@ -157,6 +157,7 @@ Tags follow the City Watch novels.
 | 0.6.8 | Night Watch, patch 8 | 25 September 2026 | "How to shoot this" sits above the caption and no longer runs off the window; its title wraps |
 | 0.6.9 | Night Watch, patch 9 | 25 September 2026 | Emptying the app caches (a cleaner, or macOS when disk space is low) no longer sends the same notification twice: the record of alerts already sent now lives with the settings, and moves there on first launch; the welcome window no longer comes back after the caches are emptied |
 | 0.6.10 | Night Watch, patch 10 | 25 September 2026 | The location prompt now appears: the signed download lacked the location entitlement Apple requires of hardened-runtime apps, so macOS never showed it and location had to be switched on in System Settings; "Use this Mac's location" waits for the answer instead of reporting "not available" while the prompt is on screen; the notifications prompt comes as the welcome closes, not over it, and alerts wait until notifications are allowed rather than counting as sent; the install steps say that macOS asks once before opening a downloaded app |
+| 0.7.0 | Thud! | 26 September 2026 | Runs in Apple's app sandbox, on the way to the Mac App Store; settings and alert records from 0.6.x are copied in on first launch; plain wording throughout ("Refresh", "Cancelled", "Less certain"), the City Watch lines and the wording setting removed; comet data unzipped inside the app instead of by a separate program; a privacy policy, linked from About |
 
 ## Install
 

@@ -89,6 +89,10 @@ if [[ -n "$PROFILE" ]]; then
   <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
   <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
 </dict></plist>
 ENT
 else
@@ -99,6 +103,10 @@ else
 <plist version="1.0"><dict>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
   <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
 </dict></plist>
 ENT
 fi

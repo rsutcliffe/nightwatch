@@ -209,7 +209,7 @@ struct TonightView: View {
         }
     }
 
-    /// Toggle "Notify at HH:MM" (the pre-window time) bound to the notify setting, "Patrol", and the provenance line.
+    /// Toggle "Notify at HH:MM" (the pre-window time) bound to the notify setting, "Refresh", and the provenance line.
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {

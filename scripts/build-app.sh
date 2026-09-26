@@ -75,12 +75,28 @@ if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
   <key>com.apple.developer.team-identifier</key><string>$TEAM</string>
   <key>com.apple.security.application-groups</key><array><string>$GROUP</string></array>
   <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
 </dict></plist>
 ENT
   codesign --force --sign "$IDENTITY" --entitlements build/Nightwatch.entitlements --options runtime "$APP"
   echo "Signed as $IDENTITY with the WeatherKit entitlement (profile $(basename "$PROFILE"))"
 else
-  codesign --force --sign - "$APP"
+  # Sandboxed like every other build (v0.7.0), so files live in the same place whichever way it was built.
+  cat > build/Nightwatch.entitlements <<ENT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.personal-information.location</key><true/>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.network.client</key><true/>
+  <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key><array><string>/Library/Application Support/Nightwatch/</string><string>/Library/Caches/Nightwatch/</string></array>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
+</dict></plist>
+ENT
+  codesign --force --sign - --entitlements build/Nightwatch.entitlements "$APP"
   echo "Signed ad hoc (no Apple Development identity or profile for $BUNDLE_ID): Open-Meteo only"
   echo "Widget: skipped (unsigned build; the widget needs the App Group a signed build carries)"
 fi

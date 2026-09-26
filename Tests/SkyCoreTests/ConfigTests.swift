@@ -13,7 +13,7 @@ import Foundation
     #expect(c.sites.isEmpty && c.activeSiteName == nil)
     #expect(c.fov == FieldOfView(widthDeg: 2.1, heightDeg: 1.2))
     #expect(c.goRule == GoRule())
-    #expect(c.flavour == .watch && c.notifyEnabled && !c.loginItem)
+    #expect(c.notifyEnabled && !c.loginItem)
 }
 
 @Test func roundTripsThroughDisk() throws {
@@ -50,11 +50,11 @@ import Foundation
     try FileManager.default.createSymbolicLink(at: linkURL, withDestinationURL: realURL)
 
     var modified = Config.default
-    modified.flavour = .plain
+    modified.notifyEnabled = false
     try ConfigStore.save(modified, to: linkURL)
 
     #expect(try FileManager.default.attributesOfItem(atPath: linkURL.path)[.type] as? FileAttributeType == .typeSymbolicLink)
-    #expect(try ConfigStore.load(from: realURL).flavour == .plain)
+    #expect(try ConfigStore.load(from: realURL).notifyEnabled == false)
 }
 
 @Test func decodesPartialFileWithDefaults() throws {
@@ -64,11 +64,9 @@ import Foundation
     let json = #"{"flavour":"plain","goRule":{"minHours":2,"maxCloudPct":40,"minAltitudeDeg":30}}"#
     try json.write(to: url, atomically: true, encoding: .utf8)
 
-    let c = try ConfigStore.load(from: url)
-    #expect(c.flavour == .plain)
+    let c = try ConfigStore.load(from: url)   // "flavour", removed in 0.7.0, is ignored
     #expect(c.goRule.minHours == 2)
     var expected = Config.default
-    expected.flavour = .plain
     expected.goRule = GoRule(minHours: 2, maxCloudPct: 40, minAltitudeDeg: 30)
     expected.welcomed = true   // a config file that already exists belongs to someone who is already set up (v0.6.7)
     #expect(c == expected)
@@ -110,7 +108,7 @@ import Foundation
 
 @Test func unknownDistanceUnitDecodesAsKm() throws {
     let c = try JSONDecoder().decode(Config.self, from: Data(#"{"flavour":"plain","darkSites":{"unit":"furlongs","radiusKm":80}}"#.utf8))
-    #expect(c.darkSites.unit == .km && c.darkSites.radiusKm == 80 && c.flavour == .plain)
+    #expect(c.darkSites.unit == .km && c.darkSites.radiusKm == 80)
 }
 
 @Test func brightSettingsDefaultAndLenientDecode() throws {
