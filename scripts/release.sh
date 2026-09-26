@@ -24,8 +24,9 @@ IDENTITY=${NIGHTWATCH_RELEASE_IDENTITY:-$(security find-identity -v -p codesigni
 [[ -n "$IDENTITY" ]] || fail "no 'Developer ID Application' certificate in the keychain (docs/releasing.md, step 1)"
 # The team ID is the certificate's organisational unit. The bracket in the name is the team only on a Developer ID
 # certificate; on a development one it is a personal ID.
-TEAM=$(security find-certificate -c "$IDENTITY" -p | openssl x509 -noout -subject | tr ',' '\n' | sed -n 's/^ *OU *= *//p' | head -1)
-[[ -n "$TEAM" ]] || fail "could not read the team ID from the certificate '$IDENTITY'"
+# (Read from the name, not with openssl: macOS's own openssl prints the subject in a form the old parse missed.)
+TEAM=${${IDENTITY##*\(}%\)}
+(( ${#TEAM} == 10 )) || fail "could not read the team ID from the certificate '$IDENTITY'"
 BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Sources/Nightwatch/Info.plist)
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Sources/Nightwatch/Info.plist)
 WIDGET_ID="$BUNDLE_ID.widget"

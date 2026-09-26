@@ -127,7 +127,7 @@ The wording is plain English throughout. The light City Watch touches of earlier
 - It is Mac-only. There is no iPhone app or iPhone widget yet.
 - It is not a forecast provider. It reads Apple Weather or Open-Meteo plus 7Timer and applies a rule; it does not claim better accuracy than its sources.
 - It is not commercial: its data sources' terms rule out a paid or ad-supported product without replacing them.
-- It is not on the Mac App Store yet. It is sandboxed from 0.7.0, as the store requires, and a store version, "Nightwatch: Clear Sky Alerts", is in preparation. Until then it is a signed, notarised download.
+- It is not on the Mac App Store yet. The store version, "Nightwatch: Clear Sky Alerts", is built from the same code with no update check (`scripts/appstore.sh`, `docs/app-store.md`) and waits on the App Store account setup. Until then it is a signed, notarised download.
 
 ## Releases
 

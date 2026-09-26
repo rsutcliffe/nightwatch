@@ -2,12 +2,22 @@
 # Builds Nightwatch.app with SwiftPM only, signs it ad hoc, installs to /Applications and launches it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-swift build -c release
+# NIGHTWATCH_APPSTORE=1 (set by scripts/appstore.sh): the Mac App Store variant, which differs only in having no update
+# check (Sources/Nightwatch/Distribution.swift).
+if [[ "${NIGHTWATCH_APPSTORE:-}" == 1 ]]; then swift build -c release -Xswiftc -DAPPSTORE; else swift build -c release; fi
 APP=build/Nightwatch.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Sources/Nightwatch/Info.plist "$APP/Contents/Info.plist"
 cp .build/release/Nightwatch "$APP/Contents/MacOS/Nightwatch"
+# SwiftPM records the deployment target (14.0) as the SDK the binary was built with, and leaves the Info.plist without the
+# toolchain keys Xcode adds. App Store Connect reads both and rejects old or unknown SDKs (0.7.x), so the app gets the real
+# SDK and the same keys SwiftPM already put on the resource bundle it built with the same toolchain.
+vtool -set-build-version macos 14.0 "$(xcrun --sdk macosx --show-sdk-version)" -replace -output "$APP/Contents/MacOS/Nightwatch" "$APP/Contents/MacOS/Nightwatch"
+for k in BuildMachineOSBuild DTCompiler DTPlatformBuild DTPlatformName DTPlatformVersion DTSDKBuild DTSDKName DTXcode DTXcodeBuild; do
+  v=$(/usr/libexec/PlistBuddy -c "Print :$k" .build/release/Nightwatch_SkyCore.bundle/Contents/Info.plist 2>/dev/null) || continue
+  /usr/libexec/PlistBuddy -c "Add :$k string $v" "$APP/Contents/Info.plist"
+done
 cp -R .build/release/Nightwatch_SkyCore.bundle "$APP/Contents/Resources/"
 cp -R Resources/Constellations "$APP/Contents/Resources/"   # the owner's artwork; the widget does not need it
 cp NOTICE "$APP/Contents/Resources/NOTICE"
@@ -36,9 +46,10 @@ BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Content
 IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Apple Development/{print $2; exit}')
 PROFILE=""
 for p in ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.provisionprofile(N) ~/Library/MobileDevice/Provisioning\ Profiles/*.provisionprofile(N); do
-  # Development profiles only: a Developer ID profile (ProvisionsAllDevices) belongs to scripts/release.sh.
+  # Development profiles only, which list devices. A Developer ID profile (ProvisionsAllDevices) belongs to scripts/release.sh
+  # and a Mac App Store profile (neither key) to scripts/appstore.sh; embedding either here gives an app that won't launch.
   PL=$(security cms -D -i "$p" 2>/dev/null) || continue
-  if print -r -- "$PL" | grep -q "\.$BUNDLE_ID</string>" && ! print -r -- "$PL" | grep -q "<key>ProvisionsAllDevices</key>"; then PROFILE="$p"; break; fi
+  if [[ "$PL" == *".$BUNDLE_ID</string>"* && "$PL" == *"<key>ProvisionedDevices</key>"* && "$PL" != *"<key>ProvisionsAllDevices</key>"* ]]; then PROFILE="$p"; break; fi
 done
 if [[ -n "$IDENTITY" && -n "$PROFILE" ]]; then
   security cms -D -i "$PROFILE" > build/profile.plist
