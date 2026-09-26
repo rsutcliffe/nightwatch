@@ -6,15 +6,19 @@
 
 Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
-<img src="docs/images/screenshot-popover.png" width="360" alt="The Nightwatch popover: tonight's sky score of 49, a clear window from 23:00 to 04:00, clear sky by hour, darkness, Moon, seeing, wind, dew risk and transparency, and the three best targets">
+<img src="docs/images/screenshot-popover.png" width="360" alt="The Nightwatch popover: tonight's sky score of 65, a clear window from 20:52 to 04:00, clear sky by hour, darkness, Moon, seeing, wind, dew risk and transparency, and the three best targets">
 
 ## Screenshots
 
-Taken at Northumberland Dark Sky Park.
+Taken at the North York Moors International Dark Sky Reserve with version 1.0.
 
 **A target's page:** the survey photo fills the window, the dashed box is your field of view, and "How to shoot this" gives your telescope's filter, exposure and frames.
 
 <img src="docs/images/screenshot-target.jpg" width="728" alt="The NGC 7000 North America Nebula page: a sky-survey photo with a dashed field-of-view box, the How to shoot this card for a DWARF Mini, and the altitude through tonight's clear window">
+
+**All 88 constellations:** each one drawn as a figure over its stars, with when it is best tonight.
+
+<img src="docs/images/screenshot-constellation.jpg" width="728" alt="The Cygnus page: the swan drawn over its stars, with tonight's best time, altitude and Moon separation">
 
 **Dark sites:** darker places nearby, scored for tonight against home.
 
