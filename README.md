@@ -107,7 +107,7 @@ The plain build uses Open-Meteo and needs no account. If an Apple Development ce
 
 ## Settings sync
 
-Settings live in `~/Library/Application Support/Nightwatch/config.json`. Symlink it into iCloud Drive or any synced folder to share across Macs.
+From 0.7.0 Nightwatch runs in Apple's app sandbox, so its settings live in its own folder: `~/Library/Containers/io.github.rsutcliffe.nightwatch/Data/Library/Application Support/Nightwatch/config.json`. Settings from 0.6.x are copied there on first launch. Syncing settings by symlinking `config.json` into iCloud Drive no longer works, because a sandboxed app cannot follow a link out of its folder; copy the file between Macs instead.
 
 ## Data sources and licences
 

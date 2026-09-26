@@ -32,7 +32,7 @@ public struct AlertState: Codable, Equatable, Sendable {
     public var stage: Stage
     /// The plan mode the current stage was reached under; nil in files from 0.3.0 and earlier.
     public var mode: PlanMode?
-    /// The go nudge went out tonight, and the "Hold fire" message went out tonight (v0.6.3). Optional, so older files decode.
+    /// The go nudge went out tonight, and the "Less certain" message went out tonight (v0.6.3). Optional, so older files decode.
     public var goFired: Bool?
     public var doubtSent: Bool?
     public init(nightKey: String, stage: Stage, mode: PlanMode? = nil, goFired: Bool? = nil, doubtSent: Bool? = nil) {
@@ -61,7 +61,7 @@ public enum AlertEngine {
                             forecastFetchedAt: Date, site: Site, copy: Copy) -> (notification: AlertNotification?, state: AlertState) {
         var s = (state?.nightKey == tonight.night.key) ? state! : AlertState(nightKey: tonight.night.key, stage: .idle)
         // Switching bright nights on or off mid-evening changes the plan, not the sky: start the night's alerts afresh
-        // in the new mode rather than sending "Stand down. Clouds moving in".
+        // in the new mode rather than sending "Cancelled. Clouds moving in".
         if let m = s.mode, m != tonight.mode { s = AlertState(nightKey: tonight.night.key, stage: .idle) }
         guard now.timeIntervalSince(forecastFetchedAt) <= staleAfter else { return (nil, s) }
 
@@ -74,7 +74,7 @@ public enum AlertEngine {
             (Copy.hhmm(p.primary!.start, site: site), p.primary!.hours)
         }
         /// Fires go when tonight qualifies, the nudge time has passed and the window is still open; true when it fired.
-        /// Forecasts agreeing again after a "Hold fire" that followed a go send nothing: the go already went out.
+        /// Forecasts agreeing again after a "Less certain" that followed a go send nothing: the go already went out.
         func goIfDue() -> Bool {
             guard let g = goAt, let w = tonight.primary, agreed, now >= g, now < w.end else { return false }
             if s.goFired == true, s.stage == .doubted { s.stage = .goSent; return true }
@@ -100,7 +100,7 @@ public enum AlertEngine {
                 split = nil
             }
             if let body = split {
-                // Once a night: forecasts flipping either side of the rule must not send "Hold fire" on every patrol.
+                // Once a night: forecasts flipping either side of the rule must not send "Less certain" on every patrol.
                 if s.doubtSent != true { note = AlertNotification(kind: .lessCertain, title: copy.lessCertainTitle, body: body) }
                 s.doubtSent = true
                 s.stage = .doubted
@@ -135,7 +135,7 @@ public enum AlertEngine {
             // cancelled and doubted recover straight to go when both forecasts clear again; no second heads-up
             if !downgrade() { _ = goIfDue() }
         case .goSent:
-            // Once the window has closed the night is over: no stand-down or "Hold fire" for a window already used.
+            // Once the window has closed the night is over: no cancel or "Less certain" for a window already used.
             if now >= (tonight.primary?.end ?? tonight.night.sunrise) { s.stage = .done } else { _ = downgrade() }
         case .done:
             break

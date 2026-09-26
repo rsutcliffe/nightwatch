@@ -162,7 +162,7 @@ private let primary = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 9
 @Test func notificationBodyCarriesTheLineButNotForTomorrow() throws {
     var p = try plan(primaryCloud: primary)
     p.agreement = .agree
-    let copy = Copy(flavour: .watch)
+    let copy = Copy()
     #expect(copy.notificationBody(plan: p, site: testSite).hasSuffix(" Open-Meteo agrees."))
     #expect(!copy.notificationBody(plan: p, site: testSite, agreement: false).contains("Open-Meteo"))
     p.agreement = nil

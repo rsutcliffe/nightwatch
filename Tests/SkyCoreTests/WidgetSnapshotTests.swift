@@ -3,7 +3,7 @@ import Foundation
 @testable import SkyCore
 
 private let testSite = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
-private let copy = Copy(flavour: .watch)
+private let copy = Copy()
 
 private func hours(from t0: Date, _ cloud: [Int]) -> [HourlyConditions] {
     cloud.enumerated().map { i, c in

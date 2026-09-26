@@ -3,7 +3,7 @@ import Foundation
 @testable import SkyCore
 
 private let site = Site(name: "Sheffield", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
-private let copy = Copy(flavour: .watch)
+private let copy = Copy()
 private let settings = AlertSettings()
 
 /// Build a plan by hand with a given window and qualifying flag.
@@ -44,7 +44,7 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     let r = AlertEngine.step(now: due, tonight: good, tomorrow: nil, state: state, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
     #expect(r.notification?.kind == .go)
     #expect(r.state.stage == .goSent)
-    #expect(r.notification!.title.hasPrefix("All's well"))
+    #expect(r.notification!.title.hasPrefix("Clear from"))
 }
 
 @Test func cancelAfterHeadsUpWhenForecastDrops() throws {
@@ -54,7 +54,7 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     let r = AlertEngine.step(now: now, tonight: bad, tomorrow: nil, state: state, settings: settings, forecastFetchedAt: now, site: site, copy: copy)
     #expect(r.notification?.kind == .cancel)
     #expect(r.state.stage == .cancelled)
-    #expect(r.notification!.title.hasPrefix("Stand down"))
+    #expect(r.notification!.title.hasPrefix("Cancelled"))
 }
 
 @Test func tomorrowPreviewWhenTonightFails() throws {
@@ -96,11 +96,14 @@ private func fixtures() throws -> (Night, NightPlan, NightPlan, NightPlan) {
     #expect(r.notification?.kind == .headsUp)
 }
 
-@Test func plainFlavourHasNoWatchPhrases() {
-    let c = Copy(flavour: .plain)
+@Test func wordingIsPlainWithNoDiscworldPhrases() {   // removed in 0.7.0 for the App Store (rule 5.2.1)
+    let c = Copy()
     #expect(c.refresh == "Refresh")
     #expect(c.noWindow == "No clear window tonight.")
-    #expect(!c.cancelTitle.contains("Stand down"))
+    let all = [c.refresh, c.noWindow, c.cancelTitle, c.lessCertainTitle, c.offlineSince("21:00"), c.goTitle(windowStart: "22:00")]
+    for phrase in ["Patrol", "Move along", "Stand down", "Hold fire", "Off the beat", "All's well"] {
+        #expect(!all.contains { $0.contains(phrase) }, "\(phrase)")
+    }
 }
 
 @Test func cancelledRecoversToGoWhenForecastClears() throws {
@@ -187,8 +190,6 @@ private func bright(_ p: NightPlan) -> NightPlan {
 
     let preview = AlertEngine.step(now: due, tonight: bad, tomorrow: bright(tomorrowGood), state: nil, settings: settings, forecastFetchedAt: due, site: site, copy: copy)
     #expect(preview.notification?.title == String(format: "Tomorrow looks bright and clear · %.1f h", tomorrowGood.primary!.hours))
-    // Same words in plain mode: no new Discworld copy for bright nights.
-    #expect(Copy(flavour: .plain).brightGoTitle(windowStart: "22:30") == copy.brightGoTitle(windowStart: "22:30"))
 }
 
 @Test func switchingBrightModeMidEveningDoesNotStandDown() throws {
@@ -238,10 +239,10 @@ private func bright(_ p: NightPlan) -> NightPlan {
     var s = AlertSettings(); s.requireAgreement = true
     let due = night.sunset.addingTimeInterval(-3600 + 60)
     p.agreement = .noWindow
-    let held = AlertEngine.step(now: due, tonight: p, tomorrow: nil, state: nil, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy(flavour: .watch))
+    let held = AlertEngine.step(now: due, tonight: p, tomorrow: nil, state: nil, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy())
     #expect(held.notification == nil && held.state.stage == .idle)
     p.agreement = .agree
-    let sent = AlertEngine.step(now: due.addingTimeInterval(1800), tonight: p, tomorrow: nil, state: held.state, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy(flavour: .watch))
+    let sent = AlertEngine.step(now: due.addingTimeInterval(1800), tonight: p, tomorrow: nil, state: held.state, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy())
     #expect(sent.notification?.kind == .headsUp)
 }
 
@@ -256,7 +257,7 @@ private func bright(_ p: NightPlan) -> NightPlan {
     #expect(p.agreement == nil)
     var s = AlertSettings(); s.requireAgreement = true
     let due = night.sunset.addingTimeInterval(-3600 + 60)
-    #expect(AlertEngine.step(now: due, tonight: p, tomorrow: nil, state: nil, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy(flavour: .watch)).notification?.kind == .headsUp)
+    #expect(AlertEngine.step(now: due, tonight: p, tomorrow: nil, state: nil, settings: s, forecastFetchedAt: due, site: testSite, copy: Copy()).notification?.kind == .headsUp)
 }
 
 @Test func alertSettingsRoundTripKeepsEveryKey() throws {
@@ -276,7 +277,7 @@ private let optIn: AlertSettings = { var s = AlertSettings(); s.requireAgreement
     let r = AlertEngine.step(now: bad.night.sunset, tonight: with(bad, .agreeNoWindow), tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
                              settings: settings, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
     #expect(r.notification?.kind == .cancel && r.state.stage == .cancelled)
-    #expect(r.notification?.title == "Stand down. Clouds moving in")
+    #expect(r.notification?.title == "Cancelled. Clouds moving in")
     #expect(r.notification?.body == "Apple Weather and Open-Meteo both see cloud.")
     // With no second opinion the only forecast decides, as before.
     let solo = AlertEngine.step(now: bad.night.sunset, tonight: bad, tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
@@ -290,9 +291,8 @@ private let optIn: AlertSettings = { var s = AlertSettings(); s.requireAgreement
     let r = AlertEngine.step(now: bad.night.sunset, tonight: with(bad, .clearRun(run.0, run.1)), tomorrow: nil, state: AlertState(nightKey: bad.night.key, stage: .headsUpSent),
                              settings: settings, forecastFetchedAt: bad.night.sunset, site: site, copy: copy)
     #expect(r.notification?.kind == .lessCertain && r.state.stage == .doubted)
-    #expect(r.notification?.title == "Hold fire. Forecasts disagree")
+    #expect(r.notification?.title == "Less certain. Forecasts disagree")
     #expect(r.notification?.body == "Apple Weather now sees cloud. Open-Meteo has a clear run \(Copy.hhmm(run.0, site: site))–\(Copy.hhmm(run.1, site: site)).")
-    #expect(Copy(flavour: .plain).lessCertainTitle == "Less certain. Forecasts disagree")
 }
 
 @Test func lessCertainWhenOnlyOpenMeteoDisagreesAndTheOptInHoldsTheGo() throws {
@@ -342,7 +342,7 @@ private let optIn: AlertSettings = { var s = AlertSettings(); s.requireAgreement
         if let n = r.notification { notes.append(n.kind) }
         st = r.state
     }
-    #expect(notes == [.lessCertain])            // one "Hold fire", no second "All's well"
+    #expect(notes == [.lessCertain])            // one "Less certain", no second go
     #expect(st.stage == .goSent)
 }
 

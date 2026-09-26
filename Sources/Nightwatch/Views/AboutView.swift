@@ -15,6 +15,7 @@ struct AboutView: View {
                 Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
                 Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
                 Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
+                Link("Privacy ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!)   // App Store rule 5.1.1
             }
             .font(.callout)
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(.caption2).foregroundStyle(Theme.dim)

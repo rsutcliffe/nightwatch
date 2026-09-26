@@ -128,7 +128,6 @@ struct SettingsView: View {
                 Text("Status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(.caption).foregroundStyle(Theme.dim)
             }
             Section("App") {
-                Picker("Wording", selection: bind(\.flavour)) { Text("Nightwatch").tag(Flavour.watch); Text("Plain").tag(Flavour.plain) }
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
                 Toggle("Start at login", isOn: Binding(get: { SMAppService.mainApp.status == .enabled }, set: { on in
                     do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; store.config.loginItem = on; store.saveConfig() }

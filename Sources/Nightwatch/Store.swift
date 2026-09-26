@@ -60,6 +60,7 @@ final class Store: ObservableObject {
         grids = LPGrids.bundled()
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
+        LegacyImport.run(from: LegacyImport.legacyDirectory, to: StateFiles.directory)   // 0.6.x settings into the sandbox, once
         StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
         plan = Store.read("plan.json")             // content in the popover before the first fetch
@@ -116,7 +117,7 @@ final class Store: ObservableObject {
     }
 
 
-    var copy: Copy { Copy(flavour: config.flavour) }
+    var copy: Copy { Copy() }
     var site: Site? { config.activeSite(auto: autoSite) }
     var homeSite: Site? { config.homeSite(auto: autoSite) }
     var isAway: Bool { config.isAway(auto: autoSite) }
@@ -168,7 +169,7 @@ final class Store: ObservableObject {
     /// Gated on the last attempt, not the last success, so a failing server is not hammered every tick.
     private func refreshAuxiliary(now: Date) async {
         if attemptDue("comets", every: 86_400, now: now), let data = try? await fetcher.get(Comets.url) {
-            let unzipped = await Task.detached { Store.gunzip(data) }.value
+            let unzipped = await Task.detached { Gzip.decompress(data) ?? Data() }.value   // off the main actor
             if let c = try? Comets.decode(unzipped) { comets = c; Store.write(c, "comets.json") }
         }
         if attemptDue("iss", every: 2 * 3600, now: now), let data = try? await fetcher.get(Satellites.issURL),
@@ -402,18 +403,5 @@ final class Store: ObservableObject {
         guard let value else { return }
         let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
         try? e.encode(value).write(to: url, options: .atomic)
-    }
-    /// gzip via Foundation is unavailable; shell out to the system gunzip for the MPC file.
-    /// `nonisolated` so this can run off the main actor (see `refreshAuxiliary`): the blocking
-    /// `readDataToEndOfFile`/`waitUntilExit` pair would otherwise freeze the UI on `Store`.
-    nonisolated static func gunzip(_ data: Data) -> Data {
-        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("cometels.json.gz")
-        try? data.write(to: tmp)
-        let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/gunzip"); p.arguments = ["-c", tmp.path]
-        let pipe = Pipe(); p.standardOutput = pipe
-        do { try p.run() } catch { return Data() }
-        let out = pipe.fileHandleForReading.readDataToEndOfFile(); p.waitUntilExit()
-        guard p.terminationStatus == 0 else { return Data() }
-        return out
     }
 }
