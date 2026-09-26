@@ -176,6 +176,21 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// "NGC 7000", "M42", "Jupiter", "Moon", "Cygnus".
     public var catalogueID: String = ""
     public var commonName: String? = nil
+    /// The Caldwell number, for the card line and search; the catalogue ID stays the NGC or IC number.
+    public var caldwell: Int? = nil
+
+    /// The card's line under the catalogue ID: "C43 · Galaxy", "C20 · North America Nebula", "Andromeda Galaxy".
+    public var cardLine: String {
+        [caldwell.map { "C\($0)" }, commonName ?? typeName].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// The Targets search: the name or subtitle contains the query, ignoring case and spaces, so "C 43" finds C43 and
+    /// "NGC7814" finds NGC 7814. An empty query matches everything.
+    public func matches(_ query: String) -> Bool {
+        let q = query.filter { !$0.isWhitespace }
+        guard !q.isEmpty else { return true }
+        return [name, subtitle].contains { $0.filter { !$0.isWhitespace }.localizedCaseInsensitiveContains(q) }
+    }
 }
 
 /// `.bright` when the dark rule could not be met and bright-night mode supplied the plan instead.
@@ -256,8 +271,9 @@ extension Planner {
 
     /// The target with its viewable span, altitude curve and names filled in.
     static func described(_ r: RankedTarget, viewable: ClearWindow?, site: Site, typeName: String, catalogueID: String,
-                          commonName: String? = nil, frameFill: Double? = nil) -> RankedTarget {
+                          commonName: String? = nil, frameFill: Double? = nil, caldwell: Int? = nil) -> RankedTarget {
         var r = r
+        r.caldwell = caldwell
         r.viewable = viewable
         r.altitudeSamples = viewable.map { altitudes(raHours: r.raHours, decDeg: r.decDeg, span: $0, site: site) } ?? []
         r.typeName = typeName; r.catalogueID = catalogueID; r.commonName = commonName; r.frameFill = frameFill
@@ -281,7 +297,8 @@ extension Planner {
                                               fit: frameFit(sizeArcmin: o.majAxisArcmin, fov: fov), peakAltDeg: tr.peakAlt, peakTime: tr.peakTime,
                                               moonSepDeg: sep, moonWashed: moonUp && sep < 30, visibleFraction: tr.fraction),
                                  viewable: tr.viewable, site: site, typeName: Catalog.typeNames[o.typeCode] ?? o.typeCode,
-                                 catalogueID: o.catalogueID, commonName: o.commonName, frameFill: frameFill(sizeArcmin: o.majAxisArcmin, fov: fov)))
+                                 catalogueID: o.catalogueID, commonName: o.commonName, frameFill: frameFill(sizeArcmin: o.majAxisArcmin, fov: fov),
+                                 caldwell: o.caldwell))
         }
 
         for p in Planet.allCases {

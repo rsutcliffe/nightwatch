@@ -63,11 +63,25 @@ import Foundation
     #expect(o("NGC1976", messier: 42).catalogueID == "M42")
     #expect(o("IC1340").displayName == "IC 1340")
     // Addendum catalogues: one "{catalogue} {number}" pattern; ESO, PGC and UGC numbers are fixed-format and kept whole.
-    #expect(o("C009").catalogueID == "C 9")
+    #expect(o("C009").catalogueID == "C9")   // Caldwell entries in the addendum read as the Caldwell number, unspaced
     #expect(o("B033").catalogueID == "B 33")
     #expect(o("Mel071").catalogueID == "Mel 71")
     #expect(o("Cl399").catalogueID == "Cl 399")
     #expect(o("MWSC3171").catalogueID == "MWSC 3171")
     #expect(o("ESO056-115").catalogueID == "ESO 056-115")
     #expect(o("IC0186A").catalogueID == "IC 186A")
+}
+
+/// All 109 Caldwell objects are findable: OpenNGC tags most as "C 043" among the identifiers, and the addendum names the
+/// four it lacks C009, C014, C041 and C099. The NGC number stays the catalogue ID; the C number joins the name.
+@Test func everyCaldwellObjectIsNumberedOnce() throws {
+    let tagged = try Catalog.bundled().objects.filter { $0.caldwell != nil }
+    #expect(tagged.count == 109)
+    #expect(Set(tagged.compactMap(\.caldwell)) == Set(1...109))
+    let c43 = try #require(tagged.first { $0.caldwell == 43 })
+    #expect(c43.id == "NGC7814" && c43.catalogueID == "NGC 7814" && c43.displayName == "NGC 7814 · C43")
+    let c20 = try #require(tagged.first { $0.caldwell == 20 })
+    #expect(c20.catalogueID == "NGC 7000" && c20.displayName == "NGC 7000 · C20 · North America Nebula")
+    let c14 = try #require(tagged.first { $0.caldwell == 14 })
+    #expect(c14.catalogueID == "C14" && c14.displayName == "C14 · Double Cluster")
 }
