@@ -52,10 +52,8 @@ struct TargetsView: View {
             let usable = Planner.sorted(found.filter { $0.notTonight == nil }.map(\.target), by: ui.sort, now: now, span: span, site: site)
             return usable.map { FavouriteTarget(target: $0, notTonight: nil) } + found.filter { $0.notTonight != nil }
         case .group(let g):
-            let shown = targets.filter { $0.group == g }
-                .filter { !$0.hiddenByFit(fitsOnly: ui.fitsOnly) && !$0.hiddenByMoon(includeMoonWashed: ui.includeMoonWashed) }
-                .filter { $0.matches(ui.search) }
-            return Planner.sorted(shown, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
+            return RankedTarget.cards(targets, group: g, query: ui.search, fitsOnly: ui.fitsOnly, includeMoonWashed: ui.includeMoonWashed,
+                                      sort: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
         case .darkSites:
             return []
         }
@@ -198,6 +196,12 @@ struct TargetsView: View {
                         .pickerStyle(.segmented).fixedSize()
                     }
                 }
+                // What the search found leads, above the night's state, so it is plain the search ran (owner, 27 September 2026).
+                if ui.section != .favourites, !isEvents,
+                   let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
+                                              includeMoonWashed: ui.includeMoonWashed) {
+                    Text(hint).font(.callout).foregroundStyle(Tokens.textPrimary)
+                }
                 if let p = store.plan, let s = store.site {
                     ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
                     if p.darkSpan == nil {
@@ -218,11 +222,6 @@ struct TargetsView: View {
                     } else if !favourites.contains(where: { $0.target.matches(ui.search) }) {
                         Text("No favourite matches “\(ui.search.trimmingCharacters(in: .whitespaces))”.").font(.caption).foregroundStyle(Tokens.textSecondary)
                     }
-                } else if isEvents {
-                    EmptyView()
-                } else if let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
-                                                     includeMoonWashed: ui.includeMoonWashed) {
-                    Text(hint).font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             GlassGroup(spacing: 12) {

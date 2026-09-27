@@ -203,6 +203,17 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public func hiddenByMoon(includeMoonWashed: Bool) -> Bool { moonWashed && !includeMoonWashed }
     /// Hidden while Fits my field of view is on.
     public func hiddenByFit(fitsOnly: Bool) -> Bool { fitsOnly && fit != .fits }
+
+    /// A group's cards, sorted. While searching every match shows, the ones the two switches would hide placed last: someone
+    /// searching wants the result first and the Moon second (owner, 27 September 2026).
+    public static func cards(_ ts: [RankedTarget], group: TargetGroup, query: String, fitsOnly: Bool, includeMoonWashed: Bool,
+                             sort: TargetSort, now: Date, span: ClearWindow?, site: Site) -> [RankedTarget] {
+        let searching = !query.allSatisfy(\.isWhitespace)
+        func hidden(_ t: RankedTarget) -> Bool { t.hiddenByFit(fitsOnly: fitsOnly) || t.hiddenByMoon(includeMoonWashed: includeMoonWashed) }
+        let sorted = Planner.sorted(ts.filter { $0.group == group && $0.matches(query) && (searching || !hidden($0)) },
+                                    by: sort, now: now, span: span, site: site)
+        return sorted.filter { !hidden($0) } + sorted.filter(hidden)
+    }
 }
 
 /// `.bright` when the dark rule could not be met and bright-night mode supplied the plan instead.
