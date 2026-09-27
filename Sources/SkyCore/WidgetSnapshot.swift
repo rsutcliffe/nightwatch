@@ -40,6 +40,10 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var source: String?
     /// "Updated 21:10" in the site's time zone and 24-hour form, as the popover shows it.
     public var updated: String?
+    /// Apple Weather's attribution (v1.0.1): the Weather mark, saved by the app into the App Group as this file (a widget
+    /// cannot fetch it), and the legal page of other data sources. Nil unless Apple Weather supplied the forecast.
+    public var weatherMarkFile: String? = nil
+    public var weatherLegalURL: String? = nil
     /// AuroraWatch UK's level when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
     /// from `aurora.updated`, the popover's rule.
     public var aurora: AuroraStatus?

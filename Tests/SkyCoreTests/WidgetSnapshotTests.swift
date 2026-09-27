@@ -145,3 +145,17 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(make(.red, off).aurora == nil)                                                // alerts off
     #expect(amber.auroraExpires == november.addingTimeInterval(3600))
 }
+
+/// A snapshot written before Apple Weather's attribution fields (v1.0.1) still loads, without them.
+@Test func aSnapshotWithoutTheAttributionFieldsDecodes() throws {
+    var s = WidgetSnapshot.sample
+    s.weatherMarkFile = "apple-weather-mark.png"; s.weatherLegalURL = "https://weatherkit.apple.com/legal-attribution.html"
+    let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
+    let dec = JSONDecoder(); dec.dateDecodingStrategy = .iso8601
+    var json = try JSONSerialization.jsonObject(with: enc.encode(s)) as! [String: Any]
+    json.removeValue(forKey: "weatherMarkFile"); json.removeValue(forKey: "weatherLegalURL")
+    let old = try dec.decode(WidgetSnapshot.self, from: JSONSerialization.data(withJSONObject: json))
+    #expect(old.weatherMarkFile == nil && old.weatherLegalURL == nil && old.score == s.score)
+    let back = try dec.decode(WidgetSnapshot.self, from: enc.encode(s))   // ISO dates drop fractions of a second, so compare the fields
+    #expect(back.weatherMarkFile == s.weatherMarkFile && back.weatherLegalURL == s.weatherLegalURL)
+}
