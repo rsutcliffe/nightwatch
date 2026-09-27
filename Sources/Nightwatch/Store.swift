@@ -271,8 +271,10 @@ final class Store: ObservableObject {
                 triedWeatherMark = mark
                 Task { @MainActor in
                     if let data = try? await fetcher.get(url) {
-                        try? data.write(to: file, options: .atomic)
-                        try? mark.write(to: stamp, atomically: true, encoding: .utf8)
+                        await Task.detached {   // the disk writes off the main actor
+                            try? data.write(to: file, options: .atomic)
+                            try? mark.write(to: stamp, atomically: true, encoding: .utf8)
+                        }.value
                     }
                     writeWidgetSnapshot()   // once more, now with the mark (or without it, if the fetch failed)
                 }
