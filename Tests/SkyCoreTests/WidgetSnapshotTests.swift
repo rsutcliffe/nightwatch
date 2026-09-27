@@ -35,7 +35,7 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let s = snap(p, t)
     #expect(s.headline == "Clear window tonight")
     #expect(s.window == "20:00 → 02:00 · 6.0 h" && s.windowShort == "Clear 20:00–02:00")
-    #expect(s.slots.count == 60 && !s.bars.isEmpty && s.notify == "Notify at 19:30" && s.notifyShort == "notify 19:30")
+    #expect(s.slots.count == 60 && !s.bars.isEmpty && s.notifyShort == "notify 19:30")
     #expect(s.brightList == nil && s.source == nil)
     #expect(s.targets.count <= 3 && s.siteName == "Test site" && s.tomorrow == nil)
 }

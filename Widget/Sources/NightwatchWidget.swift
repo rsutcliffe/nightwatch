@@ -215,15 +215,14 @@ struct LargeView: View {
                 }
             } }
             Spacer(minLength: 0)
-            // The footer's items on one centre line, spread with equal gaps rather than one wide gap (owner, 27 September 2026).
+            // Updated on the left, Apple's mark on the right, on one centre line. No "Notify when clear": it did not earn its
+            // place against a quieter footer (owner, 27 September 2026).
             HStack(alignment: .center, spacing: 0) {
-                Text(s.notify ?? "")
-                Spacer(minLength: 8)
                 if let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true, lines: 1) } else {
                     Text(s.updated ?? "Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))")
-                    Spacer(minLength: 8)
-                    WeatherMark(s: s, link: true)
                 }
+                Spacer(minLength: 8)
+                WeatherMark(s: s, link: true)
             }
             .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
         }
