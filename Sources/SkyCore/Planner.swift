@@ -186,13 +186,15 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
 
     /// The Targets search, ignoring case. A catalogue number ("C43", "C 43", "NGC7814", "m 31") must begin one of the name's
     /// " · " parts once spaces are removed, so "C43" does not find NGC 4303; a bare number ("7814") must begin one part's
-    /// digits. Anything else ("veil", "north america", "Peg") is found anywhere in the name or subtitle. Empty matches all.
+    /// digits. Anything else ("veil", "north america", "Peg", "galaxy", "globular") is found anywhere in the name, subtitle or
+    /// type, so a word for a kind of object finds every one of that kind, not only those whose name contains it (owner,
+    /// 27 September 2026: "galaxy" found nine of 141 galaxies). Empty matches all.
     public func matches(_ query: String) -> Bool {
         let q = query.filter { !$0.isWhitespace }.lowercased()
         guard !q.isEmpty else { return true }
         let letters = q.prefix { $0.isLetter }, number = q.dropFirst(letters.count)
         guard let first = number.first, first.isNumber else {
-            return [name, subtitle].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
+            return [name, subtitle, typeName].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
         }
         let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace }.lowercased() }
         if letters.isEmpty { return parts.contains { $0.drop { $0.isLetter }.hasPrefix(q) } }

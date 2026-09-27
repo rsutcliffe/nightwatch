@@ -23,6 +23,9 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(veil.matches("veil") && veil.matches("eastern veil") && veil.matches("C33") && veil.matches("Peg"))   // words: anywhere
     let little = target("NGC7814", name: "NGC 7814 · C43 · Little Sombrero Galaxy", group: .galaxies, caldwell: 43, commonName: "Little Sombrero Galaxy")
     #expect(little.matches("sombrero") && little.matches("little sombrero") && little.matches("C43"))
+    // A kind of object finds every one of that kind: C43's card says "Galaxy" though its name does not.
+    #expect(c43.matches("galaxy") && c43.matches("Galax") && !c43.matches("nebula"))
+    #expect(target("NGC6205", name: "M13 · NGC 6205", group: .clusters, typeName: "Globular cluster").matches("globular"))
 }
 
 @Test func cardLineCarriesTheCaldwellNumber() {
