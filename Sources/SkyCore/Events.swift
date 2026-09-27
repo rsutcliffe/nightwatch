@@ -57,10 +57,27 @@ public struct SkyEvent: Codable, Equatable, Sendable, Identifiable {
     public var facts: [EventFact] = []
     /// True when `best` (or `time`) is in a clear hour of tonight's forecast, false in a cloudy one, nil outside it.
     public var clear: Bool? = nil
-    /// A conjunction's separation, for "does it fit my field of view".
+    /// A conjunction's separation, and whether both bodies fit in the user's frame (`Events.fits`).
     public var separationDeg: Double? = nil
+    public var fits: Bool? = nil
     /// The time to show: `best`, else `time`.
     public var when: Date { best ?? time }
+}
+
+extension SkyEvent {
+    /// The fields added in 1.0.1 fall back to their defaults, so an event saved by an earlier version still loads.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id); kind = try c.decode(SkyEventKind.self, forKey: .kind)
+        title = try c.decode(String.self, forKey: .title); detail = try c.decode(String.self, forKey: .detail)
+        time = try c.decode(Date.self, forKey: .time); endTime = try c.decodeIfPresent(Date.self, forKey: .endTime)
+        raHours = try c.decodeIfPresent(Double.self, forKey: .raHours); decDeg = try c.decodeIfPresent(Double.self, forKey: .decDeg)
+        best = try c.decodeIfPresent(Date.self, forKey: .best)
+        facts = try c.decodeIfPresent([EventFact].self, forKey: .facts) ?? []
+        clear = try c.decodeIfPresent(Bool.self, forKey: .clear)
+        separationDeg = try c.decodeIfPresent(Double.self, forKey: .separationDeg)
+        fits = try c.decodeIfPresent(Bool.self, forKey: .fits)
+    }
 }
 
 public struct EventFact: Codable, Equatable, Sendable {
@@ -73,6 +90,17 @@ public enum Events {
     /// Tonight's darkness, or sunset to sunrise when there is none.
     static func darkness(_ night: Night) -> (start: Date, end: Date) {
         (night.darkStart ?? night.sunset, night.darkEnd ?? night.sunrise)
+    }
+
+    /// Nautical dusk to dawn, or darkness when there is none: planets and comets are often best in twilight.
+    static func twilight(_ night: Night) -> (start: Date, end: Date) {
+        (night.nauticalStart ?? night.darkStart ?? night.sunset, night.nauticalEnd ?? night.darkEnd ?? night.sunrise)
+    }
+
+    /// Both bodies of a pair fit in one frame: their separation, plus the Moon's radius when one is the Moon (its far limb
+    /// must fit too), within the frame's longer side less a tenth for margin.
+    public static func fits(separationDeg sep: Double, fov: FieldOfView, includesMoon: Bool) -> Bool {
+        sep + (includesMoon ? 0.26 : 0) <= max(fov.widthDeg, fov.heightDeg) * 0.9
     }
 
     /// The highest point of a fixed sky position between `from` and `to`, sampled every 15 minutes.
@@ -116,13 +144,19 @@ public enum Events {
         let cal = site.calendar
         let dark = darkness(night)
         return MeteorShowers.active(on: night.localDate, calendar: cal, showers: showers).map { s in
-            // Tonight's night runs into tomorrow's date, so a peak on either counts as tonight.
+            // A peak date's maximum can fall either side of midnight, so the night running into it and the night of it
+            // both read "at peak tonight"; the countdown is to the first of them, the night of the day before.
             let (peakDate, days) = peak(s, near: night.localDate, calendar: cal)
+            let eve = cal.date(byAdding: .day, value: -1, to: peakDate)!
+            // "4–5 November", or "31 October–1 November" across a month end
+            let peakNight = (cal.component(.month, from: eve) == cal.component(.month, from: peakDate) ? "\(cal.component(.day, from: eve))" : day(eve, site: site))
+                + "–" + day(peakDate, site: site)
             let peakText: String
             switch days {
             case 0, 1: peakText = "At peak tonight"
-            case 2...: peakText = "Peak \(day(peakDate, site: site)), in \(days) days"
-            default: peakText = "Past its peak (\(day(peakDate, site: site)))"
+            case 2: peakText = "Peak tomorrow night (\(peakNight))"
+            case 3...: peakText = "Peak night \(peakNight), in \(days - 1) days"
+            default: peakText = "Past its peak (night of \(peakNight))"
             }
             let top = highest(raHours: s.raHours, decDeg: s.decDeg, from: dark.start, to: dark.end, site: site)
             let where_ = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).name
@@ -134,7 +168,7 @@ public enum Events {
             e.best = up ? top.time : nil
             let speed = s.velocityKms >= 55 ? "fast" : s.velocityKms <= 30 ? "slow" : "medium"
             e.facts = [
-                EventFact("Peak", days >= 0 && days <= 1 ? "Tonight, ZHR \(s.zhr)" : "\(day(peakDate, site: site)), ZHR \(s.zhr)"),
+                EventFact("Peak", days >= 0 && days <= 1 ? "Tonight, ZHR \(s.zhr)" : "Night of \(peakNight), ZHR \(s.zhr)"),
                 EventFact("Radiant", up ? "\(where_), highest at \(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"
                                         : "\(where_), below the horizon all night"),
             ]
@@ -161,10 +195,14 @@ public enum Events {
             var e = SkyEvent(id: "lunar-\(Int(l.peak.timeIntervalSince1970))", kind: .lunarEclipse,
                              title: "\(l.kind.rawValue.capitalized) lunar eclipse", detail: "Peak obscuration \(Int((l.obscuration * 100).rounded()))%",
                              time: l.peak, endTime: l.end, raHours: nil, decDeg: nil)
-            let alt = Ephemeris.moon(at: l.peak, site: site).position.altDeg
-            e.facts = times(l.begin, l.peak, l.end) + [EventFact("Moon at peak", alt > 0 ? "\(Int(alt.rounded()))° up"
-                                                                                       : "Below the horizon: not visible from \(site.name)")]
-            if alt <= 0 { e.detail += " · Moon below the horizon here" }
+            func moonAlt(_ d: Date?) -> Double { d.map { Ephemeris.moon(at: $0, site: site).position.altDeg } ?? -90 }
+            let alt = moonAlt(l.peak)
+            let partly = moonAlt(l.begin) > 0 || moonAlt(l.end) > 0
+            let seen = alt > 0 ? "\(Int(alt.rounded()))° up"
+                     : partly ? "Below the horizon at peak; the Moon is up for part of the eclipse"
+                     : "Below the horizon throughout: not visible from \(site.name)"
+            e.facts = times(l.begin, l.peak, l.end) + [EventFact("Moon at peak", seen)]
+            if alt <= 0 { e.detail += partly ? " · partly visible here" : " · not visible here" }
             out.append(e)
         }
         if let s = Ephemeris.nextLocalSolarEclipse(after: date, site: site), s.peak <= limit {
@@ -172,7 +210,8 @@ public enum Events {
                              title: "\(s.kind.rawValue.capitalized) solar eclipse from \(site.name)", detail: "Peak obscuration \(Int((s.obscuration * 100).rounded()))%",
                              time: s.peak, endTime: s.partialEnd, raHours: nil, decDeg: nil)
             let alt = Ephemeris.sunAltitude(at: s.peak, site: site)
-            e.facts = times(s.partialBegin, s.peak, s.partialEnd) + [EventFact("Sun at peak", "\(Int(alt.rounded()))° up"),
+            e.facts = times(s.partialBegin, s.peak, s.partialEnd) + [EventFact("Sun at peak", alt > 0 ? "\(Int(alt.rounded()))° up"
+                                                                          : "Below the horizon; the eclipse is seen at sunrise or sunset"),
                       EventFact("Safety", "Never look at the Sun, or point a telescope or camera at it, without a certified solar filter.")]
             out.append(e)
         }
@@ -196,21 +235,21 @@ public enum Events {
                 e.separationDeg = sep
                 e.facts = [EventFact("Separation", String(format: "%.1f°", sep))]
                 if let f = fov {
-                    // Both in one frame with a little margin: the longer side, less a tenth.
-                    let fits = sep <= max(f.widthDeg, f.heightDeg) * 0.9
+                    let fits = Events.fits(separationDeg: sep, fov: f, includesMoon: a == "Moon" || b == "Moon")
+                    e.fits = fits
                     detail += fits ? " · fits your field of view" : " · wider than your field of view"
                     e.facts.append(EventFact("Your field of view", String(format: "%g × %g°: ", f.widthDeg, f.heightDeg)
                                              + (fits ? "both fit in one frame" : "too narrow for both at once")))
                 }
                 if let n = night {
-                    let d = darkness(n)
+                    let d = twilight(n)
                     let top = highest(raHours: pa.raHours, decDeg: pa.decDeg, from: d.start, to: d.end, site: site)
                     if top.alt > 0 {
                         e.best = top.time
                         detail += " · best \(Copy.hhmm(top.time, site: site))"
                         e.facts.append(EventFact("Best", "\(Copy.hhmm(top.time, site: site)), \(Int(top.alt.rounded()))° up"))
                     } else {
-                        e.facts.append(EventFact("Best", "Below the horizon in darkness tonight"))
+                        e.facts.append(EventFact("Best", "Below the horizon at night"))
                     }
                 }
                 e.detail = detail
@@ -223,7 +262,7 @@ public enum Events {
     /// A comet tonight, from its position now (`pos`) and a week later (`later`, for the trend). Nil when it never gets
     /// above `minAlt` in darkness.
     public static func comet(designation: String, pos: CometPosition, later: CometPosition?, night: Night, site: Site, minAlt: Double = 20) -> SkyEvent? {
-        let d = darkness(night)
+        let d = twilight(night)
         let top = highest(raHours: pos.raHours, decDeg: pos.decDeg, from: d.start, to: d.end, site: site)
         guard top.alt > minAlt else { return nil }
         let where_ = Ephemeris.constellation(raHours: pos.raHours, decDeg: pos.decDeg).name
@@ -243,18 +282,25 @@ public enum Events {
         return e
     }
 
-    /// An ISS pass: where it rises, peaks and sets.
+    /// An ISS pass: where it appears, peaks and disappears. It is only seen while above the horizon and sunlit, so a pass
+    /// that runs into Earth's shadow "fades" before it sets, and one that starts in shadow "appears" after it rises.
     public static func issPass(_ p: SatellitePass, site: Site) -> SkyEvent {
         func dir(_ az: Double?) -> String { az.map { " \(Geo.compass($0))" } ?? "" }
+        let start = p.appears ?? p.rise, end = p.vanishes ?? p.set
+        let emerges = start.timeIntervalSince(p.rise) > 30, fades = p.set.timeIntervalSince(end) > 30
+        let first = emerges ? "Appears\(dir(p.appearsAzimuthDeg))" : "Rises\(dir(p.riseAzimuthDeg))"
+        let last = fades ? "fades\(dir(p.vanishesAzimuthDeg))" : "sets\(dir(p.setAzimuthDeg))"
         let highest = "\(Int(p.maxElevationDeg.rounded()))° up in the\(dir(p.peakAzimuthDeg))"
         var e = SkyEvent(id: "iss-\(Int(p.rise.timeIntervalSince1970))", kind: .issPass, title: "ISS pass",
-                         detail: "Rises\(dir(p.riseAzimuthDeg)) \(Copy.hhmm(p.rise, site: site)) · \(highest) \(Copy.hhmm(p.peak, site: site)) · sets\(dir(p.setAzimuthDeg)) \(Copy.hhmm(p.set, site: site))",
-                         time: p.rise, endTime: p.set, raHours: nil, decDeg: nil)
+                         detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(p.peak, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
+                         time: start, endTime: end, raHours: nil, decDeg: nil)
         e.best = p.peak
-        let minutes = max(1, Int((p.set.timeIntervalSince(p.rise) / 60).rounded()))
-        e.facts = [EventFact("Rises", "\(Copy.hhmm(p.rise, site: site))\(dir(p.riseAzimuthDeg))"),
+        let minutes = max(1, Int((end.timeIntervalSince(start) / 60).rounded()))
+        e.facts = [EventFact(emerges ? "Appears" : "Rises", "\(Copy.hhmm(start, site: site))\(dir(emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg))"
+                                                          + (emerges ? ", out of Earth's shadow" : "")),
                    EventFact("Highest", "\(Copy.hhmm(p.peak, site: site)), \(highest)"),
-                   EventFact("Sets", "\(Copy.hhmm(p.set, site: site))\(dir(p.setAzimuthDeg))"),
+                   EventFact(fades ? "Fades" : "Sets", "\(Copy.hhmm(end, site: site))\(dir(fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg))"
+                                                     + (fades ? ", into Earth's shadow" : "")),
                    EventFact("Visible for", "About \(minutes) minute\(minutes == 1 ? "" : "s")")]
         return e
     }

@@ -83,7 +83,8 @@ struct TargetsView: View {
             .navigationSplitViewColumnWidth(232)
         } detail: {
             if let ev = ui.selectedEvent {
-                EventDetailView(event: ev) { ui.selectedEvent = nil }.id(ev.id)
+                // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
+                EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
             } else if let selected = ui.selected {
                 // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
                 DetailView(target: selected) { ui.selected = nil }.id(selected.id)
@@ -136,6 +137,7 @@ struct TargetsView: View {
             ui.section = section
             ui.pendingScrollID = r.siteID
             ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
+            ui.selectedEvent = nil   // an open event page would hide the requested target
         }
         store.targetsRequest = nil
     }
@@ -278,6 +280,7 @@ struct TargetsView: View {
             Button { ui.selectedEvent = e } label: {
                 HStack {
                     Image(systemName: e.kind == .issPass ? "airplane" : (e.kind == .meteorShower ? "sparkle" : (e.kind == .comet ? "comet" : "moon.stars"))).foregroundStyle(Theme.accent)
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading) {
                         Text(e.title).font(.callout.weight(.semibold))
                         Text(e.detail).font(.caption).foregroundStyle(Theme.dim)
@@ -290,6 +293,7 @@ struct TargetsView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain).padding(.vertical, 4)
+            .accessibilityLabel([e.title, e.detail, e.clear.map { $0 ? "clear" : "cloudy" }].compactMap { $0 }.joined(separator: ", "))
         }
         .overlay { if store.events.isEmpty { Text("No events tonight").foregroundStyle(Theme.dim) } }
     }

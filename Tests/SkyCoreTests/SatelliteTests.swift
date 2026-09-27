@@ -63,5 +63,11 @@ private func epochDate(_ tle: TLE) -> Date {
     let visible = try Satellites.visiblePasses(tle: tle, site: site, from: from, to: to, minPeakElevation: 0)
     let all = try Satellites.passes(tle: tle, site: site, from: from, to: to, minPeakElevation: 0, stepSeconds: 30)
     #expect(visible.count <= all.count)
-    for p in visible { #expect(Ephemeris.sunAltitude(at: p.peak, site: site) < -6) }
+    for p in visible {
+        #expect(Ephemeris.sunAltitude(at: p.peak, site: site) < -6)
+        // The sunlit stretch (v1.0.1) lies within the pass and includes the peak, which visiblePasses requires sunlit.
+        let a = try #require(p.appears), v = try #require(p.vanishes)
+        #expect(p.rise <= a && a <= p.peak.addingTimeInterval(10) && p.peak.addingTimeInterval(-10) <= v && v <= p.set)
+        #expect(p.appearsAzimuthDeg != nil && p.vanishesAzimuthDeg != nil)
+    }
 }
