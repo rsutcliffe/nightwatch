@@ -163,6 +163,11 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(faded.detail == "Rises W 21:10 · 62° up in the S 21:14 · fades SE 21:16")
     #expect(faded.facts.map(\.label) == ["Rises", "Highest", "Fades", "Visible for"])
     #expect(faded.facts.last?.value == "About 6 minutes")
+    // The compass drawing's path (v1.0.1): where it rises, its highest point, and where it fades, at the right heights.
+    #expect(e.path.map(\.label) == ["Rises", "Highest", "Sets"] && e.path.map(\.altitudeDeg) == [0, 62, 0])
+    #expect(e.path.map(\.azimuthDeg) == [270, 180, 90])
+    f.vanishesElevationDeg = 25
+    #expect(Events.issPass(f, site: site).path.last == SkyPathPoint(label: "Fades", time: utc(2026, 9, 27, 20, 16), azimuthDeg: 135, altitudeDeg: 25))
 }
 
 @Test func aCometSaysWhereItIsAndWhetherItIsBrightening() throws {
@@ -217,9 +222,39 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
 @Test func anEventWithoutTheNewFieldsDecodes() throws {
     var x = SkyEvent(id: "x", kind: .comet, title: "C/1", detail: "d", time: utc(2026, 9, 27, 20, 0), endTime: nil, raHours: 1, decDeg: 2)
     x.best = x.time; x.facts = [EventFact("a", "b")]; x.clear = true; x.separationDeg = 1; x.fits = true
+    x.atPeak = true; x.radiantConstellation = "Tau"; x.path = [SkyPathPoint(label: "Rises", time: x.time, azimuthDeg: 270, altitudeDeg: 0)]
     var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(x)) as! [String: Any]
-    for k in ["best", "facts", "clear", "separationDeg", "fits"] { json.removeValue(forKey: k) }
+    for k in ["best", "facts", "clear", "separationDeg", "fits", "atPeak", "radiantConstellation", "path"] { json.removeValue(forKey: k) }
     let old = try JSONDecoder().decode(SkyEvent.self, from: JSONSerialization.data(withJSONObject: json))
-    #expect(old.facts.isEmpty && old.best == nil && old.title == "C/1")
+    #expect(old.facts.isEmpty && old.best == nil && old.title == "C/1" && !old.atPeak && old.path.isEmpty)
     #expect(try JSONDecoder().decode(SkyEvent.self, from: JSONEncoder().encode(x)) == x)
+}
+
+@Test func showersCarryTheirPeakFlagAndRadiantForTheArtwork() throws {
+    let showers = try MeteorShowers.bundled()
+    let peak = try #require(Events.showers(night: try Ephemeris.night(localDate: utc(2026, 12, 13, 12, 0), site: site), site: site, showers: showers)
+        .first { $0.id == "shower-gem" })
+    #expect(peak.atPeak && peak.radiantConstellation == "Gem")
+    let early = try #require(Events.showers(night: try Ephemeris.night(localDate: utc(2026, 12, 10, 12, 0), site: site), site: site, showers: showers)
+        .first { $0.id == "shower-gem" })
+    #expect(!early.atPeak)
+}
+
+@Test func eventsSortByTimeOrClearSkyFirst() {
+    func ev(_ id: String, _ h: Int, _ clear: Bool?) -> SkyEvent {
+        var e = SkyEvent(id: id, kind: .issPass, title: id, detail: "", time: utc(2026, 9, 27, h, 0), endTime: nil, raHours: nil, decDeg: nil)
+        e.clear = clear
+        return e
+    }
+    let es = [ev("a", 23, false), ev("b", 21, nil), ev("c", 22, true), ev("d", 20, false)]
+    #expect(Events.sorted(es, by: .time).map(\.id) == ["d", "b", "c", "a"])
+    #expect(Events.sorted(es, by: .clearFirst).map(\.id) == ["c", "b", "d", "a"])   // clear, unknown, then cloudy, each by time
+}
+
+@Test func anEventCardsTimelineTracksItsSkyPosition() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 27, 12, 0), site: site)
+    let w = ClearWindow(start: try #require(night.darkStart), end: try #require(night.darkEnd))
+    let t = Planner.skyTrack(id: "x", name: "Southern Taurids", raHours: 3.5, decDeg: 15, window: w, site: site, minAlt: 0)
+    #expect(t.altitudeSamples.count == 9 && t.viewable != nil)
+    #expect(t.peakAltDeg > 45 && t.peakAltDeg < 53)                     // culminates at about 51.6° from 53.4° N
 }
