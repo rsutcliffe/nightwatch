@@ -90,43 +90,40 @@ struct Headline: View {
     }
 }
 
-/// Where the forecast came from, as its terms ask (v1.0.1): Apple's Weather mark, plus "Sources", the link to its legal page of
-/// other data sources, where the widget can hold a link (medium and large; a small widget is one click target, which opens Nightwatch,
+/// Where the forecast came from, as its terms ask (v1.0.1): Apple's Weather mark, which is itself the link to Apple's legal page
+/// where the widget can hold a link (medium and large; a small widget is one click target, which opens Nightwatch,
 /// whose popover carries the link). Owner-approved mockup, 27 September 2026. Open-Meteo builds name Open-Meteo.
 struct WeatherAttribution: View {
     let s: WidgetSnapshot
     var link = true
     var body: some View {
-        HStack(alignment: .center, spacing: 4) {
-            WeatherMark(s: s)
-            if link, WeatherMark.image(s) != nil, let l = WeatherMark.legal(s) {
-                Text("·")
-                SourcesLink(url: l)
-            }
-        }
+        WeatherMark(s: s, link: link)
         .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
     }
 }
 
-/// Apple's Weather mark, or the source's name when Apple Weather did not supply the forecast (Open-Meteo builds).
+/// Apple's Weather mark, or the source's name when Apple Weather did not supply the forecast (Open-Meteo builds). With `link`
+/// the mark itself is the link to Apple's legal page (owner's decision, 27 September 2026: a separate "Sources" label read as
+/// a link to Open-Meteo and the rest, and crowded the footer).
 struct WeatherMark: View {
     let s: WidgetSnapshot
+    var link = false
     static func image(_ s: WidgetSnapshot) -> NSImage? {
         s.weatherMarkFile.flatMap { f in SnapshotFile.dir.flatMap { NSImage(contentsOf: $0.appendingPathComponent(f)) } }
     }
     static func legal(_ s: WidgetSnapshot) -> URL? { s.weatherLegalURL.flatMap(URL.init(string:)) }
     var body: some View {
-        if let m = Self.image(s) { Image(nsImage: m).resizable().scaledToFit().frame(height: 9).accessibilityLabel("Apple Weather") }
-        else if let src = s.source { Text(src) }
+        if let m = Self.image(s) {
+            let mark = Image(nsImage: m).resizable().scaledToFit().frame(height: 9)
+            if link, let l = Self.legal(s) {
+                Link(destination: l) { mark }.accessibilityLabel("Apple Weather, legal attribution and data sources")
+            } else {
+                mark.accessibilityLabel("Apple Weather")
+            }
+        } else if let src = s.source { Text(src) }
     }
 }
 
-/// "Sources", not "Other data sources": the large widget's footer ran out of room (owner, 27 September 2026). The wording is
-/// ours; Apple asks only for the link. The popover, with room, keeps the longer label.
-struct SourcesLink: View {
-    let url: URL
-    var body: some View { Link("Sources", destination: url) }
-}
 
 /// "● Aurora amber" in AuroraWatch UK's own colour for the level (owner ruling, v0.6.1).
 struct AuroraMark: View {
@@ -225,11 +222,7 @@ struct LargeView: View {
                 if let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true, lines: 1) } else {
                     Text(s.updated ?? "Updated \(s.fetchedAt.formatted(date: .omitted, time: .shortened))")
                     Spacer(minLength: 8)
-                    WeatherMark(s: s)
-                    if WeatherMark.image(s) != nil, let l = WeatherMark.legal(s) {
-                        Spacer(minLength: 8)
-                        SourcesLink(url: l)
-                    }
+                    WeatherMark(s: s, link: true)
                 }
             }
             .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
