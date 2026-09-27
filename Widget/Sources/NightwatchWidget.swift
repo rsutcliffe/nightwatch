@@ -90,8 +90,8 @@ struct Headline: View {
     }
 }
 
-/// Where the forecast came from, as its terms ask (v1.0.1): Apple's Weather mark, plus the link to its legal page of other data
-/// sources where the widget can hold a link (medium and large; a small widget is one click target, which opens Nightwatch,
+/// Where the forecast came from, as its terms ask (v1.0.1): Apple's Weather mark, plus "Sources", the link to its legal page of
+/// other data sources, where the widget can hold a link (medium and large; a small widget is one click target, which opens Nightwatch,
 /// whose popover carries the link). Owner-approved mockup, 27 September 2026. Open-Meteo builds name Open-Meteo.
 struct WeatherAttribution: View {
     let s: WidgetSnapshot
@@ -103,7 +103,9 @@ struct WeatherAttribution: View {
                 Image(nsImage: m).resizable().scaledToFit().frame(height: 9).accessibilityLabel("Apple Weather")
                 if link, let l = s.weatherLegalURL.flatMap(URL.init(string:)) {
                     Text("·")
-                    Link("Other data sources", destination: l)
+                    // "Sources", not "Other data sources": the large widget's footer ran out of room (owner, 27 September 2026).
+                    // The wording is ours; Apple asks only for the link. The popover, with room, keeps the longer label.
+                    Link("Sources", destination: l)
                 }
             } else if let src = s.source {
                 Text(src)
