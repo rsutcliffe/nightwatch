@@ -278,7 +278,8 @@ struct TargetsView: View {
 
     private func chips(_ t: RankedTarget) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
-            if !ui.fitsOnly { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
+            // With Fits my field of view on, a fitting card needs no chip; one a search shows anyway says why it is last.
+            if !ui.fitsOnly || t.hiddenByFit(fitsOnly: true) { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
             if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
             else if nearMoon(t) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
         }

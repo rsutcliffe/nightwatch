@@ -48,7 +48,7 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(hint("C", .clusters, in: [c43, c20]) == "No match for “C” in Star clusters tonight. Also in Nebulae (1), Galaxies (1).")
     // Both switches would hide it, so both are named.
     #expect(hint("C43", .galaxies, fitsOnly: true) == "1 match for “C43” in Galaxies. 1 Moon-washed, shown last. 1 not fitting your field of view, shown last.")
-    #expect(hint("", .galaxies) == nil && hint("  ", .galaxies) == nil)
+    #expect(hint("", .galaxies) == nil && hint("  ", .galaxies) == nil && hint("\n", .galaxies) == nil)
     #expect(hint("zzz", .galaxies) == "No match for “zzz” in Galaxies tonight.")
 }
 

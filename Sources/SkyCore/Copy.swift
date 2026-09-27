@@ -67,8 +67,8 @@ public struct Copy: Sendable {
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the
     /// group on screen). Nil with no search.
     public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool) -> String? {
-        let q = query.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { return nil }
+        guard !query.allSatisfy(\.isWhitespace) else { return nil }   // the grid's test for "no search", newlines included
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let found = targets.filter { $0.matches(query) }
         let here = found.filter { $0.group == group }
         var parts = [here.isEmpty ? "No match for “\(q)” in \(group.displayName) tonight."
