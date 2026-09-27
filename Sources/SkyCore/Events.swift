@@ -98,6 +98,14 @@ public struct SkyPathPoint: Codable, Equatable, Sendable {
     public init(label: String, time: Date, azimuthDeg: Double, altitudeDeg: Double) {
         self.label = label; self.time = time; self.azimuthDeg = azimuthDeg; self.altitudeDeg = altitudeDeg
     }
+
+    /// Where this point sits on a sky chart of the given radius, as an offset from the centre (the zenith): north up, east to
+    /// the left, as the sky looks lying on your back with your head to the north; the horizon on the rim.
+    public func chartOffset(radius r: Double) -> (dx: Double, dy: Double) {
+        let d = r * (90 - max(0, min(90, altitudeDeg))) / 90
+        let a = azimuthDeg * .pi / 180
+        return (-d * sin(a), -d * cos(a))
+    }
 }
 
 /// How the Events page sorts (v1.0.1): the target sorts (altitude, size, brightness) do not apply to events.
@@ -318,20 +326,28 @@ public enum Events {
         let emerges = start.timeIntervalSince(p.rise) > 30, fades = p.set.timeIntervalSince(end) > 30
         let first = emerges ? "Appears\(dir(p.appearsAzimuthDeg))" : "Rises\(dir(p.riseAzimuthDeg))"
         let last = fades ? "fades\(dir(p.vanishesAzimuthDeg))" : "sets\(dir(p.setAzimuthDeg))"
-        let highest = "\(Int(p.maxElevationDeg.rounded()))° up in the\(dir(p.peakAzimuthDeg))"
+        // The highest point it can be SEEN at: when a pass peaks in Earth's shadow (it appears after its peak, or fades before
+        // it), that is the end of the sunlit stretch nearer the peak.
+        let hi: (time: Date, az: Double, alt: Double)
+        if p.peak < start { hi = (start, p.appearsAzimuthDeg ?? p.peakAzimuthDeg, p.appearsElevationDeg ?? p.maxElevationDeg) }
+        else if p.peak > end { hi = (end, p.vanishesAzimuthDeg ?? p.peakAzimuthDeg, p.vanishesElevationDeg ?? p.maxElevationDeg) }
+        else { hi = (p.peak, p.peakAzimuthDeg, p.maxElevationDeg) }
+        let highest = "\(Int(hi.alt.rounded()))° up in the\(dir(hi.az))"
         var e = SkyEvent(id: "iss-\(Int(p.rise.timeIntervalSince1970))", kind: .issPass, title: "ISS pass",
-                         detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(p.peak, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
+                         detail: "\(first) \(Copy.hhmm(start, site: site)) · \(highest) \(Copy.hhmm(hi.time, site: site)) · \(last) \(Copy.hhmm(end, site: site))",
                          time: start, endTime: end, raHours: nil, decDeg: nil)
-        e.best = p.peak
-        e.path = [SkyPathPoint(label: emerges ? "Appears" : "Rises", time: start, azimuthDeg: (emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg) ?? p.peakAzimuthDeg,
-                               altitudeDeg: emerges ? (p.appearsElevationDeg ?? 0) : 0),
-                  SkyPathPoint(label: "Highest", time: p.peak, azimuthDeg: p.peakAzimuthDeg, altitudeDeg: p.maxElevationDeg),
-                  SkyPathPoint(label: fades ? "Fades" : "Sets", time: end, azimuthDeg: (fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg) ?? p.peakAzimuthDeg,
-                               altitudeDeg: fades ? (p.vanishesElevationDeg ?? 0) : 0)]
+        e.best = hi.time
+        let first_ = SkyPathPoint(label: emerges ? "Appears" : "Rises", time: start, azimuthDeg: (emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg) ?? p.peakAzimuthDeg,
+                                  altitudeDeg: emerges ? (p.appearsElevationDeg ?? 0) : 0)
+        let last_ = SkyPathPoint(label: fades ? "Fades" : "Sets", time: end, azimuthDeg: (fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg) ?? p.peakAzimuthDeg,
+                                 altitudeDeg: fades ? (p.vanishesElevationDeg ?? 0) : 0)
+        // Seen only from its sunlit start to its end: a peak outside that stretch is not drawn.
+        e.path = hi.time == start || hi.time == end ? [first_, last_]
+            : [first_, SkyPathPoint(label: "Highest", time: hi.time, azimuthDeg: hi.az, altitudeDeg: hi.alt), last_]
         let minutes = max(1, Int((end.timeIntervalSince(start) / 60).rounded()))
         e.facts = [EventFact(emerges ? "Appears" : "Rises", "\(Copy.hhmm(start, site: site))\(dir(emerges ? p.appearsAzimuthDeg : p.riseAzimuthDeg))"
                                                           + (emerges ? ", out of Earth's shadow" : "")),
-                   EventFact("Highest", "\(Copy.hhmm(p.peak, site: site)), \(highest)"),
+                   EventFact("Highest", "\(Copy.hhmm(hi.time, site: site)), \(highest)"),
                    EventFact(fades ? "Fades" : "Sets", "\(Copy.hhmm(end, site: site))\(dir(fades ? p.vanishesAzimuthDeg : p.setAzimuthDeg))"
                                                      + (fades ? ", into Earth's shadow" : "")),
                    EventFact("Visible for", "About \(minutes) minute\(minutes == 1 ? "" : "s")")]

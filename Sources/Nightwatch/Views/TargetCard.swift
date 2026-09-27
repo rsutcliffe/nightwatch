@@ -21,7 +21,8 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
                 .opacity(dimmed ? 0.45 : 1)
                 .overlay(alignment: .topLeading) { badge().padding(8) }   // after the dimming, so a greyed favourite's heart stays bright
             HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                // Priority rather than a fixed size: an event's title can be long ("Partial solar eclipse from …").
+                Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Tokens.textPrimary).lineLimit(1).truncationMode(.tail).layoutPriority(1)
                 Text(subtitle).font(.system(size: 11.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1).truncationMode(.tail)
                 Spacer(minLength: 4)
                 Text(trailing).font(.system(size: 9)).foregroundStyle(Tokens.textSecondary).fixedSize()
@@ -72,39 +73,50 @@ struct EventPicture: View {
 }
 
 /// An ISS pass drawn on the sky (v1.0.1, owner's choice): the horizon as a circle with the compass points, the zenith at
-/// the centre, and the pass from where it appears, through its highest point, to where it goes.
+/// the centre, and the pass from where it appears, through its highest visible point, to where it goes. The projection is
+/// `SkyPathPoint.chartOffset` (north up, east to the left, as the sky looks lying on your back with your head north).
 struct SkyPathView: View {
     let path: [SkyPathPoint]
     let site: Site
 
-    /// Azimuth from north, clockwise; altitude 90° at the centre, 0° on the rim. North is up, east to the left, as the sky
-    /// looks when you lie on your back with your head to the north.
-    private func point(_ p: SkyPathPoint, in r: CGFloat, centre c: CGPoint) -> CGPoint {
-        let d = r * CGFloat((90 - max(0, min(90, p.altitudeDeg))) / 90)
-        let a = p.azimuthDeg * .pi / 180
-        return CGPoint(x: c.x - d * CGFloat(sin(a)), y: c.y - d * CGFloat(cos(a)))
-    }
-
     var body: some View {
         GeometryReader { g in
-            let r = min(g.size.width, g.size.height) / 2 - 22, c = CGPoint(x: g.size.width / 2, y: g.size.height / 2)
+            // Room outside the rim for the compass letters (12 pt out) and the rise/set labels (30 pt out, up to ~40 pt half-width).
+            let r = max(40, min(g.size.width, g.size.height) / 2 - 70), c = CGPoint(x: g.size.width / 2, y: g.size.height / 2)
+            let pt = { (p: SkyPathPoint) -> CGPoint in let o = p.chartOffset(radius: Double(r)); return CGPoint(x: c.x + o.dx, y: c.y + o.dy) }
+            // A point pushed out from the centre by `by` points: rim labels go outside the circle, clear of the compass letters' band.
+            let outward = { (q: CGPoint, by: CGFloat) -> CGPoint in
+                let dx = q.x - c.x, dy = q.y - c.y, len = max(1, (dx * dx + dy * dy).squareRoot())
+                return CGPoint(x: q.x + dx / len * by, y: q.y + dy / len * by)
+            }
             ZStack {
                 Circle().stroke(Color.white.opacity(0.35), lineWidth: 1).frame(width: 2 * r, height: 2 * r).position(c)
                 Circle().stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: r, height: r).position(c)   // 45° up
                 ForEach(Array(zip(["N", "E", "S", "W"], [0.0, 90, 180, 270])), id: \.0) { label, az in
                     Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.dim)
-                        .position(point(SkyPathPoint(label: label, time: .now, azimuthDeg: az, altitudeDeg: -12), in: r, centre: c))
+                        .position(outward(pt(SkyPathPoint(label: label, time: .now, azimuthDeg: az, altitudeDeg: 0)), 12))
                 }
-                if path.count == 3 {
-                    let a = point(path[0], in: r, centre: c), m = point(path[1], in: r, centre: c), b = point(path[2], in: r, centre: c)
-                    // A quadratic curve through the highest point: its control point sits beyond it.
-                    let ctl = CGPoint(x: 2 * m.x - (a.x + b.x) / 2, y: 2 * m.y - (a.y + b.y) / 2)
-                    Path { p in p.move(to: a); p.addQuadCurve(to: b, control: ctl) }.stroke(Theme.accent, lineWidth: 2.5)
-                    ForEach(Array(zip(path.indices, [a, m, b])), id: \.0) { i, pt in
-                        Circle().fill(i == 2 ? Theme.accent : Theme.text).frame(width: 7, height: 7).position(pt)
+                let pts = path.map(pt)
+                if pts.count >= 2, let a = pts.first, let b = pts.last {
+                    let far = (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) > 4
+                    if far || pts.count == 3 {
+                        Path { p in
+                            p.move(to: a)
+                            if pts.count == 3 {
+                                // A quadratic curve through the highest point: its control point sits beyond it.
+                                let m = pts[1]
+                                p.addQuadCurve(to: b, control: CGPoint(x: 2 * m.x - (a.x + b.x) / 2, y: 2 * m.y - (a.y + b.y) / 2))
+                            } else { p.addLine(to: b) }
+                        }
+                        .stroke(Theme.accent, lineWidth: 2.5)
+                    }
+                    ForEach(Array(zip(path.indices, pts)), id: \.0) { i, q in
+                        let last = i == pts.count - 1, mid = pts.count == 3 && i == 1
+                        Circle().fill(last ? Theme.accent : Theme.text).frame(width: 7, height: 7).position(q)
                         Text("\(path[i].label) \(Copy.hhmm(path[i].time, site: site))").font(.system(size: 10)).foregroundStyle(Theme.text)
                             .padding(.horizontal, 4).background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 3))
-                            .position(x: pt.x, y: pt.y + (i == 1 ? -12 : 12))
+                            .fixedSize()
+                            .position(mid ? CGPoint(x: q.x, y: q.y - 13) : outward(q, 30))
                     }
                 }
             }
@@ -112,6 +124,20 @@ struct SkyPathView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(path.map { "\($0.label) \(Copy.hhmm($0.time, site: site)), \(Geo.compass($0.azimuthDeg)), \(Int($0.altitudeDeg.rounded())) degrees up" }
                                 .joined(separator: "; "))
+    }
+}
+
+/// An event's chips, shared by its card (stacked) and its page (in a row): At peak, Fits frame or Too wide, Clear or Cloudy.
+struct EventChips: View {
+    let event: SkyEvent
+    var onPage = false
+    var body: some View {
+        let chips = Group {
+            if event.atPeak { Chip(text: "At peak", icon: "sparkle") }
+            if let f = event.fits { Chip(text: f ? "Fits frame" : "Too wide", icon: "viewfinder") }
+            if let c = event.clear { Chip(text: onPage ? (c ? "Clear then" : "Cloudy then") : (c ? "Clear" : "Cloudy"), icon: c ? "checkmark" : "cloud.fill", warning: !c) }
+        }
+        if onPage { HStack(spacing: 6) { chips } } else { VStack(alignment: .trailing, spacing: 4) { chips } }
     }
 }
 

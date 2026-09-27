@@ -124,8 +124,11 @@ struct TargetsView: View {
                 HStack(spacing: 5) { WarningDot(size: 5); Text("Moon \(Int((p.moonIllumination * 100).rounded()))% · \(Copy.moonText(m, site: s).lowercased())") }
                     .font(.system(size: 10)).foregroundStyle(Tokens.statusWarning)
             }
-            Toggle("Fits my field of view", isOn: $ui.fitsOnly)
-            Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
+            // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
+            if case .group(let g) = ui.section, g != .events {
+                Toggle("Fits my field of view", isOn: $ui.fitsOnly)
+                Toggle("Include Moon-washed", isOn: $ui.includeMoonWashed)
+            }
         }
         .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: 11)).padding(10)
     }
@@ -206,7 +209,7 @@ struct TargetsView: View {
                     Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
-                if store.plan?.mode == .bright, ui.section != .favourites, selectedGroup != .planets {
+                if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if ui.section == .favourites {
@@ -239,7 +242,7 @@ struct TargetsView: View {
                                         .contentShape(Rectangle())
                                         .onTapGesture { ui.selectedEvent = e }
                                         .accessibilityElement(children: .combine)
-                                        .accessibilityLabel([e.title, e.detail, e.clear.map { $0 ? "clear" : "cloudy" }].compactMap { $0 }.joined(separator: ", "))
+                                        .accessibilityLabel(eventLabel(e))
                                         .accessibilityAddTraits(.isButton)
                                         .accessibilityAction { ui.selectedEvent = e }
                                 }
@@ -313,10 +316,19 @@ struct TargetsView: View {
 
     private var isEvents: Bool { ui.section == .group(.events) }
 
+    /// An event card's whole sentence for VoiceOver, as `Copy.cardLabel` is for a target: kind, name, what, when, chips.
+    private func eventLabel(_ e: SkyEvent) -> String {
+        [Self.eventKinds[e.kind], e.title, e.detail, e.atPeak ? "at peak" : nil, e.fits.map { $0 ? "fits your frame" : "wider than your frame" },
+         e.clear.map { $0 ? "clear then" : "cloudy then" }].compactMap { $0 }.joined(separator: ", ")
+    }
+
     /// Tonight's events, searched and sorted.
     private var shownEvents: [SkyEvent] {
         let q = ui.search.trimmingCharacters(in: .whitespaces)
-        let found = q.isEmpty ? store.events : store.events.filter { $0.title.localizedCaseInsensitiveContains(q) || $0.detail.localizedCaseInsensitiveContains(q) }
+        // The kind too, so the search prompt's "comet" finds a comet listed by its designation.
+        let found = q.isEmpty ? store.events : store.events.filter {
+            [$0.title, $0.detail, Self.eventKinds[$0.kind] ?? ""].contains { $0.localizedCaseInsensitiveContains(q) }
+        }
         return Events.sorted(found, by: ui.eventSort)
     }
 
@@ -326,15 +338,12 @@ struct TargetsView: View {
     /// An event on the same card as a target: artwork, chips, title row, and the altitude timeline where it has a place in the sky.
     private func eventCard(_ e: SkyEvent) -> some View {
         let eclipse = e.kind == .lunarEclipse || e.kind == .solarEclipse
-        let when = store.site.map { eclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : "best \(Copy.hhmm(e.when, site: $0))" } ?? ""
+        // "best" only when there is a best time: a shower whose radiant never rises has none.
+        let when = store.site.map { s in eclipse ? e.when.formatted(date: .abbreviated, time: .shortened) : e.best.map { "best \(Copy.hhmm($0, site: s))" } ?? "" } ?? ""
         return TargetCardFrame(title: e.title, subtitle: Self.eventKinds[e.kind] ?? "", trailing: when) {
             EventPicture(kind: e.kind)
         } corner: {
-            VStack(alignment: .trailing, spacing: 4) {
-                if e.atPeak { Chip(text: "At peak", icon: "sparkle") }
-                if let f = e.fits { Chip(text: f ? "Fits frame" : "Too wide", icon: "viewfinder") }
-                if let c = e.clear { Chip(text: c ? "Clear" : "Cloudy", icon: c ? "checkmark" : "cloud.fill", warning: !c) }
-            }
+            EventChips(event: e)
         } badge: {
             EmptyView()
         } footer: {

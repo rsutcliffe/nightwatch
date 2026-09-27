@@ -18,36 +18,33 @@ struct DetailView: View {
     private var fov: FieldOfView { FieldOfView(widthDeg: max(0.05, store.config.fov.widthDeg), heightDeg: max(0.05, store.config.fov.heightDeg)) }
 
     var body: some View {
-        GeometryReader { g in
-            ZStack {
-                Theme.card
-                VStack(alignment: .leading, spacing: 12) {
-                    topBar.zIndex(1)
-                    if fitted {
-                        fittedHero.frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .overlay(alignment: .bottomTrailing) { tipsOverlay }
-                    } else {
-                        // The clear space between the top bar and the caption. The photo is centred on it and overflows it to
-                        // cover the page; the dashed box stays inside it.
-                        GeometryReader { f in
-                            if let img = hero.image {
-                                survey(img, free: f.frame(in: .named("pane")), pane: g.size)
-                            } else {
-                                // Offline with nothing cached: the group's glyph, as the cards show.
-                                Image(systemName: Theme.glyph(for: target.group)).font(.system(size: 40)).foregroundStyle(Theme.dim)
-                                    .frame(width: f.size.width, height: f.size.height)
-                            }
-                        }
-                        .overlay(alignment: .bottomTrailing) { tipsOverlay }
-                    }
-                    caption.zIndex(1)
-                }
-                .padding(16)
+        DetailPage(back: target.group.displayName, onBack: onBack) {
+            if !fitted {
+                Label(showsWholeFieldOfView ? "Shown at your field of view" : "Dashed box = your field of view", systemImage: "viewfinder").captionPill()
             }
-            .coordinateSpace(name: "pane")
-            .clipped()
+        } hero: { pane in
+            if fitted {
+                fittedHero
+            } else {
+                // The clear space between the top bar and the caption. The photo is centred on it and overflows it to
+                // cover the page; the dashed box stays inside it.
+                GeometryReader { f in
+                    if let img = hero.image {
+                        survey(img, free: f.frame(in: .named("pane")), pane: pane)
+                    } else {
+                        // Offline with nothing cached: the group's glyph, as the cards show.
+                        Image(systemName: Theme.glyph(for: target.group)).font(.system(size: 40)).foregroundStyle(Theme.dim)
+                            .frame(width: f.size.width, height: f.size.height)
+                    }
+                }
+            }
+        } tips: {
+            tipsOverlay
+        } title: {
+            titleBlock
+        } stats: {
+            stats
         }
-        .foregroundStyle(Theme.text)
         .task(id: target.id) {
             hero.image = nil; hero.art = nil; hero.imageFovDeg = nil
             if target.group == .constellations { hero.art = ConstellationArt(id: target.id); return }
@@ -68,17 +65,6 @@ struct DetailView: View {
     static let boxContext = 1.6
 
     // MARK: Parts
-
-    private var topBar: some View {
-        HStack {
-            Button(action: onBack) { Label(target.group.displayName, systemImage: "chevron.left").captionPill() }
-                .buttonStyle(.plain)
-            Spacer()
-            if !fitted {
-                Label(showsWholeFieldOfView ? "Shown at your field of view" : "Dashed box = your field of view", systemImage: "viewfinder").captionPill()
-            }
-        }
-    }
 
     @ViewBuilder private var fittedHero: some View {
         if let art = hero.art { art }
@@ -109,15 +95,6 @@ struct DetailView: View {
             }
         }
         .frame(width: free.width, height: free.height)   // centred on the clear space; the photo overflows it
-    }
-
-    private var caption: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .bottom, spacing: 18) { titleBlock.fixedSize(horizontal: true, vertical: false); Spacer(minLength: 12); stats.frame(maxWidth: 470) }
-            VStack(alignment: .leading, spacing: 12) { titleBlock; stats }
-        }
-        .padding(14)
-        .captionBacking(cornerRadius: 10)
     }
 
     private var titleBlock: some View {
@@ -161,7 +138,7 @@ extension DetailView {
     /// The card sits over the bottom of the image area, just above the caption: an overlay takes no layout space, so
     /// opening it never resizes the image, and it is never clipped by the window's bottom edge (owner, 25 Sep 2026).
     @ViewBuilder var tipsOverlay: some View {
-        if tipsUI.shown, let s = store.site { tipsCard(site: s).zIndex(2) }
+        if tipsUI.shown, let s = store.site { tipsCard(site: s) }
     }
 
     /// "How to shoot this" (v0.6.7, owner-approved mockup): the settings for the user's own telescope and this kind of

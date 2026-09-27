@@ -168,6 +168,17 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     #expect(e.path.map(\.azimuthDeg) == [270, 180, 90])
     f.vanishesElevationDeg = 25
     #expect(Events.issPass(f, site: site).path.last == SkyPathPoint(label: "Fades", time: utc(2026, 9, 27, 20, 16), azimuthDeg: 135, altitudeDeg: 25))
+    // A morning pass that comes out of Earth's shadow partway: it "appears", at its own height.
+    var m = p; m.appears = utc(2026, 9, 27, 20, 12); m.appearsAzimuthDeg = 250; m.appearsElevationDeg = 30; m.vanishes = p.set; m.vanishesAzimuthDeg = 90
+    let appears = Events.issPass(m, site: site)
+    #expect(appears.detail.hasPrefix("Appears WSW 21:12 · 62° up in the S 21:14"))
+    #expect(appears.path.first == SkyPathPoint(label: "Appears", time: utc(2026, 9, 27, 20, 12), azimuthDeg: 250, altitudeDeg: 30))
+    // Peaking in shadow: it appears after its peak, so its highest visible point is where it appears, and no hidden peak is drawn.
+    var late = p; late.appears = utc(2026, 9, 27, 20, 15); late.appearsAzimuthDeg = 160; late.appearsElevationDeg = 55; late.vanishes = p.set
+    late.vanishesAzimuthDeg = 90
+    let hidden = Events.issPass(late, site: site)
+    #expect(hidden.detail == "Appears SSE 21:15 · 55° up in the SSE 21:15 · sets E 21:18")
+    #expect(hidden.path.map(\.label) == ["Appears", "Sets"] && hidden.best == late.appears)
 }
 
 @Test func aCometSaysWhereItIsAndWhetherItIsBrightening() throws {
@@ -238,6 +249,32 @@ private let dwarfMini = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
     let early = try #require(Events.showers(night: try Ephemeris.night(localDate: utc(2026, 12, 10, 12, 0), site: site), site: site, showers: showers)
         .first { $0.id == "shower-gem" })
     #expect(!early.atPeak)
+    let after = try #require(Events.showers(night: try Ephemeris.night(localDate: utc(2026, 12, 15, 12, 0), site: site), site: site, showers: showers)
+        .first { $0.id == "shower-gem" })
+    #expect(!after.atPeak)                                              // the night after the peak date
+}
+
+/// Every shower's radiant has constellation artwork, so its event page never falls back for want of a picture.
+@Test func everyRadiantHasConstellationArtwork() throws {
+    let dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("../../Resources/Constellations").standardized
+    for s in try MeteorShowers.bundled() {
+        let sym = Ephemeris.constellation(raHours: s.raHours, decDeg: s.decDeg).symbol
+        #expect(FileManager.default.fileExists(atPath: dir.appendingPathComponent("\(sym)-figure.heic").path), "\(s.name): \(sym)")
+    }
+}
+
+/// The compass drawing's projection: north up, east to the LEFT, the zenith at the centre, the horizon on the rim.
+@Test func theSkyChartProjection() {
+    func o(_ az: Double, _ alt: Double) -> (Double, Double) {
+        let v = SkyPathPoint(label: "", time: .now, azimuthDeg: az, altitudeDeg: alt).chartOffset(radius: 100); return (v.dx, v.dy)
+    }
+    func near(_ a: (Double, Double), _ b: (Double, Double)) -> Bool { abs(a.0 - b.0) < 1e-9 && abs(a.1 - b.1) < 1e-9 }
+    #expect(near(o(0, 0), (0, -100)))      // north, top
+    #expect(near(o(90, 0), (-100, 0)))     // east, left
+    #expect(near(o(180, 0), (0, 100)))     // south, bottom
+    #expect(near(o(270, 45), (50, 0)))     // west, half way in at 45° up
+    #expect(near(o(123, 90), (0, 0)))      // zenith
+    #expect(near(o(0, -10), (0, -100)))    // below the horizon clamps to the rim
 }
 
 @Test func eventsSortByTimeOrClearSkyFirst() {
