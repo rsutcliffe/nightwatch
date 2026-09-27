@@ -42,6 +42,8 @@ private func epochDate(_ tle: TLE) -> Date {
         #expect(p.set.timeIntervalSince(p.rise) < 15 * 60)
         #expect(p.maxElevationDeg >= 0 && p.maxElevationDeg <= 90)
         #expect(p.peakAzimuthDeg >= 0 && p.peakAzimuthDeg < 360)
+        #expect((p.riseAzimuthDeg ?? -1) >= 0 && (p.riseAzimuthDeg ?? 360) < 360)   // where to look (v1.0.1)
+        #expect((p.setAzimuthDeg ?? -1) >= 0 && (p.setAzimuthDeg ?? 360) < 360)
     }
     #expect(passes == passes.sorted { $0.rise < $1.rise })
 }
