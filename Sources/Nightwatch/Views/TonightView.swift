@@ -215,7 +215,7 @@ struct TonightView: View {
         } else { badge }
     }
 
-    /// One centre line, evenly spread as on the large widget: the update time, the cloud source, "Refresh". The notify switch
+    /// One centre line, evenly spread as on the large widget: the cloud source, the update time, "Refresh". The notify switch
     /// lives in Settings › Alerts (owner, 27 September 2026).
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -229,13 +229,14 @@ struct TonightView: View {
             }
             HStack(alignment: .center, spacing: 0) {
                 if let f = store.forecast, let s = store.site {
+                    // The mark on the left: its weight looked odd in the middle (owner, 27 September 2026).
+                    sourceBadge(f)
+                    Spacer(minLength: 8)
                     HStack(spacing: 6) {
                         if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
                         Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
                             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
-                    Spacer(minLength: 8)
-                    sourceBadge(f)
                 }
                 Spacer(minLength: 8)
                 HStack(spacing: 6) {
