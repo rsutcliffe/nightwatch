@@ -210,12 +210,12 @@ struct TargetsView: View {
                 if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
-                // What the search found, under the night's state as before but in the callout size and primary colour: in the
-                // caption size it went unseen while typing (owner, 27 September 2026).
+                // What the search found, under the night's state as before but in the callout size and the amber used for the Moon
+                // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
                 if ui.section != .favourites, !isEvents,
                    let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
                                               includeMoonWashed: ui.includeMoonWashed) {
-                    Text(hint).font(.callout).foregroundStyle(Tokens.textPrimary).padding(.top, 2)
+                    Text(hint).font(.callout).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
                 }
                 if ui.section == .favourites {
                     if favourites.isEmpty {
