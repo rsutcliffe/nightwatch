@@ -196,12 +196,6 @@ struct TargetsView: View {
                         .pickerStyle(.segmented).fixedSize()
                     }
                 }
-                // What the search found leads, above the night's state, so it is plain the search ran (owner, 27 September 2026).
-                if ui.section != .favourites, !isEvents,
-                   let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
-                                              includeMoonWashed: ui.includeMoonWashed) {
-                    Text(hint).font(.callout).foregroundStyle(Tokens.textPrimary)
-                }
                 if let p = store.plan, let s = store.site {
                     ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
                     if p.darkSpan == nil {
@@ -215,6 +209,13 @@ struct TargetsView: View {
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
                 if store.plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
+                }
+                // What the search found, under the night's state as before but in the callout size and primary colour: in the
+                // caption size it went unseen while typing (owner, 27 September 2026).
+                if ui.section != .favourites, !isEvents,
+                   let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
+                                              includeMoonWashed: ui.includeMoonWashed) {
+                    Text(hint).font(.callout).foregroundStyle(Tokens.textPrimary).padding(.top, 2)
                 }
                 if ui.section == .favourites {
                     if favourites.isEmpty {
