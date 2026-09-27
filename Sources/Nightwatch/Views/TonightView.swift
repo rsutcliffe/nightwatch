@@ -215,8 +215,8 @@ struct TonightView: View {
         } else { badge }
     }
 
-    /// One line: the update time and the cloud source on the left, "Refresh" on the right. The notify switch lives in
-    /// Settings › Alerts (owner, 27 September 2026).
+    /// One centre line, evenly spread as on the large widget: the update time, the cloud source, "Refresh". The notify switch
+    /// lives in Settings › Alerts (owner, 27 September 2026).
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let u = store.availableUpdate {
@@ -227,19 +227,23 @@ struct TonightView: View {
                 }
                 .font(.system(size: 10.5))
             }
-            HStack(spacing: 6) {
+            HStack(alignment: .center, spacing: 0) {
                 if let f = store.forecast, let s = store.site {
-                    if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
-                    Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
-                        .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
-                    Text("·").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+                    HStack(spacing: 6) {
+                        if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
+                        Text(store.isStale ? store.copy.offlineSince(Copy.hhmm(f.fetchedAt, site: s)) : "Updated \(Copy.hhmm(f.fetchedAt, site: s))")
+                            .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
+                    }
+                    Spacer(minLength: 8)
                     sourceBadge(f)
                 }
-                Spacer()
-                if store.refreshing { ProgressView().controlSize(.small) }
-                Button(store.copy.refresh) { Task { await store.refresh(force: true) } }
-                .buttonStyle(SecondaryButtonStyle())
-                .help("Fetch the forecast now and recompute tonight")
+                Spacer(minLength: 8)
+                HStack(spacing: 6) {
+                    if store.refreshing { ProgressView().controlSize(.small) }
+                    Button(store.copy.refresh) { Task { await store.refresh(force: true) } }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .help("Fetch the forecast now and recompute tonight")
+                }
             }
         }.padding(.top, 4)
     }
