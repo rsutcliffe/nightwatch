@@ -89,7 +89,7 @@ public struct Copy: Sendable {
     /// "NGC 6992 Eastern Veil, viewable from 00:00 to 03:28, best at 00:00, 57 degrees up" (spec §7).
     /// The card's whole sentence, chips and magnitude included, because the label replaces the card's contents for a screen reader.
     public static func cardLabel(_ t: RankedTarget, lit: Bool, nearMoon: Bool, site: Site) -> String {
-        let name = [t.catalogueID, t.caldwell.map { "C\($0)" }, t.commonName].compactMap { $0 }.joined(separator: " ")
+        let name = [t.catalogueID, t.cardNote, t.cardName].compactMap { $0 }.joined(separator: " ")   // as the card reads
         var parts = [name]
         if let m = t.magnitude { parts.append(String(format: "magnitude %.1f", m)) }
         parts.append(frameChip(t))
