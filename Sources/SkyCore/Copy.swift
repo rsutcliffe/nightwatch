@@ -29,10 +29,10 @@ public struct Copy: Sendable {
 
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
     /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
-    public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true) -> String {
+    public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
         let line: String
         if !agreement { line = "" }
-        else if let advice = Copy.advice(plan, site: site, alerts: AlertSettings()) { line = " " + advice.body }   // alerts come with a window, so never "Check again"
+        else if let advice = Copy.advice(plan, site: site, alerts: alerts) { line = " " + advice.body }
         else { line = plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? "" }
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
@@ -172,6 +172,8 @@ public struct Copy: Sendable {
         }
         let sources = "Apple Weather: \(plan.primary.map { "clear \(range($0.start, $0.end))" } ?? "no window") · Open-Meteo: \(other)"
         if plan.primary == nil, case .clearRun(let x, let y) = a {
+            // Nothing to check once Open-Meteo's run is over: the plan only changes at the next refresh.
+            guard now < y else { return nil }
             // Check again at the nudge time before Open-Meteo's run: the same lead the user chose for the nudge.
             let check = x.addingTimeInterval(-Double(alerts.preWindowMinutes) * 60)
             let title = check > now ? "Check again at \(hhmm(check, site: site))" : "Check the sky now"

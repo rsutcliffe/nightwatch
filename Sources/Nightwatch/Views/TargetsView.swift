@@ -207,6 +207,9 @@ struct TargetsView: View {
                         Picker("Night", selection: $ui.tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
                             .pickerStyle(.segmented).labelsHidden().fixedSize().padding(.leading, 8)
                     }
+                    // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
+                    // Tonight, so it never jumps to tomorrow by itself on a later refresh.
+                    Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
                     Spacer()
                     if isEvents {
                         Picker("Sort", selection: $ui.eventSort) {

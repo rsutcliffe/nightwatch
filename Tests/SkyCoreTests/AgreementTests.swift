@@ -183,6 +183,8 @@ private let primary = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 9
     #expect(check.short == "Check again 22:30 · 2nd forecast: clear 23:00–02:00")
     // Once that time has passed, look now.
     #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 20, 22, 45))?.title == "Check the sky now")
+    // After the run has ended there is nothing to check, until the next refresh brings a new plan.
+    #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 21, 2, 0)) == nil)
     // A window, and Open-Meteo sees cloud part-way: less certain, never "don't go".
     var window = try plan(primaryCloud: primary)
     window.agreement = .cloudFrom(a)
