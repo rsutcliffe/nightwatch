@@ -60,7 +60,7 @@ No-issue: planning document, tracked by the spec.
 
 Task 1 of the v0.3 plan. `Night` gains `nauticalStart` / `nauticalEnd` (Sun at −12°) and `hasNauticalDarkness`, computed through one shared crossings helper that the −18° darkness now uses too.
 
-Also fixes a latent bug found while testing: the search for the Sun climbing back through the threshold started at the exact instant it went down, and on nights where the Sun barely dips below the threshold it returned that same instant. At Home on the June solstice that gave a zero-length nautical night instead of 1.56 h. The −18° darkness code had the same pattern, so its short nights in mid-May and early August were exposed to it too. The return search now starts one minute after the crossing.
+Also fixes a latent bug found while testing: the search for the Sun climbing back through the threshold started at the exact instant it went down, and on nights where the Sun barely dips below the threshold it returned that same instant. In northern England on the June solstice that gave a zero-length nautical night instead of about 1.5 h. The −18° darkness code had the same pattern, so its short nights in mid-May and early August were exposed to it too. The return search now starts one minute after the crossing.
 
 Checked at Home after the fix (dark / nautical hours): 28 Apr 3.55 / 5.90, 10 May 0.97 / 4.76, 14 May none / 4.38, 20 Jun none / 1.56, 5 Aug 2.16 / 5.15, 24 Sep 7.95 / 9.39. 108 tests pass; release build clean; task review approved.
 
@@ -76,7 +76,7 @@ No-issue: v0.3 plan task, tracked by docs/plans/2026-09-24-v0.3-feet-of-clay.md.
 
 Task 2 of the v0.3 plan. `Config.brightNights` holds the bright-night mode setting: off by default, minimum clear run 1 h, clamped to 1 to 6 h on decode, and decoded leniently so older config files keep working.
 
-The same commit amends the v0.3 spec and plan from a 2 h to a 1 h default, per your ruling today: nautical darkness at Home lasts only 1.56 h at the June solstice, so 2 h would have silenced the mode in the weeks it exists for. Scotland gets no nautical darkness for about four weeks around midsummer, which you accepted.
+The same commit amends the v0.3 spec and plan from a 2 h to a 1 h default, per your ruling today: nautical darkness in northern England lasts only about 1.5 h at the June solstice, so 2 h would have silenced the mode in the weeks it exists for. Scotland gets no nautical darkness for about four weeks around midsummer, which you accepted.
 
 109 tests pass; release build clean; task review approved with no findings.
 
