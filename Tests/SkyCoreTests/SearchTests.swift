@@ -79,7 +79,7 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
 @Test func cardLabelNamesTheCaldwellNumber() {
     var t = c43; t.catalogueID = "NGC 7814"
     #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: Site(name: "x", latitude: 54, longitude: -1, elevationM: 0,
-                                                                     timeZoneID: "Europe/London", bortle: 4)).hasPrefix("NGC 7814 C43, "))
+                                                                     timeZoneID: "Europe/London", bortle: 4)).hasPrefix("NGC 7814 C43 Galaxy, "))   // the kind, as the card shows, when there is no name
 }
 
 /// With no clear window the card says when the target is up in darkness anyway, and so does its sentence (owner, 28 Sep 2026).
