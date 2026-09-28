@@ -83,7 +83,11 @@ struct Headline: View {
                 .lineLimit(compact ? 1 : 2).minimumScaleFactor(compact ? 0.7 : 0.8)
             if let w = s.window { Text(w).font(.system(size: 13)).foregroundStyle(Tokens.textPrimary) }
             if let r = s.reason { NoteLine(text: r, warns: s.reasonWarns, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
-            if let a = s.agreement { NoteLine(text: a, warns: s.agreementWarns, tick: true, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
+            // A disagreement is the popover's advice in one line, in the warning colour (owner, 28 September 2026).
+            if let a = s.agreement, s.agreementWarns {
+                Text(a).font(.system(size: 10, weight: .semibold)).foregroundStyle(Tokens.statusWarning).lineLimit(noteLines)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let a = s.agreement { NoteLine(text: a, warns: false, tick: true, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
             if let t = s.tomorrow, !(compact && s.reason != nil) { NoteLine(text: t, warns: false) }
             if showStale, let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true) }
         }

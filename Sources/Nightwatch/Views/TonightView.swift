@@ -104,12 +104,23 @@ struct TonightView: View {
         }
     }
 
-    /// Open-Meteo's second opinion (v0.5): a tick when it agrees, an amber dot when it does not; hidden without one.
+    /// Open-Meteo's second opinion (v0.5). When it agrees, a small line with a tick. When it disagrees, a box that says what to
+    /// do ("Check again at 20:30" or "Less certain"), with both sources small beneath (owner, 28 September 2026).
     @ViewBuilder private func agreementLine(_ plan: NightPlan, _ site: Site) -> some View {
-        if let a = plan.agreement {
+        if let advice = Copy.advice(plan, site: site, alerts: store.config.alerts) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(advice.title).font(.system(size: 12, weight: .semibold)).foregroundStyle(Tokens.statusWarning)
+                Text(advice.body).font(.system(size: 11)).foregroundStyle(Tokens.textPrimary)
+                Text(advice.sources).font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 9).padding(.vertical, 7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning, lineWidth: 1))
+            .accessibilityElement(children: .combine)
+        } else if let a = plan.agreement {
             HStack(spacing: 5) {
-                if Copy.agreementWarns(a) { WarningDot(size: 4.5) }
-                else { Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true) }
+                Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true)
                 Text(Copy.agreementText(a, site: site))
             }
             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)

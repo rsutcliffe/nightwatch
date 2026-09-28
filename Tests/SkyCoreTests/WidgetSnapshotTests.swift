@@ -96,7 +96,11 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     var (p, t) = try plans(november, clearMiddle)
     p.agreement = .cloudFrom(utc(2026, 11, 21, 0, 0))
     let s = snap(p, t)
-    #expect(s.agreement == "Open-Meteo sees cloud from 00:00" && s.agreementWarns)
+    // A disagreement is the popover's advice in one line; agreement keeps the plain line.
+    #expect(s.agreement == "Less certain · 2nd forecast: cloud from 00:00" && s.agreementWarns)
+    p.agreement = .agree
+    let agreed = snap(p, t)
+    #expect(agreed.agreement == "Open-Meteo agrees" && !agreed.agreementWarns)
 }
 
 @Test func snapshotStaleText() throws {
