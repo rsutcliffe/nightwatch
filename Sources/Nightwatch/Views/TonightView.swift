@@ -83,7 +83,8 @@ struct TonightView: View {
                         Text(Copy.brightList(plan.brightTargets)).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
                     }
                     if let why = Copy.heldBack(plan.limiting) {
-                        HStack(spacing: 5) { WarningDot(size: 4.5); Text(why) }
+                        // No dot: every line under the verdict reads the same way (owner, 28 September 2026).
+                        Text(why)
                             .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
@@ -95,29 +96,19 @@ struct TonightView: View {
                     if let why = noWindowReason(plan, site) {
                         Text(why).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
+                    // No "Tomorrow" line: after sunrise the popover shows tomorrow night itself (owner, 28 September 2026).
                     agreementLine(plan, site)
-                    if let t = store.tomorrow, let w = t.primary {
-                        Text("Tomorrow \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))").font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
-                    }
                 }
             }
         }
     }
 
-    /// Open-Meteo's second opinion (v0.5). When it agrees, a small line with a tick. When it disagrees, a box that says what to
-    /// do ("Check again at 20:30" or "Less certain"), with both sources small beneath (owner, 28 September 2026).
+    /// Open-Meteo's second opinion (v0.5). When it agrees, a small line with a tick. When it disagrees, one plain grey line
+    /// that says what it means ("Less certain: a second forecast sees cloud from 00:00."): no box, no dot, no coloured text
+    /// (owner, 28 September 2026).
     @ViewBuilder private func agreementLine(_ plan: NightPlan, _ site: Site) -> some View {
         if let advice = Copy.advice(plan, site: site, alerts: store.config.alerts) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(advice.title).font(.system(size: 12, weight: .semibold)).foregroundStyle(Tokens.statusWarning)
-                Text(advice.body).font(.system(size: 11)).foregroundStyle(Tokens.textPrimary)
-                Text(advice.sources).font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 9).padding(.vertical, 7)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Tokens.statusWarning, lineWidth: 1))
-            .accessibilityElement(children: .combine)
+            Text(advice.line).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
         } else if let a = plan.agreement {
             HStack(spacing: 5) {
                 Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).accessibilityHidden(true)

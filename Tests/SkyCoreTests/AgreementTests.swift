@@ -177,24 +177,19 @@ private let primary = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 90, 9
     var none = try plan(primaryCloud: Array(repeating: 90, count: 15))
     none.agreement = .clearRun(a, b)
     let check = try #require(Copy.advice(none, site: testSite, alerts: alerts, now: early))
-    #expect(check.title == "Check again at 22:30")
-    #expect(check.body == "A second forecast sees 23:00–02:00 clear.")
-    #expect(check.sources == "Apple Weather: no window · Open-Meteo: clear 23:00–02:00")
-    #expect(check.short == "Check again 22:30 · 2nd forecast: clear 23:00–02:00")
+    #expect(check.line == "Check again at 22:30: a second forecast sees 23:00–02:00 clear.")
     // Once that time has passed, look now.
-    #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 20, 22, 45))?.title == "Check the sky now")
+    #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 20, 22, 45))?.line == "Check the sky now: a second forecast sees 23:00–02:00 clear.")
     // After the run has ended there is nothing to check, until the next refresh brings a new plan.
     #expect(Copy.advice(none, site: testSite, alerts: alerts, now: utc(2026, 11, 21, 2, 0)) == nil)
     // A window, and Open-Meteo sees cloud part-way: less certain, never "don't go".
     var window = try plan(primaryCloud: primary)
     window.agreement = .cloudFrom(a)
     let less = try #require(Copy.advice(window, site: testSite, alerts: alerts, now: early))
-    #expect(less.title == "Less certain")
-    #expect(less.body == "A second forecast sees cloud from 23:00, so this window is less certain than usual.")
-    #expect(less.sources == "Apple Weather: clear 20:00–02:00 · Open-Meteo: cloud from 23:00")
-    #expect(less.short == "Less certain · 2nd forecast: cloud from 23:00")
+    #expect(less.line == "Less certain: a second forecast sees cloud from 23:00.")
+    #expect(less.sentence == "A second forecast sees cloud from 23:00, so this window is less certain than usual.")
     window.agreement = .noWindow
-    #expect(Copy.advice(window, site: testSite, alerts: alerts)?.body == "A second forecast sees no clear window, so this window is less certain than usual.")
+    #expect(Copy.advice(window, site: testSite, alerts: alerts)?.line == "Less certain: a second forecast sees no clear window.")
     // Agreement needs no advice.
     window.agreement = .agree
     #expect(Copy.advice(window, site: testSite, alerts: alerts) == nil)

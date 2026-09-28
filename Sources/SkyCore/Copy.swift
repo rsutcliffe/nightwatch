@@ -32,7 +32,7 @@ public struct Copy: Sendable {
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
         let line: String
         if !agreement { line = "" }
-        else if let advice = Copy.advice(plan, site: site, alerts: alerts) { line = " " + advice.body }
+        else if let advice = Copy.advice(plan, site: site, alerts: alerts) { line = " " + advice.sentence }
         else { line = plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? "" }
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
@@ -147,38 +147,28 @@ public struct Copy: Sendable {
         switch a { case .agree, .agreeNoWindow: false; default: true }
     }
 
-    /// When the second opinion disagrees, one instruction instead of a bare fact about Open-Meteo (owner, 28 September
-    /// 2026): with no window and Open-Meteo clear, when to check again; with a window, that it is less certain. The verdict
-    /// still comes from Apple Weather alone, and a clear night is a notification, not a guarantee. nil when they agree.
+    /// When the second opinion disagrees, one plain line that says what it means instead of a bare fact about Open-Meteo
+    /// (owner, 28 September 2026: no box, no dot, no coloured text, so the popover keeps its simplicity). With no window and
+    /// Open-Meteo clear, when to check again; with a window, that it is less certain. The verdict still comes from Apple
+    /// Weather alone, and a clear night is a notification, not a guarantee. nil when they agree.
     public struct Advice: Equatable, Sendable {
-        /// "Check again at 20:30", "Check the sky now" or "Less certain".
-        public let title: String
-        /// One sentence: "A second forecast sees 21:00–01:00 clear."
-        public let body: String
-        /// Both sources, small: "Apple Weather: no window · Open-Meteo: clear 21:00–01:00".
-        public let sources: String
-        /// The widgets' single line: "Check again 20:30 · 2nd forecast: clear 21:00–01:00".
-        public let short: String
+        /// The popover's and widgets' line: "Less certain: a second forecast sees cloud from 00:00."
+        public let line: String
+        /// The notifications' sentence: "A second forecast sees cloud from 00:00, so this window is less certain than usual."
+        public let sentence: String
     }
 
     public static func advice(_ plan: NightPlan, site: Site, alerts: AlertSettings, now: Date = Date()) -> Advice? {
         guard let a = plan.agreement, agreementWarns(a) else { return nil }
         func range(_ x: Date, _ y: Date) -> String { "\(hhmm(x, site: site))–\(hhmm(y, site: site))" }
-        let other: String = switch a {
-        case .cloudFrom(let t): "cloud from \(hhmm(t, site: site))"
-        case .clearFrom(let t): "clear from \(hhmm(t, site: site))"
-        case .clearRun(let x, let y): "clear \(range(x, y))"
-        case .noWindow, .agree, .agreeNoWindow: "no window"
-        }
-        let sources = "Apple Weather: \(plan.primary.map { "clear \(range($0.start, $0.end))" } ?? "no window") · Open-Meteo: \(other)"
         if plan.primary == nil, case .clearRun(let x, let y) = a {
             // Nothing to check once Open-Meteo's run is over: the plan only changes at the next refresh.
             guard now < y else { return nil }
             // Check again at the nudge time before Open-Meteo's run: the same lead the user chose for the nudge.
             let check = x.addingTimeInterval(-Double(alerts.preWindowMinutes) * 60)
-            let title = check > now ? "Check again at \(hhmm(check, site: site))" : "Check the sky now"
-            return Advice(title: title, body: "A second forecast sees \(range(x, y)) clear.", sources: sources,
-                          short: (check > now ? "Check again \(hhmm(check, site: site))" : "Check the sky now") + " · 2nd forecast: \(other)")
+            let sees = "a second forecast sees \(range(x, y)) clear."
+            return Advice(line: (check > now ? "Check again at \(hhmm(check, site: site))" : "Check the sky now") + ": " + sees,
+                          sentence: "A second forecast sees \(range(x, y)) clear.")
         }
         let sees: String = switch a {
         case .cloudFrom(let t): "sees cloud from \(hhmm(t, site: site))"
@@ -186,8 +176,8 @@ public struct Copy: Sendable {
         case .clearRun(let x, let y): "sees it clear \(range(x, y)) instead"
         case .noWindow, .agree, .agreeNoWindow: "sees no clear window"
         }
-        return Advice(title: "Less certain", body: "A second forecast \(sees), so this window is less certain than usual.",
-                      sources: sources, short: "Less certain · 2nd forecast: \(other)")
+        return Advice(line: "Less certain: a second forecast \(sees).",
+                      sentence: "A second forecast \(sees), so this window is less certain than usual.")
     }
 
     /// "Sun 27 Sep": the one way a date is written in the interface (owner, 28 September 2026).

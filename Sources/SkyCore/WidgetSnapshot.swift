@@ -63,7 +63,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             window: w.map { "\(hm($0.start))–\(hm($0.end)) · \(String(format: "%.1f h", $0.hours))" },
             windowShort: w.map { (plan.mode == .bright ? "Bright " : "Clear ") + "\(hm($0.start))–\(hm($0.end))" },
             reason: reason, reasonWarns: w != nil && reason != nil,
-            agreement: Copy.advice(plan, site: site, alerts: alerts)?.short ?? plan.agreement.map { Copy.agreementText($0, site: site) },
+            agreement: Copy.advice(plan, site: site, alerts: alerts)?.line ?? plan.agreement.map { Copy.agreementText($0, site: site) },
             agreementWarns: plan.agreement.map(Copy.agreementWarns) ?? false,
             slots: Bezel.slots(darkness: plan.darkSpan, windows: plan.windows, primary: plan.primary, hours: plan.darkHours, site: site),
             bezelLabel: Copy.bezelLabel(plan, site: site),
