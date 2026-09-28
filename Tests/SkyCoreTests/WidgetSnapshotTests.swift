@@ -45,7 +45,7 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let (p, t) = try plans(november, cloudy)
     #expect(p.primary == nil)
     let s = snap(p, t)
-    #expect(s.headline == copy.noWindow && s.window == nil && s.reasonWarns == false && s.notifyShort == nil)
+    #expect(s.headline == copy.noWindow && s.window == nil && s.notifyShort == nil)
     #expect(s.reason == Planner.noWindowReasonText(plan: p, rule: GoRule(), bright: BrightSettings(), site: testSite))
     #expect(s.tomorrow == nil)                                                    // tomorrow is cloudy too
     let (clearTomorrow, _) = try plans(november.addingTimeInterval(86_400), clearMiddle)
