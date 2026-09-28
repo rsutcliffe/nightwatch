@@ -28,11 +28,16 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(target("NGC6205", name: "M13 · NGC 6205", group: .clusters, typeName: "Globular cluster").matches("globular"))
 }
 
-@Test func cardLineCarriesTheCaldwellNumber() {
-    #expect(c43.cardLine == "C43 · Galaxy")
-    #expect(target("NGC7000", name: "NGC 7000 · C20 · North America Nebula", group: .nebulae, caldwell: 20,
-                   commonName: "North America Nebula").cardLine == "C20 · North America Nebula")
-    #expect(target("NGC0224", name: "M31", group: .galaxies, commonName: "Andromeda Galaxy").cardLine == "Andromeda Galaxy")
+@Test func cardTitlesKeepTheNamePeopleKnow() {
+    // The Caldwell number sits beside the ID; the name, or the kind when there is none, has its own line.
+    #expect(c43.cardNote == "C43" && c43.cardName == "Galaxy")
+    let c20 = target("NGC7000", name: "NGC 7000 · C20 · North America Nebula", group: .nebulae, caldwell: 20, commonName: "North America Nebula")
+    #expect(c20.cardNote == "C20" && c20.cardName == "North America Nebula")
+    let m31 = target("NGC0224", name: "M31", group: .galaxies, commonName: "Andromeda Galaxy")
+    #expect(m31.cardNote == nil && m31.cardName == "Andromeda Galaxy")
+    var c14 = target("C014", name: "C14 · Double Cluster", group: .clusters, caldwell: 14, commonName: "Double Cluster")
+    c14.catalogueID = "C14"
+    #expect(c14.cardNote == nil)   // the number is already the ID
 }
 
 /// The owner searched for C43 under a full Moon and missed the note under "No clear window tonight": the line now leads with

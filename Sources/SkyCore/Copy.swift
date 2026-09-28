@@ -138,6 +138,12 @@ public struct Copy: Sendable {
         switch a { case .agree, .agreeNoWindow: false; default: true }
     }
 
+    /// "Sun 27 Sep": the one way a date is written in the interface (owner, 28 September 2026).
+    public static func dayMonth(_ date: Date, site: Site) -> String {
+        let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "EEE d MMM"; f.locale = Locale(identifier: "en_GB")
+        return f.string(from: date)
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)
