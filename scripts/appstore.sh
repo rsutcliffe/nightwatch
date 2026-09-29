@@ -84,7 +84,7 @@ for b in "$APP" "$APPEX"; do
 done
 attrs=$(xattr -r "$APP" 2>/dev/null)
 [[ "$attrs" == *com.apple.quarantine* ]] && fail "a file in the store build is quarantined, which App Store Connect rejects (error 91109)"
-grep -qaF "Check for a new version once a day" "$APP/Contents/MacOS/Nightwatch" && fail "the store build still has the update check: was it built with -DAPPSTORE?"
+grep -qaF "Check for a new version once a day" "$APP/Contents/MacOS/Nightwatch" && fail "the store build still has the update check: was it built with the APPSTORE condition?"
 sdk=$(vtool -show-build "$APP/Contents/MacOS/Nightwatch" | awk '/ sdk /{print $2; exit}')
 (( ${sdk%%.*} >= 26 )) || fail "the app records macOS SDK $sdk; App Store Connect needs 26 or later"
 

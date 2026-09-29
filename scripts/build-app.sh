@@ -58,6 +58,8 @@ else
   <key>com.apple.security.files.user-selected.read-only</key><true/>
 </dict></plist>
 ENT
+  # No App Group without a team, so no group name either: the app then skips the widget snapshot entirely.
+  /usr/libexec/PlistBuddy -c "Delete :NightwatchAppGroup" "$APP/Contents/Info.plist"
   codesign --force --sign - --entitlements build/Nightwatch.entitlements "$APP"
   echo "Signed ad hoc (no Apple Development identity or profile for $BUNDLE_ID): Open-Meteo only, no widget"
 fi

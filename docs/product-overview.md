@@ -176,7 +176,7 @@ Download `Nightwatch-<version>.dmg` from https://github.com/rsutcliffe/nightwatc
 
 Or build from source:
 
-    xcode-select --install
+    brew install xcodegen   # with Xcode 26 or later installed
     git clone https://github.com/rsutcliffe/nightwatch.git && cd nightwatch
     scripts/build-app.sh
 
