@@ -71,6 +71,8 @@ struct ShowTargetIntent: AppIntent {
     }
 }
 
+// `.system.searchInApp` is in the macOS 27 SDK (Xcode 27, Swift 6.4); CI's Xcode 26 builds without it.
+#if compiler(>=6.4)
 /// "Find the Crescent Nebula in Nightwatch" (#72). Siri on macOS 27 sends "… in <app>" to an app's in-app search and, with
 /// none, answers from Apple Weather instead ("The Nightwatch app doesn't support in-app search", owner's test, 29 September
 /// 2026). This takes Siri's words to the Targets window's search, which already matches names, catalogue numbers and types.
@@ -84,6 +86,7 @@ struct SearchTargetsIntent {
         return .result()
     }
 }
+#endif
 
 struct EventsTonightIntent: AppIntent {
     static let title: LocalizedStringResource = "Events Tonight"
