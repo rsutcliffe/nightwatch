@@ -242,6 +242,10 @@ struct TargetsView: View {
                 } else {
                     Text(store.lastError ?? "Waiting for the first forecast…").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
+                // The next moonless run (#62): said once here, where planning happens; the popover stays as it is.
+                if !isEvents, let run = store.moonlessRun, let s = store.site {
+                    Label(Copy.moonlessRun(run, site: s), systemImage: "circle").font(.callout).foregroundStyle(Tokens.textPrimary)
+                }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
                 if plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
