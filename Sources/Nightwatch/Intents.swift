@@ -8,12 +8,15 @@ import SkyCore
 // Each answer is a card as well as a sentence: Spotlight runs an action without showing its sentence (owner's test,
 // 29 September 2026), and a card carries the forecast's source, Apple Weather's mark where it supplied the forecast.
 // Phrases name Nightwatch first: "Is tonight clear in …" went to Apple Weather, and "Best targets in …" to a web answer.
+// On macOS 27 Siri answers such questions itself (from Notes and the web) rather than running an app's phrases (owner's
+// tests, 29 September 2026), so these actions are for Spotlight and Shortcuts; the phrases stay for Siri versions that use them.
 
 /// The running app's store, set at launch, so the actions read the same plan the popover shows.
 @MainActor enum IntentHost { static weak var store: Store? }
 
 struct TonightIntent: AppIntent {
-    static let title: LocalizedStringResource = "Is Tonight Clear"
+    // "Sky Score", not "Is Tonight Clear": a weather question in Spotlight also brings Siri's Apple Weather suggestion.
+    static let title: LocalizedStringResource = "Sky Score"
     static let description = IntentDescription("Tonight's sky score and clear window at your site, and tomorrow's outlook.")
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
         let snap = IntentHost.store?.snapshot()
@@ -138,7 +141,7 @@ struct SourceLine: View {
     }
 }
 
-/// "Is Tonight Clear" and "Refresh" as a card: the bezel, the verdict and the window, as the small widget draws them.
+/// "Sky Score" and "Refresh" as a card: the bezel, the verdict and the window, as the small widget draws them.
 struct TonightCard: View {
     let snapshot: WidgetSnapshot?
     let mark: NSImage?

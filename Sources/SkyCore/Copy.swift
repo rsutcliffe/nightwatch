@@ -272,7 +272,7 @@ public struct Copy: Sendable {
     // Siri and Spotlight (#53). Spoken answers from the cached forecast, naming its source as the widget does.
     static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { "Forecast from \($0)." } }
 
-    /// "Is Tonight Clear": "Sky score 72 at Home. Clear tonight. Clear 20:40–03:10. Tomorrow: … Forecast from Apple Weather."
+    /// "Sky Score": "Sky score 72 at Home. Clear tonight. Clear 20:40–03:10. Tomorrow: … Forecast from Apple Weather."
     public static func siriTonight(_ s: WidgetSnapshot?) -> String {
         guard let s else { return "Nightwatch has no forecast yet. Open it once to set where you observe." }
         return ["Sky score \(s.score) at \(s.siteName).", s.headline.hasSuffix(".") ? s.headline : s.headline + ".",
