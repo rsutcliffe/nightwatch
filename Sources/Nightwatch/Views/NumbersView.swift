@@ -14,6 +14,8 @@ struct NumbersView: View {
                 List(NumbersGuide.entries, selection: Binding(get: { selected }, set: { id in
                     guard let id else { return }
                     selected = id
+                    // Scrolls only. Moving VoiceOver's focus here too would pull it out of the list on every arrow key, so
+                    // the list could not be stepped through; the sections carry headings and read in order instead.
                     withAnimation { proxy.scrollTo(id, anchor: .top) }
                 })) { e in
                     Text(e.title).font(.system(size: 13)).tag(e.id)

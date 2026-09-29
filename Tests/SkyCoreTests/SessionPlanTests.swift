@@ -256,3 +256,13 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
                            moonSet: nil, darkHours: [], targets: [], best: [], seeingAvailable: false)
     #expect(step(nil, plan: cloudy).1.firstClearSaid == false)
 }
+
+@Test func aFirstClearLineDroppedInQuietHoursIsNotUsedUp() throws {
+    let p = try septemberPlan()
+    // After midnight, inside the default quiet hours (00:00–07:00), with the window still open: the go is dropped.
+    let late = p.primary!.start.addingTimeInterval(4 * 3600)
+    var quiet = AlertSettings(); quiet.quietStartHour = 0; quiet.quietEndHour = 7
+    let r = AlertEngine.step(now: late, tonight: p, tomorrow: nil, state: nil, settings: quiet, forecastFetchedAt: late, site: sheffield, copy: Copy())
+    #expect(r.notification == nil)
+    #expect(r.state.firstClearSaid == false)
+}

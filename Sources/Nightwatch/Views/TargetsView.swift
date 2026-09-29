@@ -51,9 +51,14 @@ struct TargetsView: View {
     /// Eyes and binoculars (#63): how each target can be seen from this site's sky, and the events that need no telescope.
     private func eyeView(_ t: RankedTarget) -> EyeView? { store.site.flatMap { EyeViews.view(t, bortle: $0.bortle) } }
     private var eyeTargets: [RankedTarget] { targets.filter { eyeView($0) != nil } }
+    /// Tonight's only: the events are worked out for tonight, so none show while Tomorrow night is chosen. Searched as the
+    /// Events group searches, by title, detail and kind.
     private var eyeEvents: [SkyEvent] {
+        guard !showingTomorrow else { return [] }
         let q = ui.search.trimmingCharacters(in: .whitespaces)
-        return store.events.filter { EyeViews.includes($0) && (q.isEmpty || $0.title.localizedCaseInsensitiveContains(q)) }
+        return store.events.filter { e in
+            EyeViews.includes(e) && (q.isEmpty || [e.title, e.detail, Self.eventKinds[e.kind] ?? ""].contains { $0.localizedCaseInsensitiveContains(q) })
+        }
     }
 
     private var favourites: [FavouriteTarget] { plan?.favourites ?? [] }
@@ -263,7 +268,10 @@ struct TargetsView: View {
                     Text(hint).font(.callout).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
                 }
                 if ui.section == .eyes {
-                    Text(eyeTargets.isEmpty && eyeEvents.isEmpty ? "Nothing bright enough to see without a telescope tonight."
+                    let q = ui.search.trimmingCharacters(in: .whitespaces)
+                    let matches = eyeTargets.contains { $0.matches(ui.search) } || !eyeEvents.isEmpty
+                    Text(!q.isEmpty && !matches ? "Nothing here matches “\(q)”."
+                         : eyeTargets.isEmpty && eyeEvents.isEmpty ? "Nothing bright enough to see without a telescope tonight."
                          : "No telescope needed. Look first with your eyes; binoculars show the rest.")
                         .font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
@@ -313,7 +321,7 @@ struct TargetsView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture { ui.selected = t }
                                 .accessibilityElement(children: .combine)
-                                .accessibilityLabel(cardLabel(t, notTonight: f.notTonight, planIndex: order[t.id]))
+                                .accessibilityLabel(cardLabel(t, notTonight: f.notTonight, planIndex: order[t.id], eye: ui.section == .eyes ? eyeView(t) : nil))
                                 .accessibilityAddTraits(.isButton)
                                 .accessibilityAction { ui.selected = t }
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
@@ -337,9 +345,11 @@ struct TargetsView: View {
     }
 
     /// A card's whole sentence for VoiceOver, with its place in Tonight's plan.
-    private func cardLabel(_ t: RankedTarget, notTonight: String?, planIndex: Int?) -> String {
+    private func cardLabel(_ t: RankedTarget, notTonight: String?, planIndex: Int?, eye: EyeView? = nil) -> String {
         let base: String
-        if let reason = notTonight { base = "\(t.name), \(reason)" }
+        // In Eyes and binoculars, how to look and what it looks like, in place of the frame chip (#63).
+        if let eye { base = "\(t.name), \(eye.rawValue.lowercased()): \(Copy.eyeLook(t, eye))" }
+        else if let reason = notTonight { base = "\(t.name), \(reason)" }
         else if let s = store.site { base = Copy.cardLabel(t, lit: plan?.primary != nil, nearMoon: nearMoon(t), site: s) }
         else { base = t.name }
         guard let i = planIndex else { return base }

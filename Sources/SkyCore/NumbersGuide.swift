@@ -14,7 +14,7 @@ public enum NumbersGuide {
         GuideEntry(id: "score", title: "Sky score",
                    body: "How good tonight is for imaging from where you are, out of 100. Cloud during darkness counts most: 60 points, or 75 when there is no seeing forecast. Then the Moon (15), seeing and transparency together (15), and calm, dry air (10). “Held back by” names what cost the most."),
         GuideEntry(id: "rule", title: "Go rule and clear window",
-                   body: "When Nightwatch calls a night clear: an unbroken run of at least 3 hours inside astronomical darkness with cloud at or under 25%, and targets at least 30° up. The clear window is that run. All three numbers are yours to change in Settings › Go rule. Clear sky by hour shows each hour’s cloud: a full bar is clear."),
+                   body: "When Nightwatch calls a night clear: an unbroken run of at least 3 hours inside astronomical darkness with cloud at or under 25%. The clear window is that run. Targets are listed when they are at least 30° up in it. All three numbers are yours to change in Settings › Go rule. Clear sky by hour shows each hour’s cloud: a full bar is clear."),
         GuideEntry(id: "dark", title: "Dark",
                    body: "Astronomical darkness: the Sun more than 18° below the horizon, when the sky is as dark as it gets. In a British midsummer there is none, which is what Bright nights in Settings is for."),
         GuideEntry(id: "moon", title: "Moon",

@@ -77,9 +77,11 @@ public enum AlertEngine {
         // in the new mode rather than sending "Cancelled. Clouds moving in".
         if let m = s.mode, m != tonight.mode { s = AlertState(nightKey: tonight.night.key, stage: .idle, firstClearSaid: firstSaid) }
         /// "Your first clear window with Nightwatch: 21:10–01:40. ", once ever, on whichever of the heads-up or go comes first.
+        /// Counted as said only when that notification is really sent (not dropped in quiet hours), at the end of the step.
+        var firstClearUsed = false
         func firstClear() -> String {
             guard s.firstClearSaid != true, let w = tonight.primary else { return "" }
-            s.firstClearSaid = true
+            firstClearUsed = true
             return Copy.firstClear(w, site: site) + " "
         }
         guard now.timeIntervalSince(forecastFetchedAt) <= staleAfter else { return (nil, s) }
@@ -165,6 +167,7 @@ public enum AlertEngine {
         }
 
         if note != nil, inQuietHours(now, site: site, settings: settings) { note = nil }   // dropped, not deferred
+        if note != nil, firstClearUsed { s.firstClearSaid = true }
         if s.stage != .idle, s.stage != .previewSent { s.mode = tonight.mode }
         return (note, s)
     }
