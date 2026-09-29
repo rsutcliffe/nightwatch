@@ -101,3 +101,24 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     let old = try JSONDecoder().decode(RankedTarget.self, from: JSONSerialization.data(withJSONObject: json))
     #expect(old.caldwell == nil && old.name == c43.name)
 }
+
+// Eyes and binoculars (#63): only what the eye or binoculars can show, by brightness and size under the site's sky.
+@Test func eyesAndBinocularsListsOnlyWhatNeedsNoTelescope() {
+    func t(_ id: String, _ group: TargetGroup, mag: Double?, size: Double?, type: String = "", washed: Bool = false) -> RankedTarget {
+        var r = RankedTarget(id: id, name: id, subtitle: "", group: group, raHours: 0, decDeg: 0, sizeArcmin: size, magnitude: mag, fit: .fits,
+                             peakAltDeg: 60, peakTime: Date(), moonSepDeg: 90, moonWashed: washed, visibleFraction: 1)
+        r.typeName = type
+        return r
+    }
+    let m31 = t("M31", .galaxies, mag: 3.4, size: 190), m13 = t("M13", .clusters, mag: 5.8, size: 20, type: "Globular cluster")
+    let faint = t("NGC7331", .galaxies, mag: 9.5, size: 10), tiny = t("M57", .nebulae, mag: 8.8, size: 1.4)
+    #expect(EyeViews.view(m31, bortle: 5) == .nakedEye)
+    #expect(EyeViews.view(m13, bortle: 5) == .binoculars && EyeViews.view(m13, bortle: 2) == .nakedEye)   // darker sky, deeper eye
+    #expect(EyeViews.view(faint, bortle: 5) == nil && EyeViews.view(tiny, bortle: 1) == nil)
+    #expect(EyeViews.view(t("M42", .nebulae, mag: 4, size: 85, washed: true), bortle: 5) == nil)        // Moon-washed tonight
+    #expect(EyeViews.view(t("moon", .planets, mag: nil, size: 31), bortle: 9) == .nakedEye)
+    #expect(EyeViews.view(t("planet-neptune", .planets, mag: 7.8, size: nil), bortle: 5) == .binoculars)
+    #expect(EyeViews.view(t("HIP1", .stars, mag: 0.5, size: nil), bortle: 5) == nil)                     // every star is; not listed
+    #expect(Copy.eyeLook(m31, .nakedEye) == "A faint smudge to the eye")
+    #expect(Copy.eyeLook(m13, .binoculars) == "A fuzzy ball in binoculars")
+}

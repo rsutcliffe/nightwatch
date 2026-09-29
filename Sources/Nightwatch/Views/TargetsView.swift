@@ -2,7 +2,7 @@ import SwiftUI
 import NightwatchUI
 import SkyCore
 
-enum BrowserSection: Hashable { case favourites, group(TargetGroup), darkSites }
+enum BrowserSection: Hashable { case favourites, eyes, group(TargetGroup), darkSites }
 
 /// Asks the Targets window to show a section and, optionally, scroll to one dark-site card (the popover's Clearer sky line)
 /// or open one target's detail (the widget). A nil section just brings the window forward as the user left it.
@@ -45,7 +45,15 @@ struct TargetsView: View {
         return .nebulae
     }
 
-    private var sections: [BrowserSection] { [.favourites] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+    private var sections: [BrowserSection] { [.favourites, .eyes] + TargetGroup.allCases.map { BrowserSection.group($0) } + [.darkSites] }
+
+    /// Eyes and binoculars (#63): how each target can be seen from this site's sky, and the events that need no telescope.
+    private func eyeView(_ t: RankedTarget) -> EyeView? { store.site.flatMap { EyeViews.view(t, bortle: $0.bortle) } }
+    private var eyeTargets: [RankedTarget] { targets.filter { eyeView($0) != nil } }
+    private var eyeEvents: [SkyEvent] {
+        let q = ui.search.trimmingCharacters(in: .whitespaces)
+        return store.events.filter { EyeViews.includes($0) && (q.isEmpty || $0.title.localizedCaseInsensitiveContains(q)) }
+    }
 
     private var favourites: [FavouriteTarget] { plan?.favourites ?? [] }
 
@@ -63,6 +71,9 @@ struct TargetsView: View {
         case .group(let g):
             return RankedTarget.cards(targets, group: g, query: ui.search, fitsOnly: ui.fitsOnly, includeMoonWashed: ui.includeMoonWashed,
                                       sort: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
+        case .eyes:
+            let found = eyeTargets.filter { $0.matches(ui.search) }
+            return Planner.sorted(found, by: ui.sort, now: now, span: span, site: site).map { FavouriteTarget(target: $0, notTonight: nil) }
         case .darkSites:
             return []
         }
@@ -107,7 +118,7 @@ struct TargetsView: View {
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
-                case .group, .favourites: grid
+                case .group, .favourites, .eyes: grid
                 }
             }
         }
@@ -123,6 +134,9 @@ struct TargetsView: View {
             switch section {
             case .favourites:
                 Label("Favourites", systemImage: "heart.fill"); Spacer(); Text("\(favourites.count)").foregroundStyle(Tokens.textSecondary)
+            case .eyes:
+                Label("Eyes and binoculars", systemImage: "binoculars"); Spacer()
+                Text("\(eyeTargets.count + store.events.filter(EyeViews.includes).count)").foregroundStyle(Tokens.textSecondary)
             case .group(let g):
                 Label(g.displayName, systemImage: Theme.glyph(for: g)); Spacer(); Text("\(count(g))").foregroundStyle(Tokens.textSecondary)
             case .darkSites:
@@ -199,12 +213,13 @@ struct TargetsView: View {
     }
 
     private var grid: some View {
-        let session = isEvents || !store.config.showPlan ? nil : store.session(for: plan)
+        let session = isEvents || ui.section == .eyes || !store.config.showPlan ? nil : store.session(for: plan)
         let order = Dictionary(uniqueKeysWithValues: (session?.slots ?? []).enumerated().map { ($1.id, $0) })
         return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text(ui.section == .favourites ? "Favourites" : selectedGroup.displayName).font(.title2.weight(.semibold))
+                    Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
+                        .font(.title2.weight(.semibold))
                     if canPlanTomorrow && !isEvents {
                         Picker("Night", selection: $ui.tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
                             .pickerStyle(.segmented).labelsHidden().fixedSize().padding(.leading, 8)
@@ -247,15 +262,20 @@ struct TargetsView: View {
                     Label(Copy.moonlessRun(run, site: s), systemImage: "circle").font(.callout).foregroundStyle(Tokens.textPrimary)
                 }
                 if store.isStale, let f = store.forecast { StaleBadge(fetchedAt: f.fetchedAt) }
-                if plan?.mode == .bright, ui.section != .favourites, !isEvents, selectedGroup != .planets {
+                if plan?.mode == .bright, ui.section != .favourites, ui.section != .eyes, !isEvents, selectedGroup != .planets {
                     Text("Bright night: no deep-sky targets suggested.").font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 // What the search found, under the night's state as before but in the callout size and the warning colour used for the Moon
                 // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
-                if ui.section != .favourites, !isEvents,
+                if ui.section != .favourites, ui.section != .eyes, !isEvents,
                    let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
                                               includeMoonWashed: ui.includeMoonWashed) {
                     Text(hint).font(.callout).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
+                }
+                if ui.section == .eyes {
+                    Text(eyeTargets.isEmpty && eyeEvents.isEmpty ? "Nothing bright enough to see without a telescope tonight."
+                         : "No telescope needed. Look first with your eyes; binoculars show the rest.")
+                        .font(.caption).foregroundStyle(Tokens.textSecondary)
                 }
                 if ui.section == .favourites {
                     if favourites.isEmpty {
@@ -299,7 +319,7 @@ struct TargetsView: View {
                             // Not a Button: the heart inside the card needs its own clicks, and a button inside a button's label
                             // does not reliably get them. A heart overlaid outside the card was hidden under the Liquid Glass
                             // (owner, 27 September 2026), so it lives inside, beside the chips.
-                            card(t, notTonight: f.notTonight, planIndex: order[t.id])
+                            card(t, notTonight: f.notTonight, planIndex: order[t.id], eye: ui.section == .eyes ? eyeView(t) : nil)
                                 .contentShape(Rectangle())
                                 .onTapGesture { ui.selected = t }
                                 .accessibilityElement(children: .combine)
@@ -307,6 +327,17 @@ struct TargetsView: View {
                                 .accessibilityAddTraits(.isButton)
                                 .accessibilityAction { ui.selected = t }
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
+                        }
+                        if ui.section == .eyes {
+                            ForEach(eyeEvents) { e in
+                                eventCard(e)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { ui.selectedEvent = e }
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityLabel(eventLabel(e))
+                                    .accessibilityAddTraits(.isButton)
+                                    .accessibilityAction { ui.selectedEvent = e }
+                            }
                         }
                     }.padding(20)
                     }
@@ -330,10 +361,14 @@ struct TargetsView: View {
         return t.isNearMoon(moonIllumination: p.moonIllumination, moonUpTonight: Planner.moonTonight(p).map { $0 != .down } ?? false)
     }
 
-    private func chips(_ t: RankedTarget) -> some View {
+    private func chips(_ t: RankedTarget, eye: EyeView? = nil) -> some View {
         VStack(alignment: .trailing, spacing: 4) {
+            // In Eyes and binoculars the chip says how to look, in place of the frame (#63).
+            if let eye { Chip(text: eye.rawValue, icon: eye == .nakedEye ? "eye" : "binoculars") }
+            else {
             // With Doesn't fit my frame off, a fitting card needs no chip; one a search shows anyway says why it is last.
             if !ui.fitsOnly || t.hiddenByFit(fitsOnly: true) { Chip(text: Copy.frameChip(t), icon: "viewfinder") }
+            }
             if t.moonWashed { Chip(text: "Moon-washed", icon: "moon.fill", warning: true) }
             else if nearMoon(t) { Chip(text: "Near Moon", icon: "moon.fill", warning: true) }
         }
@@ -352,12 +387,13 @@ struct TargetsView: View {
 
     /// `notTonight`: a favourite that is not usable tonight, drawn dimmed with the reason in place of its timeline.
     /// `planIndex`: its place in Tonight's plan (#57), outlined and labelled "In the plan, 1st".
-    private func card(_ t: RankedTarget, notTonight: String? = nil, planIndex: Int? = nil) -> some View {
+    /// `eye`: in Eyes and binoculars, how it can be seen, with a line saying what it looks like (#63).
+    private func card(_ t: RankedTarget, notTonight: String? = nil, planIndex: Int? = nil, eye: EyeView? = nil) -> some View {
         TargetCardFrame(dimmed: notTonight != nil, highlighted: planIndex != nil, title: t.catalogueID, note: t.cardNote, subtitle: t.cardName,
                         trailing: t.magnitude.map { String(format: "mag %.1f", $0) }) {
             ThumbnailView(target: t)
         } corner: {
-            chips(t)
+            chips(t, eye: eye)
         } badge: {
             heart(t)
         } footer: {
@@ -366,6 +402,7 @@ struct TargetsView: View {
             } else if let s = store.site, let p = plan, let track = p.primary ?? p.darkSpan {
                 VStack(alignment: .leading, spacing: 4) {
                     if let i = planIndex { Text(Copy.inPlan(i)).font(.system(size: 10.5, weight: .medium)).foregroundStyle(Tokens.accentClear) }
+                    if let eye { Text(Copy.eyeLook(t, eye)).font(.system(size: 10.5)).foregroundStyle(Tokens.textSecondary) }
                     ViewabilityTimeline(target: t, track: track, lit: p.primary != nil, site: s)
                 }
             }
