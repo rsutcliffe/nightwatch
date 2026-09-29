@@ -159,7 +159,7 @@ public enum ShootingTips {
         var tip = ShootingTip(title: "How to shoot this with \(presetName == nil ? "your telescope" : "your \(name)")", rows: rows, source: source)
         tip.copyLine = copyNumbers(k, presetID: presetID).map { numbers in
             let what = [t.catalogueID, t.commonName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
-            return "\(what) · \(presetName ?? name): \(numbers)"
+            return "\(what.isEmpty ? t.name : what) · \(presetName ?? name): \(numbers)"
         }
         return tip
     }
@@ -179,13 +179,14 @@ public enum ShootingTips {
             switch k {
             case .emission: return "light-pollution filter on, 10 s frames"
             case .broadband: return "light-pollution filter off, 10 s frames"
-            case .nebulaUnknown: return "10 s frames"
+            case .nebulaUnknown: return "light-pollution filter on if it glows red, off if not, 10 s frames"
             default: return nil
             }
         case "dslr-apsc-200":
             switch k {
             case .moon, .planet, .star, .constellation: return nil
-            default: return "60–120 s on a star tracker, under 1.5 s without one"
+            case .emission, .nebulaUnknown: return "dual-band or light-pollution filter, 60–120 s on a star tracker, under about 1.5 s without one"
+            default: return "60–120 s on a star tracker, under about 1.5 s without one"
             }
         default:
             return nil

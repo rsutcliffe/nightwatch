@@ -103,3 +103,35 @@ extension ScrollViewProxy {
         if reduceMotion { scrollTo(id, anchor: .top) } else { withAnimation { scrollTo(id, anchor: .top) } }
     }
 }
+
+/// Reports the usable height of the screen its window is on, when it appears and whenever the window changes screen
+/// (#60): the popover opens on the screen of the menu bar clicked, which need not be the one with focus.
+struct WindowScreenReader: NSViewRepresentable {
+    let onHeight: (CGFloat) -> Void
+    func makeNSView(context: Context) -> ReaderView { ReaderView(onHeight: onHeight) }
+    func updateNSView(_ view: ReaderView, context: Context) { view.onHeight = onHeight }
+
+    final class ReaderView: NSView {
+        var onHeight: (CGFloat) -> Void
+        private var observer: NSObjectProtocol?
+        init(onHeight: @escaping (CGFloat) -> Void) { self.onHeight = onHeight; super.init(frame: .zero) }
+        required init?(coder: NSCoder) { nil }
+        deinit { observer.map(NotificationCenter.default.removeObserver) }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observer.map(NotificationCenter.default.removeObserver)
+            guard let window else { return }
+            report(window)
+            observer = NotificationCenter.default.addObserver(forName: NSWindow.didChangeScreenNotification, object: window, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { if let w = self?.window { self?.report(w) } }
+            }
+        }
+
+        private func report(_ window: NSWindow) {
+            guard let screen = window.screen ?? NSScreen.main else { return }
+            let h = screen.visibleFrame.height
+            DispatchQueue.main.async { self.onHeight(h) }   // after this update, not inside it
+        }
+    }
+}

@@ -46,7 +46,10 @@ public enum Tokens {
     public static let barCloudy = Color.white.opacity(0.35)              // bar.cloudy
     public static let targetsBackground = Color(hex: 0x14171D)           // targets.background
     public static let targetsCard = Color(hex: 0x1C1F27)                 // targets.card
-    public static let targetsTrack = Color.contrast(NSColor(hex: 0x272A34), NSColor(white: 1, alpha: 0.35))   // targets.track: card outlines
+    public static let targetsTrack = Color(hex: 0x272A34)                // targets.track: timeline tracks, bar gaps
+    /// Card and strip outlines: the track colour normally, a clear white edge under Increase contrast (#60). Kept apart from
+    /// the track so the timeline's grey "up in darkness" bar still stands out against it.
+    public static let cardOutline = Color.contrast(NSColor(hex: 0x272A34), NSColor(white: 1, alpha: 0.45))
     public static let bestLine = Color(hex: 0xCDD2DC)                    // handover type table: the target "Best" line
 
     /// accent.clear.low towards accent.clear by u (0…1): the accent's opacity, since the accent is only known at run time.

@@ -15,8 +15,9 @@ final class TargetsViewState: ObservableObject {
     @Published var search = ""
     @Published var selected: RankedTarget? = nil
     @Published var selectedEvent: SkyEvent? = nil
-    /// The grid's width, so a narrow window (a small screen, or Larger Text scaling) shows two columns, not three (#60).
-    @Published var gridWidth: CGFloat = 1000
+    /// A narrow grid (a small screen, or Larger Text scaling) shows two columns, not three (#60). A flag, not the width, so
+    /// resizing redraws the window only when it crosses the line.
+    @Published var narrow = false
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
     @Published var eventSort: EventSort = .time
@@ -292,7 +293,7 @@ struct TargetsView: View {
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             if let p = plan, let s = store.site, let session {
-                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations, columns: ui.gridWidth < 640 ? 2 : 3) { ui.selected = $0 }
+                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations, columns: ui.narrow ? 2 : 3) { ui.selected = $0 }
                     .padding(.horizontal, 20).padding(.top, 12)
             }
             GlassGroup(spacing: 12) {
@@ -350,7 +351,7 @@ struct TargetsView: View {
                 }
             }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { ui.gridWidth = $0 }
+        .onGeometryChange(for: Bool.self) { $0.size.width < 640 } action: { if ui.narrow != $0 { ui.narrow = $0 } }
     }
 
     /// A card's whole sentence for VoiceOver, with its place in Tonight's plan.
@@ -366,7 +367,7 @@ struct TargetsView: View {
     }
 
     /// Three columns, or two once a column would be narrower than a card can be read at (#60).
-    private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12), count: ui.gridWidth < 640 ? 2 : 3) }
+    private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12), count: ui.narrow ? 2 : 3) }
 
     private var headerTitle: some View {
         Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
@@ -531,7 +532,7 @@ struct DarkSiteCard: View {
             }
         }
         .padding(12)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
 }

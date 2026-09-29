@@ -41,7 +41,7 @@ struct TargetCardFrame<Picture: View, Corner: View, Badge: View, Footer: View>: 
             footer()
         }
         .padding(10)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(highlighted ? Tokens.accentClear : Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(highlighted ? Tokens.accentClear : Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
     }
 }
@@ -192,14 +192,17 @@ struct CopyButton: View {
     let label: String
     let done: String
     @State private var copied = false
+    @State private var copies = 0   // each click's own two seconds: an earlier click never cuts a later tick short
 
     var body: some View {
         Button {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
             copied = true
+            copies += 1
+            let this = copies
             AccessibilityNotification.Announcement(done).post()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { if copies == this { copied = false } }
         } label: {
             Image(systemName: copied ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 12, weight: copied ? .bold : .regular))
@@ -209,7 +212,7 @@ struct CopyButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(copied ? done : label)
+        .accessibilityLabel(label)   // constant: the announcement says it was copied, once
     }
 }
 

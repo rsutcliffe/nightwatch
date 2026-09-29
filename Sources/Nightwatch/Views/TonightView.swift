@@ -8,7 +8,8 @@ struct TonightView: View {
 
     /// The popover's height as laid out, to know when it is taller than the screen (#60).
     @State private var contentHeight: CGFloat = 0
-    private var screenHeight: CGFloat { (NSScreen.main?.visibleFrame.height ?? 900) - 24 }
+    /// The usable height of the screen the popover is on, not the one with focus (a menu-bar app often has no key window).
+    @State private var screenHeight: CGFloat = .greatestFiniteMagnitude
 
     /// Taller than the screen (a small display, or the Larger Text resolutions): it scrolls rather than losing its footer.
     /// Otherwise exactly as before, with no scroll view at all.
@@ -25,6 +26,7 @@ struct TonightView: View {
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
+        .background(WindowScreenReader { screenHeight = $0 - 24 })
     }
 
     private var content: some View {
@@ -56,7 +58,7 @@ struct TonightView: View {
             Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(SecondaryButtonStyle())
         }
         .padding(8)
-        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var header: some View {

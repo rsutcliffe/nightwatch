@@ -37,7 +37,7 @@ struct PlanStrip: View {
             }
         }
         .padding(14)
-        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 11), fill: Tokens.targetsCard)
     }
 
@@ -95,6 +95,6 @@ struct PlanStrip: View {
         }
         .padding(10)
         .background(Tokens.targetsBackground, in: RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.targetsTrack, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
     }
 }
