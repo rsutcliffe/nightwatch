@@ -67,7 +67,7 @@ for k in com.apple.application-identifier:"$TEAM.$WIDGET_ID" com.apple.developer
   /usr/libexec/PlistBuddy -c "Delete :${k%%:*}" "$WORK/widget.entitlements" >/dev/null 2>&1 || true
   /usr/libexec/PlistBuddy -c "Add :${k%%:*} string ${k#*:}" "$WORK/widget.entitlements"
 done
-# The app and the widget each carry SwiftPM's resource bundle with the same identifier, which App Store Connect rejects
+# The app and the widget each carry the SkyCore package's resource bundle with the same identifier, which App Store Connect rejects
 # as a collision. Bundle.module finds the bundle by name, not identifier, so each gets its own.
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID.resources" "$APP/Contents/Resources/Nightwatch_SkyCore.bundle/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $WIDGET_ID.resources" "$APPEX/Contents/Resources/Nightwatch_SkyCore.bundle/Contents/Info.plist"
