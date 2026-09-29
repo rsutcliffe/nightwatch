@@ -122,3 +122,19 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     #expect(Copy.eyeLook(m31, .nakedEye) == "A faint smudge to the eye")
     #expect(Copy.eyeLook(m13, .binoculars) == "A fuzzy ball in binoculars")
 }
+
+// What the numbers mean (#59): every term the popover and target cards show has a plain entry.
+@Test func everyTermOnScreenIsExplained() {
+    let titles = NumbersGuide.entries.map(\.title).joined(separator: " ").lowercased()
+    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "bortle", "eq tilt", "frame"] {
+        #expect(titles.contains(term), "no entry for \(term)")
+    }
+    let text = NumbersGuide.entries.map(\.body).joined(separator: " ")
+    for shown in ["Held back by", "Fills 28% of frame", "Small in frame", "Mosaic", "Moon-washed", "Near Moon", "Naked eye", "Binoculars", "arcseconds"] {
+        #expect(text.contains(shown), "\(shown) is not explained")
+    }
+    #expect(Set(NumbersGuide.entries.map(\.id)).count == NumbersGuide.entries.count)
+    // The figures quoted are the app's own.
+    let rule = GoRule()
+    #expect(text.contains("at least \(Int(rule.minHours)) hours") && text.contains("\(rule.maxCloudPct)%") && text.contains("\(Int(rule.minAltitudeDeg))° up"))
+}

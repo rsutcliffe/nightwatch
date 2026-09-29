@@ -24,6 +24,7 @@ final class TargetsViewState: ObservableObject {
 
 struct TargetsView: View {
     @EnvironmentObject var store: Store
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var ui = TargetsViewState()
 
     /// Tomorrow night can be planned from the window when tonight has no clear window and tomorrow night has one.
@@ -123,6 +124,9 @@ struct TargetsView: View {
             }
         }
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
+        .toolbar {   // #59, beside the search
+            ToolbarItem { Button { openWindow(id: "numbers") } label: { Label("What the numbers mean", systemImage: "questionmark.circle").labelStyle(.titleAndIcon) } }
+        }
         .preferredColorScheme(.dark)
         .background(Theme.bg)
         .onAppear { consumeRequest() }
