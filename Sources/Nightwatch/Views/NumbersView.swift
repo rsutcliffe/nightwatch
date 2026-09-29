@@ -8,6 +8,7 @@ import SkyCore
 /// reads in order. No hover tooltips.
 struct NumbersView: View {
     @State private var selected: String? = NumbersGuide.entries[0].id
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationSplitView {
@@ -38,7 +39,7 @@ struct NumbersView: View {
                 // in the list, so the arrow keys keep stepping through the terms; the sections carry headings.
                 .onChange(of: selected) { _, id in
                     guard let id else { return }
-                    DispatchQueue.main.async { withAnimation { proxy.scrollTo(id, anchor: .top) } }
+                    DispatchQueue.main.async { proxy.scroll(to: id, reduceMotion: reduceMotion) }
                 }
             }
             .background(Theme.bg)

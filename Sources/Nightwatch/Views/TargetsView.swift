@@ -15,6 +15,8 @@ final class TargetsViewState: ObservableObject {
     @Published var search = ""
     @Published var selected: RankedTarget? = nil
     @Published var selectedEvent: SkyEvent? = nil
+    /// The grid's width, so a narrow window (a small screen, or Larger Text scaling) shows two columns, not three (#60).
+    @Published var gridWidth: CGFloat = 1000
     @Published var pendingScrollID: String? = nil
     @Published var sort: TargetSort = .bestNow
     @Published var eventSort: EventSort = .time
@@ -25,6 +27,7 @@ final class TargetsViewState: ObservableObject {
 struct TargetsView: View {
     @EnvironmentObject var store: Store
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var ui = TargetsViewState()
 
     /// Tomorrow night can be planned from the window when tonight has no clear window and tomorrow night has one.
@@ -222,7 +225,7 @@ struct TargetsView: View {
 
     private func scroll(_ proxy: ScrollViewProxy) {
         guard let id = ui.pendingScrollID else { return }
-        withAnimation { proxy.scrollTo(id, anchor: .top) }
+        proxy.scroll(to: id, reduceMotion: reduceMotion)
         ui.pendingScrollID = nil
     }
 
@@ -289,7 +292,7 @@ struct TargetsView: View {
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding([.horizontal, .top], 20)
             if let p = plan, let s = store.site, let session {
-                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations) { ui.selected = $0 }
+                PlanStrip(plan: p, session: session, site: s, constellations: store.constellations, columns: ui.gridWidth < 640 ? 2 : 3) { ui.selected = $0 }
                     .padding(.horizontal, 20).padding(.top, 12)
             }
             GlassGroup(spacing: 12) {
@@ -303,7 +306,7 @@ struct TargetsView: View {
                             }
                             .frame(maxWidth: .infinity).padding(.top, 40)
                         } else {
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                            LazyVGrid(columns: gridColumns, spacing: 12) {
                                 ForEach(shownEvents) { e in
                                     eventCard(e)
                                         .contentShape(Rectangle())
@@ -316,7 +319,7 @@ struct TargetsView: View {
                             }.padding(20)
                         }
                     } else {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                    LazyVGrid(columns: gridColumns, spacing: 12) {
                         ForEach(visible(at: clock.date)) { f in
                             let t = f.target
                             // Not a Button: the heart inside the card needs its own clicks, and a button inside a button's label
@@ -347,6 +350,7 @@ struct TargetsView: View {
                 }
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { ui.gridWidth = $0 }
     }
 
     /// A card's whole sentence for VoiceOver, with its place in Tonight's plan.
@@ -360,6 +364,9 @@ struct TargetsView: View {
         guard let i = planIndex else { return base }
         return base + ", " + Copy.inPlan(i).lowercased()
     }
+
+    /// Three columns, or two once a column would be narrower than a card can be read at (#60).
+    private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12), count: ui.gridWidth < 640 ? 2 : 3) }
 
     private var headerTitle: some View {
         Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)

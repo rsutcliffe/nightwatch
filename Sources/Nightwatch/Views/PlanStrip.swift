@@ -10,6 +10,8 @@ struct PlanStrip: View {
     let session: SessionPlan
     let site: Site
     let constellations: [Constellation]
+    /// Three, or two in a narrow window (#60).
+    var columns = 3
     let onSelect: (RankedTarget) -> Void
 
     private var title: String { plan.night.key == store.plan?.night.key ? "Tonight's plan" : "Tomorrow night's plan" }
@@ -24,7 +26,7 @@ struct PlanStrip: View {
                 }
             }
             bar
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), alignment: .leading, spacing: 10) {
                 ForEach(Array(session.slots.enumerated()), id: \.element.id) { i, slot in slotCard(slot, index: i) }
             }
             if let left = Copy.planLeftover(session, site: site) {
