@@ -80,7 +80,7 @@ struct SearchTargetsIntent {
     static let searchScopes: [StringSearchScope] = [.general]
     var criteria: StringSearchCriteria
     @MainActor func perform() async throws -> some IntentResult {
-        AppDelegate.handle(WidgetLink.search(criteria.term).url)
+        AppDelegate.handle(WidgetLink.search(SpokenSearch.normalise(criteria.term)).url)
         return .result()
     }
 }

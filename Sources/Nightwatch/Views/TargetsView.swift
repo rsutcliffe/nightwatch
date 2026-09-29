@@ -197,6 +197,11 @@ struct TargetsView: View {
             ui.selected = nil
             ui.selectedEvent = nil
             ui.search = text
+            // The search covers the section on screen: open the one holding a match unless this one has one.
+            let found = (targets + favourites.map(\.target)).filter { $0.matches(text) }
+            if case .group(let g) = ui.section, found.contains(where: { $0.group == g }) {} else if let first = found.first {
+                ui.section = .group(first.group)
+            }
         }
         store.targetsRequest = nil
     }
