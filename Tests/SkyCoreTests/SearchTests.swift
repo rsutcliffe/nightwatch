@@ -116,31 +116,41 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     #expect(abs(EyeViews.surfaceBrightness(magnitude: 8.4, majorArcmin: 6, minorArcmin: 4) - 20.5) < 0.05)
 }
 
-@Test func eyesAndBinocularsFollowPublishedVisibility() {
-    // Published magnitudes and sizes; the visibility each should have under a suburban (Bortle 5) and a dark (Bortle 2) sky.
-    let m31 = eyeTarget("M31", .galaxies, mag: 3.44, size: 190, minor: 60, type: "Galaxy")
-    let m33 = eyeTarget("M33", .galaxies, mag: 5.72, size: 70.8, minor: 41.7, type: "Galaxy")
-    let m42 = eyeTarget("M42", .nebulae, mag: 4.0, size: 65, minor: 60, type: "Emission nebula")
-    let nan = eyeTarget("NGC7000", .nebulae, mag: 4.0, size: 120, minor: 100, type: "Emission nebula")
-    let pelican = eyeTarget("IC5070", .nebulae, mag: 8.0, size: 60, minor: 50, type: "Emission nebula")
-    let m27 = eyeTarget("M27", .nebulae, mag: 7.4, size: 8, minor: 5.6, type: "Planetary nebula")
-    let veil = eyeTarget("NGC6960", .nebulae, mag: 7.0, size: 70, minor: 6, type: "Supernova remnant")
-    let m13 = eyeTarget("M13", .clusters, mag: 5.8, size: 20, type: "Globular cluster")
-    let double = eyeTarget("NGC869", .clusters, mag: 3.7, size: 60, type: "Open cluster")
-    #expect(EyeViews.view(m31, bortle: 5) == .nakedEye)          // visible to the naked eye even with moderate light pollution
-    #expect(EyeViews.view(m42, bortle: 5) == .nakedEye)
-    #expect(EyeViews.view(m33, bortle: 5) == .binoculars)        // the Bortle scale: undetectable by eye in class 5
-    #expect(EyeViews.view(m33, bortle: 2) == .nakedEye)
-    #expect(EyeViews.view(nan, bortle: 5) == .binoculars)        // "normally it cannot be seen with the unaided eye"
-    #expect(EyeViews.view(pelican, bortle: 5) == nil && EyeViews.view(pelican, bortle: 2) == nil)
-    #expect(EyeViews.view(m27, bortle: 5) == .binoculars)        // "easily visible in binoculars"
-    #expect(EyeViews.view(veil, bortle: 1) == nil)               // needs an O-III filter
-    #expect(EyeViews.view(m13, bortle: 5) == .binoculars && EyeViews.view(m13, bortle: 2) == .nakedEye)
-    #expect(EyeViews.view(double, bortle: 5) == .nakedEye)
+@Test func eyesAndBinocularsFollowPublishedVisibilityOnTheCatalogue() throws {
+    // The app's own OpenNGC rows, not typed-in sizes (review, 29 September 2026), against published visibility.
+    let catalog = try Catalog.bundled()
+    func row(_ id: String) throws -> RankedTarget {
+        let o = try #require(catalog.objects.first { $0.id == id })
+        var r = RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group, raHours: o.raHours,
+                             decDeg: o.decDeg, sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude, fit: .fits, peakAltDeg: 60, peakTime: Date(),
+                             moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+        r.typeName = Catalog.typeNames[o.typeCode] ?? o.typeCode; r.minorArcmin = o.minAxisArcmin
+        return r
+    }
+    func view(_ id: String, _ bortle: Int) throws -> EyeView? { EyeViews.view(try row(id), bortle: bortle) }
+    #expect(try view("NGC0224", 5) == .nakedEye)       // M31: "visible to the naked eye … with moderate light pollution"
+    #expect(try view("NGC1976", 5) == .nakedEye)       // M42: "visible to the naked eye even from areas affected by light pollution"
+    #expect(try view("NGC0598", 5) == .binoculars)     // M33: undetectable by eye in Bortle class 5
+    #expect(try view("NGC0598", 2) == .nakedEye)
+    #expect(try view("NGC7000", 5) == .binoculars)     // "normally it cannot be seen with the unaided eye"
+    #expect(try view("IC5070", 5) == nil && view("IC5070", 2) == nil)
+    #expect(try view("NGC6888", 5) == nil && view("NGC6888", 2) == nil)   // the Crescent needs a filter
+    #expect(try view("NGC6853", 5) == .binoculars)     // M27: "easily visible in binoculars"
+    #expect(try view("NGC6960", 1) == nil)             // the Veil needs an O-III filter
+    #expect(try view("NGC6205", 5) == .binoculars && view("NGC6205", 2) == .nakedEye)   // M13
+    #expect(try view("NGC0869", 5) == .nakedEye)       // the Double Cluster
+    #expect(try view("NGC5457", 5) == nil)             // M101: too faint per square arcsecond for a suburban sky
+    let nan = try row("NGC7000")
+    #expect(nan.sizeArcmin == 120 && nan.minorArcmin == 100)   // OpenNGC's 120 × 30, corrected
+}
+
+@Test func eyesAndBinocularsKeepTheMoonPlanetsAndStarsRules() {
     #expect(EyeViews.view(eyeTarget("M42w", .nebulae, mag: 4, size: 65, washed: true), bortle: 5) == nil)
     #expect(EyeViews.view(eyeTarget("moon", .planets, mag: nil, size: 31), bortle: 9) == .nakedEye)
     #expect(EyeViews.view(eyeTarget("planet-neptune", .planets, mag: 7.8, size: nil), bortle: 5) == .binoculars)
     #expect(EyeViews.view(eyeTarget("HIP1", .stars, mag: 0.5, size: nil), bortle: 5) == nil)
+    let m31 = eyeTarget("M31", .galaxies, mag: 3.44, size: 177.8, minor: 69.7, type: "Galaxy")
+    let m13 = eyeTarget("M13", .clusters, mag: 5.8, size: 20, type: "Globular cluster")
     #expect(Copy.eyeLook(m31, .nakedEye) == "A faint smudge to the eye")
     #expect(Copy.eyeLook(m13, .binoculars) == "A fuzzy ball in binoculars")
 }

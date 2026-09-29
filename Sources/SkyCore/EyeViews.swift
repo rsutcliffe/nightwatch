@@ -12,9 +12,13 @@ public enum EyeViews {
     static let skyBrightness: [Int: Double] = [1: 21.88, 2: 21.68, 3: 21.45, 4: 21.05, 5: 19.78, 6: 18.88, 7: 18.25, 8: 17.75, 9: 17.5]
     /// How much fainter than the sky, in mag/arcsec², an extended object may be and still show. Binoculars: the literature's
     /// rule of thumb of 5% of the sky's brightness, 3.25 (Torres Lapasio, "On the Prediction of Visibility for Deep-Sky
-    /// Objects"). The naked eye: 2.5, set so that at Bortle 5 M31 (22.2) and M42 (21.6) show while M33 (23.0), which the
-    /// Bortle scale calls undetectable by eye in class 5, and NGC 7000 (22.8) do not (owner-approved, 29 September 2026).
-    static let nakedEyeMargin = 2.5, binocularMargin = 3.25
+    /// Objects"). The naked eye: 2.6, set on the catalogue's own rows so that at Bortle 5 M31 (22.30) and M42 (21.96) show
+    /// while M33 (22.81), which the Bortle scale calls undetectable by eye in class 5, and NGC 7000 (22.83) do not.
+    static let nakedEyeMargin = 2.6, binocularMargin = 3.25
+    /// An emission nebula (OpenNGC "HII") shines mostly in hydrogen-alpha red, which the dark-adapted eye barely sees, and the
+    /// catalogue gives only its blue magnitude; binoculars show one only this bright (our threshold, not a published one:
+    /// it keeps NGC 7000 and drops the Crescent, NGC 6888, which needs a filter).
+    static let emissionBinocularLimit = 6.0
     /// Binoculars reach about magnitude 8, and an object under 5′ is a point rather than something to see.
     static let binocularLimit = 8.0, binocularMinArcmin = 5.0
 
@@ -44,7 +48,8 @@ public enum EyeViews {
             guard !t.moonWashed, t.typeName != "Supernova remnant", let a = t.sizeArcmin, a > 0 else { return nil }
             let sb = surfaceBrightness(magnitude: m, majorArcmin: a, minorArcmin: t.minorArcmin)
             if m <= limit, sb <= sky + nakedEyeMargin { return .nakedEye }
-            return m <= binocularLimit && a >= binocularMinArcmin && sb <= sky + binocularMargin ? .binoculars : nil
+            let faintest = t.subtitle.hasPrefix("HII ") ? emissionBinocularLimit : binocularLimit
+            return m <= faintest && a >= binocularMinArcmin && sb <= sky + binocularMargin ? .binoculars : nil
         default:
             return nil
         }
