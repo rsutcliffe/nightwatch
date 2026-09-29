@@ -299,9 +299,7 @@ struct TargetsView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture { ui.selected = t }
                                 .accessibilityElement(children: .combine)
-                                .accessibilityLabel((f.notTonight.map { "\(t.name), \($0)" }
-                                                    ?? store.site.map { Copy.cardLabel(t, lit: plan?.primary != nil, nearMoon: nearMoon(t), site: $0) } ?? t.name)
-                                                    + (order[t.id].map { ", " + Copy.inPlan($0).lowercased() } ?? ""))
+                                .accessibilityLabel(cardLabel(t, notTonight: f.notTonight, planIndex: order[t.id]))
                                 .accessibilityAddTraits(.isButton)
                                 .accessibilityAction { ui.selected = t }
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
@@ -311,6 +309,16 @@ struct TargetsView: View {
                 }
             }
         }
+    }
+
+    /// A card's whole sentence for VoiceOver, with its place in Tonight's plan.
+    private func cardLabel(_ t: RankedTarget, notTonight: String?, planIndex: Int?) -> String {
+        let base: String
+        if let reason = notTonight { base = "\(t.name), \(reason)" }
+        else if let s = store.site { base = Copy.cardLabel(t, lit: plan?.primary != nil, nearMoon: nearMoon(t), site: s) }
+        else { base = t.name }
+        guard let i = planIndex else { return base }
+        return base + ", " + Copy.inPlan(i).lowercased()
     }
 
     private func nearMoon(_ t: RankedTarget) -> Bool {
