@@ -73,13 +73,14 @@ struct SettingsView: View {
                 Toggle("Stop by", isOn: bind(\.stopBy.enabled))
                 if store.config.stopBy.enabled {
                     DatePicker("Plan ends by", selection: Binding(get: {
-                        Calendar.current.startOfDay(for: .now).addingTimeInterval(Double(store.config.stopBy.minutes) * 60)
+                        let m = store.config.stopBy.minutes
+                        return Calendar.current.date(bySettingHour: m / 60 % 24, minute: m % 60, second: 0, of: .now) ?? .now
                     }, set: { d in
                         let c = Calendar.current.dateComponents([.hour, .minute], from: d)
                         store.config.stopBy.minutes = (c.hour ?? 0) * 60 + (c.minute ?? 0); store.saveConfig()
                     }), displayedComponents: .hourAndMinute)
                 }
-                Toggle("Show tonight's plan in Targets", isOn: bind(\.showPlan))
+                Toggle("Tonight's plan in Targets and the heads-up", isOn: bind(\.showPlan))
             }
             Section("Go rule") {
                 Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")

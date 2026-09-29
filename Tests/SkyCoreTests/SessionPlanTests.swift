@@ -25,10 +25,20 @@ private func septemberPlan(objects: [DeepSkyObject] = [crescent, bubble, pacman,
 }
 
 private func make(_ p: NightPlan, preset: String? = "dwarf-mini", battery: Double? = 4, stopBy: StopBy = StopBy(),
-                  favourites: [String] = [], added: [String] = [], removed: Set<String> = []) -> SessionPlan? {
+                  favourites: [String] = [], added: [String] = [], removed: Set<String> = [], now: Date? = nil) -> SessionPlan? {
     SessionPlanner.make(plan: p, presetID: preset, batteryHours: battery, stopBy: stopBy, favourites: favourites,
-                        added: added, removed: removed, site: sheffield)
+                        added: added, removed: removed, now: now, site: sheffield)
 }
+
+/// The same night's targets over a window of our choosing.
+private func withWindow(_ p: NightPlan, _ w: ClearWindow) -> NightPlan {
+    let targets = Planner.rank(catalog: Catalog(objects: [crescent, bubble, pacman, veil, crab]), constellations: [], window: w, site: sheffield,
+                               fov: dwarfMini, rule: GoRule())
+    return NightPlan(night: p.night, windows: [w], primary: w, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil,
+                     moonSet: nil, darkHours: [], targets: targets, best: [], seeingAvailable: false)
+}
+private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messier: 1, typeCode: "SNR", group: .nebulae,
+                                 raHours: 5.575, decDeg: 22.0, majAxisArcmin: 8, minAxisArcmin: 4, magnitude: 8.4, constellation: "Tau")
 
 @Test func thePlanRunsInBestViewingOrderWithStackLongSlots() throws {
     let p = try septemberPlan()
@@ -60,10 +70,10 @@ private func make(_ p: NightPlan, preset: String? = "dwarf-mini", battery: Doubl
     let p = try septemberPlan()
     let stop = StopBy(enabled: true, minutes: 30)                              // 00:30
     let s = try #require(make(p, stopBy: stop))
-    let stopAt = stop.date(after: p.primary!.start, site: sheffield)
+    let stopAt = stop.date(night: p.night, site: sheffield)
     #expect(s.end == stopAt && s.slots.allSatisfy { $0.end <= stopAt })
     #expect(s.slots.count == 2)
-    #expect(Copy.hhmm(stopAt, site: sheffield) == "00:30")
+    #expect(Copy.hhmm(stopAt, site: sheffield) == "00:30" && stopAt > p.night.sunset)
 }
 
 @Test func favouritesAndAddedTargetsGoFirstAndRemovedOnesNever() throws {
@@ -150,4 +160,54 @@ private func make(_ p: NightPlan, preset: String? = "dwarf-mini", battery: Doubl
     let heads = AlertEngine.step(now: now, tonight: p, tomorrow: nil, state: nil, settings: AlertSettings(), forecastFetchedAt: now,
                                  site: sheffield, copy: Copy(), session: s)
     #expect(heads.notification?.kind == .headsUp && heads.notification?.body.hasPrefix("Start with the Crescent Nebula") == true)
+}
+
+@Test func stopByBelongsToTheNightNotToTheWindow() throws {
+    let p = try septemberPlan()
+    // A window opening at 01:00 with Stop by 00:30, or at 23:30 with Stop by 23:00: nothing to plan, not a plan to 04:20.
+    #expect(make(withWindow(p, ClearWindow(start: utc(2026, 9, 30, 0, 0), end: utc(2026, 9, 30, 4, 0))), stopBy: StopBy(enabled: true, minutes: 30)) == nil)
+    #expect(make(withWindow(p, ClearWindow(start: utc(2026, 9, 29, 22, 30), end: utc(2026, 9, 30, 3, 0))), stopBy: StopBy(enabled: true, minutes: 23 * 60)) == nil)
+    // The night the clocks go back (25 October 2026): 03:00 is still 03:00.
+    let autumn = try Ephemeris.night(localDate: utc(2026, 10, 24, 12, 0), site: sheffield)
+    #expect(Copy.hhmm(StopBy(enabled: true, minutes: 180).date(night: autumn, site: sheffield), site: sheffield) == "03:00")
+}
+
+@Test func thePlanWaitsForATargetThatRisesLater() throws {
+    // 23:00 to 05:00 BST: the Crescent, then the Pacman and the Bubble, and the Crab once it is up, not an early stop.
+    let p = withWindow(try septemberPlan(), ClearWindow(start: utc(2026, 9, 29, 22, 0), end: utc(2026, 9, 30, 4, 0)))
+    let s = try #require(make(p, removed: ["NGC7635", "NGC281"]))
+    #expect(s.slots.map(\.id) == ["NGC6888", "NGC1952"])
+    let crabUp = try #require(s.slots.last?.target.viewable?.start)
+    #expect(s.slots[1].start >= crabUp && s.slots[1].start > s.slots[0].end)
+}
+
+@Test func onTheRealCatalogueThePlanChoosesTheNightsBestTargets() throws {
+    let night = try Ephemeris.night(localDate: utc(2026, 9, 29, 12, 0), site: sheffield)
+    let w = ClearWindow(start: try #require(night.darkStart), end: try #require(night.darkEnd))
+    let targets = Planner.rank(catalog: try Catalog.bundled(), constellations: [], window: w, site: sheffield, fov: dwarfMini, rule: GoRule())
+    let p = NightPlan(night: night, windows: [w], primary: w, score: 80, qualifies: true, moonIllumination: 0, moonRise: nil,
+                      moonSet: nil, darkHours: [], targets: targets, best: [], seeingAvailable: false)
+    let s = try #require(make(p))
+    #expect(s.slots.count >= 3)
+    #expect(s.slots.allSatisfy { $0.target.commonName != nil })              // well-known targets, not whatever is highest
+    #expect(s.slots.allSatisfy { $0.target.fit == .fits && !$0.target.moonWashed && $0.reason == .bestPlaced })
+    let seestar = try #require(make(p, preset: "seestar-s50", battery: 6))   // about 1,000 × 10 s: several, not one all night
+    #expect(seestar.slots.count >= 2 && seestar.slots.allSatisfy { abs($0.end.timeIntervalSince($0.start) - 10_000) < 1 })
+    let camera = try #require(make(p, preset: "dslr-apsc-200", battery: nil)) // no frame count: while well placed
+    #expect(camera.slots.count >= 2)
+}
+
+@Test func onceTheWindowHasStartedThePlanRunsFromNow() throws {
+    let p = try septemberPlan()
+    let now = p.primary!.start.addingTimeInterval(2 * 3600 + 7 * 60)
+    let s = try #require(make(p, now: now))
+    #expect(s.slots[0].start >= now && s.slots[0].start.timeIntervalSince(now) < 300)
+}
+
+@Test func aFavouriteOrAddedTargetSaysWhyItIsThere() throws {
+    let p = try septemberPlan(favourites: ["NGC281"])
+    let s = try #require(make(p, favourites: ["NGC281"]))
+    #expect(s.slots[0].reason == .favourite && Copy.slotDetail(s.slots[0], index: 0, presetID: nil, site: sheffield).hasPrefix("Favourite · best "))
+    let a = try #require(make(p, added: ["NGC7635"]))
+    #expect(Copy.slotDetail(a.slots[0], index: 0, presetID: nil, site: sheffield).hasPrefix("Added by you · best "))
 }

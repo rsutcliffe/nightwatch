@@ -123,13 +123,21 @@ struct DetailView: View {
 
     /// "Add to tonight's plan" (#57): on a night with a clear window, in the dark.
     @ViewBuilder private var planButton: some View {
-        if let plan, plan.primary != nil, plan.mode == .dark {
+        // Only for a target the plan can take: in tonight's list, or a favourite usable tonight.
+        if let plan, plan.primary != nil, plan.mode == .dark, store.config.showPlan,
+           (plan.targets + plan.favourites.filter { $0.notTonight == nil }.map(\.target)).contains(where: { $0.id == target.id }) {
             let inPlan = store.session(for: plan)?.slots.contains { $0.id == target.id } ?? false
+            let asked = store.planEdits.nightKey == plan.night.key && store.planEdits.added.contains(target.id)
             let night = plan.night.key == store.plan?.night.key ? "tonight's plan" : "tomorrow night's plan"
-            Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
-                Label(inPlan ? "Remove from \(night)" : "Add to \(night)", systemImage: inPlan ? "minus.circle" : "plus.circle")
+            HStack(spacing: 6) {
+                Button { store.setInPlan(target.id, !inPlan, night: plan.night.key) } label: {
+                    Label(inPlan ? "Remove from \(night)" : "Add to \(night)", systemImage: inPlan ? "minus.circle" : "plus.circle")
+                }
+                .captionButton()
+                if asked && !inPlan {
+                    Text("Not up long enough in the clear window for a stack").font(.system(size: 10.5)).foregroundStyle(Theme.dim)
+                }
             }
-            .captionButton()
         }
     }
 

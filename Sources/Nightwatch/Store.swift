@@ -133,11 +133,18 @@ final class Store: ObservableObject {
     var copy: Copy { Copy() }
 
     /// Tonight's plan for `p` with this night's edits; nil when it has none (#57).
-    func session(for p: NightPlan?) -> SessionPlan? {
-        guard let p, let site else { return nil }
+    /// Nil too when the plan is switched off in Settings, which then leaves the heads-up as it was.
+    func session(for p: NightPlan?, now: Date = Date()) -> SessionPlan? {
+        guard config.showPlan, let p, let site else { return nil }
         let e = planEdits.nightKey == p.night.key ? planEdits : PlanEdits()
         return SessionPlanner.make(plan: p, presetID: config.fovPresetID, batteryHours: telescope?.batteryHours, stopBy: config.stopBy,
-                                   favourites: config.favourites, added: e.added, removed: e.removed, site: site)
+                                   favourites: config.favourites, added: e.added, removed: e.removed, now: now, site: site)
+    }
+
+    /// "Open plan": Targets on the first planned target's group, where the strip is, with no page open over it.
+    func openPlan() {
+        let group = session(for: plan)?.slots.first?.target.group ?? .nebulae
+        targetsRequest = TargetsRequest(section: .group(group), siteID: nil)
     }
     var telescope: TelescopePreset? { TelescopePresets.shared.first { $0.id == config.fovPresetID } }
 
@@ -148,9 +155,9 @@ final class Store: ObservableObject {
         if on { planEdits.added.append(id); planEdits.removed.remove(id) } else { planEdits.removed.insert(id) }
     }
 
-    /// "Not tonight" on the heads-up: no more clear-sky alerts for this night.
-    func silenceTonight() {
-        guard var s = alertState else { return }
+    /// "Not tonight" on the heads-up: no more clear-sky alerts for that night (an old notification never silences a newer one).
+    func silence(night: String) {
+        guard var s = alertState, s.nightKey == night else { return }
         s.silenced = true
         alertState = s
         Store.writeFile(s, StateFiles.url(StateFiles.alerts))
@@ -250,7 +257,7 @@ final class Store: ObservableObject {
         writeWidgetSnapshot()
         if canNotify {
             let r = AlertEngine.step(now: now, tonight: p, tomorrow: t, state: alertState, settings: config.alerts,
-                                     forecastFetchedAt: fc.fetchedAt, site: site, copy: copy, session: session(for: p))
+                                     forecastFetchedAt: fc.fetchedAt, site: site, copy: copy, session: session(for: p, now: now))
             alertState = r.state
             Store.writeFile(r.state, StateFiles.url(StateFiles.alerts))
             if let n = r.notification { Notifier.post(n) }

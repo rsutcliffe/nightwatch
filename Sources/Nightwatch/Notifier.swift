@@ -24,7 +24,7 @@ enum Notifier {
 
     static func post(_ n: AlertNotification) {
         let content = UNMutableNotificationContent()
-        if n.kind == .headsUp { content.categoryIdentifier = headsUpCategory }
+        if let night = n.planNight { content.categoryIdentifier = headsUpCategory; content.userInfo = ["night": night] }
         content.title = n.title
         content.body = n.body
         content.sound = n.kind == .go || n.kind == .aurora ? .default : nil   // aurora is brief: worth a sound (v0.6.6)

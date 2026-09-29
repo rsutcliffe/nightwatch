@@ -47,6 +47,8 @@ public struct AlertNotification: Equatable, Sendable {
     public let kind: Kind
     public let title: String
     public let body: String
+    /// A heads-up carrying Tonight's plan (#57): its night, so Open plan and Not tonight act on that night only.
+    public var planNight: String? = nil
 }
 
 public enum AlertEngine {
@@ -126,7 +128,8 @@ public enum AlertEngine {
                     // With Tonight's plan (#57) the heads-up says where to start; the advice sentence still follows.
                     let body = session.map { Copy.headsUpPlan($0, plan: tonight, site: site) + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) }
                         ?? copy.notificationBody(plan: tonight, site: site, alerts: settings)
-                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body)
+                    note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body,
+                                             planNight: session == nil ? nil : tonight.night.key)
                     s.stage = .headsUpSent
                 } else if !tonight.qualifies, let t = tomorrow, t.qualifies, settings.tomorrowPreview {
                     note = AlertNotification(kind: .tomorrowPreview, title: t.mode == .bright ? copy.brightTomorrowTitle(hours: t.primary!.hours) : copy.tomorrowTitle(hours: t.primary!.hours), body: copy.notificationBody(plan: t, site: site, agreement: false))

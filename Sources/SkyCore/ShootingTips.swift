@@ -34,12 +34,14 @@ public enum ShootingTips {
         }
     }
 
-    /// The shortest worthwhile stack for a deep-sky target, from the same maker figures the tips give: a DWARF's 200 frames
-    /// (the low end of its 200–400) at 30 s is 100 minutes. Nil where no maker publishes a frame count; Tonight's plan then
-    /// gives a target the time it stays up (#57).
+    /// The shortest worthwhile stack for a deep-sky target (#57). A DWARF: its manual's 200 frames (the low end of 200–400)
+    /// at 30 s, 100 minutes. A Seestar stacks as it goes with ZWO's 10 s frames and names no count, so the owner's rule of
+    /// thumb for deep sky, about 1,000 frames (29 September 2026): 167 minutes. Nil for a camera or a custom telescope;
+    /// Tonight's plan then gives a target the time it is well placed.
     public static func stackMinutes(presetID: String?) -> Double? {
         switch presetID {
         case "dwarf-mini", "dwarf-3": 200 * 30 / 60
+        case "seestar-s50": 1000 * 10 / 60
         default: nil
         }
     }
@@ -51,7 +53,8 @@ public enum ShootingTips {
         case "dwarf-mini", "dwarf-3":
             return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"
         case "seestar-s50":
-            return k == .emission ? "Light-pollution filter on" : (k == .broadband ? "Light-pollution filter off" : nil)
+            let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
+            return filter + "1,000 × 10 s"
         default:
             return nil
         }

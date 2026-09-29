@@ -15,11 +15,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// A notification button (#57). A click can launch the app, so buttons that arrive before boot() sets the handler wait.
-    private static var pendingActions: [String] = []
-    static var onAction: ((String) -> Void)? {
-        didSet { if let h = onAction { pendingActions.forEach(h); pendingActions = [] } }
+    private static var pendingActions: [(String, String?)] = []
+    static var onAction: ((String, String?) -> Void)? {
+        didSet { if let h = onAction { pendingActions.forEach { h($0.0, $0.1) }; pendingActions = [] } }
     }
-    static func action(_ id: String) { if let h = onAction { h(id) } else { pendingActions.append(id) } }
+    /// `id`: the button; `night`: the night the notification was about.
+    static func action(_ id: String, night: String?) { if let h = onAction { h(id, night) } else { pendingActions.append((id, night)) } }
     func applicationWillFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
         Notifier.registerActions()
@@ -28,8 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        let id = response.actionIdentifier
-        await MainActor.run { AppDelegate.action(id) }
+        let id = response.actionIdentifier, night = response.notification.request.content.userInfo["night"] as? String
+        await MainActor.run { AppDelegate.action(id, night: night) }
     }
 }
 
@@ -99,9 +100,9 @@ struct NightwatchApp: App {
                 store.targetsRequest = TargetsRequest(section: .group(group ?? .nebulae), siteID: nil, targetID: id)
             }
         }
-        AppDelegate.onAction = { [store] id in
-            if id == Notifier.openPlan { store.targetsRequest = TargetsRequest(section: nil, siteID: nil) }
-            if id == Notifier.notTonight { store.silenceTonight() }
+        AppDelegate.onAction = { [store] id, night in
+            if id == Notifier.openPlan { store.openPlan() }
+            if id == Notifier.notTonight, let night { store.silence(night: night) }
         }
         location.onSite = { [store] site in Task { @MainActor in store.autoSite = site; await store.refresh(force: false) } }
         // A first launch asks for notifications as the welcome closes, after it has said what they are for.

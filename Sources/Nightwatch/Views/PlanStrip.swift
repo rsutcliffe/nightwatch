@@ -39,11 +39,14 @@ struct PlanStrip: View {
         .nightwatchGlass(in: RoundedRectangle(cornerRadius: 11), fill: Tokens.targetsCard)
     }
 
-    /// The slots, then any time left, in proportion.
+    /// The slots, any waits between them, then any time left, in proportion.
     private var bar: some View {
-        let parts: [(Double, Color)] = session.slots.enumerated().map { i, s in
-            (s.end.timeIntervalSince(s.start), Tokens.accentClear.opacity(1 - 0.2 * Double(min(i, 3))))
-        } + (session.leftover.map { [($0.end.timeIntervalSince($0.start), Tokens.targetsTrack)] } ?? [])
+        var parts: [(Double, Color)] = []
+        for (i, s) in session.slots.enumerated() {
+            if i > 0, s.start > session.slots[i - 1].end { parts.append((s.start.timeIntervalSince(session.slots[i - 1].end), Tokens.targetsTrack)) }
+            parts.append((s.end.timeIntervalSince(s.start), Tokens.accentClear.opacity(1 - 0.2 * Double(min(i, 3)))))
+        }
+        if let l = session.leftover { parts.append((l.end.timeIntervalSince(l.start), Tokens.targetsTrack)) }
         let total = max(1, parts.map(\.0).reduce(0, +))
         return GeometryReader { g in
             HStack(spacing: 4) {

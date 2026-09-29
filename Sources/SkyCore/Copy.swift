@@ -224,9 +224,14 @@ public struct Copy: Sendable {
         return "\(t.cardName), in \(c.name)"
     }
 
-    /// A slot's third line: "Best 21:20, so first · Duo-Band · 200 × 30 s".
+    /// A slot's third line: "Best 21:20, so first · Duo-Band · 200 × 30 s"; a favourite or added target says so instead.
     public static func slotDetail(_ slot: PlanSlot, index: Int, presetID: String?, site: Site) -> String {
-        let why = "Best \(hhmm(slot.target.peakTime, site: site)), so \(ordinal(index))"
+        let best = hhmm(slot.target.peakTime, site: site)
+        let why = switch slot.reason {
+        case .bestPlaced: "Best \(best), so \(ordinal(index))"
+        case .favourite: "Favourite · best \(best)"
+        case .added: "Added by you · best \(best)"
+        }
         return ShootingTips.planKit(slot.target, presetID: presetID).map { "\(why) · \($0)" } ?? why
     }
 
