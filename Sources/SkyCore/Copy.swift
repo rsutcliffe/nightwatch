@@ -269,6 +269,11 @@ public struct Copy: Sendable {
         return text
     }
 
+    /// "Your first clear window with Nightwatch: 21:10–01:40." Said once, ever (#64, owner-approved mock-up).
+    public static func firstClear(_ w: ClearWindow, site: Site) -> String {
+        "Your first clear window with Nightwatch: \(span(w.start, w.end, site: site))."
+    }
+
     // Siri and Spotlight (#53). Spoken answers from the cached forecast, naming its source as the widget does.
     static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { "Forecast from \($0)." } }
 
