@@ -82,6 +82,11 @@ private let crab = DeepSkyObject(id: "NGC1952", commonName: "Crab Nebula", messi
     #expect(make(p, added: ["NGC7635"])?.slots.first?.id == "NGC7635")
     #expect(make(p, added: ["NGC6960"])?.slots.first?.id == "NGC6960")        // added by hand: its frame is the user's call
     #expect(make(p, removed: ["NGC6888"])?.slots.contains { $0.id == "NGC6888" } == false)
+    let star = RankedTarget(id: "HIP102098", name: "Deneb", subtitle: "Star", group: .stars, raHours: 20.69, decDeg: 45.3, sizeArcmin: nil,
+                            magnitude: 1.25, fit: .small, peakAltDeg: 85, peakTime: p.primary!.start, moonSepDeg: 90, moonWashed: false,
+                            visibleFraction: 1, viewable: p.primary)
+    var withStar = p; withStar.favourites.append(FavouriteTarget(target: star, notTonight: nil))
+    #expect(!SessionPlanner.canTake(star) && make(withStar, added: ["HIP102098"])?.slots.contains { $0.id == "HIP102098" } == false)
 }
 
 @Test func withoutAMakerFrameCountATargetGetsTheTimeItIsUp() throws {

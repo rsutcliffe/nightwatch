@@ -123,8 +123,8 @@ struct DetailView: View {
 
     /// "Add to tonight's plan" (#57): on a night with a clear window, in the dark.
     @ViewBuilder private var planButton: some View {
-        // Only for a target the plan can take: in tonight's list, or a favourite usable tonight.
-        if let plan, plan.primary != nil, plan.mode == .dark, store.config.showPlan,
+        // Only for a target the plan can take: deep sky, in tonight's list or a favourite usable tonight.
+        if let plan, plan.primary != nil, plan.mode == .dark, store.config.showPlan, SessionPlanner.canTake(target),
            (plan.targets + plan.favourites.filter { $0.notTonight == nil }.map(\.target)).contains(where: { $0.id == target.id }) {
             let inPlan = store.session(for: plan)?.slots.contains { $0.id == target.id } ?? false
             let asked = store.planEdits.nightKey == plan.night.key && store.planEdits.added.contains(target.id)

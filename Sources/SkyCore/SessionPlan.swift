@@ -46,6 +46,8 @@ public struct SessionPlan: Equatable, Sendable {
 
 public enum SessionPlanner {
     static let deepSky: Set<TargetGroup> = [.nebulae, .galaxies, .clusters]
+    /// Only deep sky is stacked for hours, so only deep sky can be added; its frame and the Moon are the user's call.
+    public static func canTake(_ t: RankedTarget) -> Bool { deepSky.contains(t.group) }
     /// How many of the night's best targets the plan chooses among, before favourites and added ones.
     static let poolSize = 12
     /// No slot is shorter than this, and a target must be well placed for at least this long to take one.
@@ -75,7 +77,7 @@ public enum SessionPlanner {
         let chosen = added + favourites.filter { !added.contains($0) }
         let pool = (Array(best) + chosen.compactMap { byID[$0] })
             .reduce(into: [RankedTarget]()) { acc, x in if !acc.contains(where: { $0.id == x.id }) { acc.append(x) } }
-            .filter { !removed.contains($0.id) && $0.viewable != nil }
+            .filter { !removed.contains($0.id) && $0.viewable != nil && canTake($0) }
         let stack = ShootingTips.stackMinutes(presetID: presetID).map { $0 * 60 }
 
         func alt(_ c: RankedTarget, _ at: Date) -> Double { Ephemeris.altAz(raHours: c.raHours, decDeg: c.decDeg, at: at, site: site).alt }
