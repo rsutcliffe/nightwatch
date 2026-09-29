@@ -298,6 +298,15 @@ final class Store: ObservableObject {
                                    source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
     }
 
+    /// Apple Weather's mark as the widget keeps it (a file in the App Group), for Siri's cards (#53); nil until fetched or on
+    /// an unsigned build. A card is drawn away from the app, so it needs the image itself, not a URL.
+    var weatherMark: NSImage? {
+        guard forecast?.attributionMarkURL != nil,
+              let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
+              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return nil }
+        return NSImage(contentsOf: dir.appendingPathComponent(Store.weatherMarkName))
+    }
+
     private func writeWidgetSnapshot() {
         guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
               let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group),
