@@ -130,7 +130,12 @@ struct TargetsView: View {
         }
         .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
         .toolbar {   // #59, beside the search
-            ToolbarItem { Button { openWindow(id: "numbers") } label: { Label("What the numbers mean", systemImage: "questionmark.circle").labelStyle(.titleAndIcon) } }
+            // Its full width, so the toolbar never squeezes the words (owner's screenshot, 29 September 2026).
+            ToolbarItem {
+                Button { openWindow(id: "numbers") } label: {
+                    Label("What the numbers mean", systemImage: "questionmark.circle").labelStyle(.titleAndIcon).fixedSize()
+                }
+            }
         }
         .preferredColorScheme(.dark)
         .background(Theme.bg)
