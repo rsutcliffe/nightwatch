@@ -71,6 +71,20 @@ struct ShowTargetIntent: AppIntent {
     }
 }
 
+/// "Find the Crescent Nebula in Nightwatch" (#72). Siri on macOS 27 sends "… in <app>" to an app's in-app search and, with
+/// none, answers from Apple Weather instead ("The Nightwatch app doesn't support in-app search", owner's test, 29 September
+/// 2026). This takes Siri's words to the Targets window's search, which already matches names, catalogue numbers and types.
+@available(macOS 27, *)
+@AppIntent(schema: .system.searchInApp)
+struct SearchTargetsIntent {
+    static let searchScopes: [StringSearchScope] = [.general]
+    var criteria: StringSearchCriteria
+    @MainActor func perform() async throws -> some IntentResult {
+        AppDelegate.handle(WidgetLink.search(criteria.term).url)
+        return .result()
+    }
+}
+
 struct EventsTonightIntent: AppIntent {
     static let title: LocalizedStringResource = "Events Tonight"
     static let description = IntentDescription("Meteor showers, space station passes, eclipses and other events tonight.")
