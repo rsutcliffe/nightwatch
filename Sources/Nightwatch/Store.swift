@@ -153,7 +153,10 @@ final class Store: ObservableObject {
     /// Waits up to `seconds` for tonight's snapshot: an action run as the app launches arrives before the first recompute.
     func waitForSnapshot(seconds: Double = 10) async -> WidgetSnapshot? {
         let until = Date().addingTimeInterval(seconds)
-        while snapshot() == nil, Date() < until { try? await Task.sleep(for: .milliseconds(250)) }
+        // Not booted yet, or a location fix on its way: worth waiting. No site at all: answer at once.
+        while snapshot() == nil, Date() < until, site != nil || awaitingFix || scheduler == nil {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
         return snapshot()
     }
 

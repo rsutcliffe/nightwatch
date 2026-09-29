@@ -275,7 +275,7 @@ public struct Copy: Sendable {
     /// A clause as a sentence: its own full stop, never two.
     static func sentence(_ s: String) -> String { s.hasSuffix(".") ? s : s + "." }
 
-    /// "Sky Score": "Sky score 72 at Home. Clear window tonight. Clear 20:40–03:10 · 6.5 h. Held back by a 40% moon. Forecast
+    /// "Sky Score": "Sky score 72 at Home. Clear window tonight. 20:40–03:10 · 6.5 h. Held back by a 40% moon. Forecast
     /// from Apple Weather." On a night without a window the reason and "Tomorrow 21:10–01:40." follow instead.
     public static func siriTonight(_ s: WidgetSnapshot?) -> String {
         guard let s else { return "Nightwatch has no forecast yet. Open it once to set where you observe." }
