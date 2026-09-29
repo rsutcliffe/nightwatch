@@ -61,3 +61,22 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
     let old = try JSONDecoder().decode(Config.self, from: Data(#"{"sites":[]}"#.utf8))
     #expect(old.welcomed && old.checkForUpdates)
 }
+
+// Copy the settings (#61): one line, the target, the telescope and the card's own numbers; none where there are no numbers.
+@Test func theCopiedLineMatchesTheCardForEachPreset() {
+    var nebula = target("NGC6888", .nebulae, "Emission nebula"); nebula.catalogueID = "NGC 6888"; nebula.commonName = "Crescent Nebula"
+    let dwarf = ShootingTips.tip(for: nebula, presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini", stackMinutes: 180, site: site)
+    #expect(dwarf.copyLine == "NGC 6888 Crescent Nebula · DwarfLab DWARF Mini: Duo-Band filter, 15–60 s at gain 60–80, 200–400 frames")
+    #expect(dwarf.rows.contains { $0.text.contains("15–60 s per frame at gain 60–80") } && dwarf.rows.contains { $0.text.hasPrefix("200–400") })
+    let seestar = ShootingTips.tip(for: nebula, presetID: "seestar-s50", presetName: "ZWO Seestar S50", stackMinutes: 60, site: site)
+    #expect(seestar.copyLine?.hasSuffix("ZWO Seestar S50: light-pollution filter on, 10 s frames") == true)
+    #expect(seestar.rows.contains { $0.text.hasPrefix("Light-pollution filter on") } && seestar.rows.contains { $0.text.hasPrefix("10 s frames") })
+    let camera = ShootingTips.tip(for: nebula, presetID: "dslr-apsc-200", presetName: "APS-C camera, 200 mm lens", stackMinutes: 60, site: site)
+    #expect(camera.copyLine?.hasSuffix(": 60–120 s on a star tracker, under 1.5 s without one") == true)
+    // No numbers, no line: a custom telescope, a planet, a star.
+    #expect(ShootingTips.tip(for: nebula, presetID: nil, presetName: nil, stackMinutes: 60, site: site).copyLine == nil)
+    #expect(ShootingTips.tip(for: target("planet-jupiter", .planets, "Planet"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini",
+                             stackMinutes: 60, site: site).copyLine == nil)
+    #expect(ShootingTips.tip(for: target("HIP1", .stars, "Star"), presetID: "dwarf-mini", presetName: "DwarfLab DWARF Mini",
+                             stackMinutes: 60, site: site).copyLine == nil)
+}
