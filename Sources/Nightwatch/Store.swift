@@ -5,6 +5,8 @@ import SwiftUI
 
 @MainActor
 final class Store: ObservableObject {
+    /// The one store: the app's scene and Siri's actions (#53) both use it, so an action run at launch finds it at once.
+    static let shared = Store()
     @Published var config: Config = .default
     @Published var plan: NightPlan?
     @Published var tomorrow: NightPlan?
@@ -141,8 +143,29 @@ final class Store: ObservableObject {
                                    favourites: config.favourites, added: e.added, removed: e.removed, now: now, site: site)
     }
 
-    /// The clear-sky notifications switch (Settings › Alerts), for Siri (#53).
-    func setNotifications(_ on: Bool) { config.notifyEnabled = on; saveConfig() }
+    /// The clear-sky notifications switch (Settings › Alerts), for Siri (#53). False when settings cannot be saved (an
+    /// unreadable config.json), so the action can say nothing changed.
+    func setNotifications(_ on: Bool) -> Bool {
+        guard !configLoadFailed else { return false }
+        config.notifyEnabled = on; saveConfig(); return true
+    }
+
+    /// Waits up to `seconds` for tonight's snapshot: an action run as the app launches arrives before the first recompute.
+    func waitForSnapshot(seconds: Double = 10) async -> WidgetSnapshot? {
+        let until = Date().addingTimeInterval(seconds)
+        while snapshot() == nil, Date() < until { try? await Task.sleep(for: .milliseconds(250)) }
+        return snapshot()
+    }
+
+    /// A target's name by id from the whole catalogue, for a saved Show Target shortcut on a night it is not in the list.
+    func targetName(id: String) -> String? {
+        if let t = plan.flatMap({ p in (p.targets + p.brightTargets + p.favourites.map(\.target)).first { $0.id == id } }) { return t.name }
+        if id == "moon" { return "Moon" }
+        if id.hasPrefix("planet-"), let p = Planet(rawValue: String(id.dropFirst(7))) { return p.displayName }
+        if let s = stars.first(where: { $0.id == id }) { return s.name }
+        if let c = constellations.first(where: { $0.id == id }) { return c.name }
+        return catalog.objects.first { $0.id == id }?.displayName
+    }
 
     /// "Open plan": Targets on the first planned target's group, where the strip is, with no page open over it.
     func openPlan() {
@@ -293,17 +316,21 @@ final class Store: ObservableObject {
     /// Tonight as the widget shows it, from the cached forecast; nil before one for this site. Siri reads it too (#53).
     func snapshot() -> WidgetSnapshot? {
         guard let plan, let tomorrow, let fc = forecast, let site, forecastMatches(site) else { return nil }
-        return WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
-                                   bright: config.brightNights, alerts: config.alerts, copy: copy,
-                                   source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
+        var s = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
+                                    bright: config.brightNights, alerts: config.alerts, copy: copy,
+                                    source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
+        s.weatherLegalURL = fc.attributionLegalURL   // with the mark, on the widget and Siri's cards
+        return s
     }
 
     /// Apple Weather's mark as the widget keeps it (a file in the App Group), for Siri's cards (#53); nil until fetched or on
     /// an unsigned build. A card is drawn away from the app, so it needs the image itself, not a URL.
     var weatherMark: NSImage? {
-        guard forecast?.attributionMarkURL != nil,
+        guard let mark = forecast?.attributionMarkURL,
               let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
-              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return nil }
+              let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group),
+              // Only the file for the current mark URL, as the widget checks: never an out-of-date mark.
+              (try? String(contentsOf: dir.appendingPathComponent(Store.weatherMarkName + ".url"), encoding: .utf8)) == mark else { return nil }
         return NSImage(contentsOf: dir.appendingPathComponent(Store.weatherMarkName))
     }
 

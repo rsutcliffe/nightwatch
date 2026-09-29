@@ -10,9 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static var onURL: ((URL) -> Void)? {
         didSet { if let h = onURL { pending.forEach(h); pending = [] } }
     }
-    func application(_ application: NSApplication, open urls: [URL]) {
-        for u in urls { if let h = Self.onURL { h(u) } else { Self.pending.append(u) } }
-    }
+    func application(_ application: NSApplication, open urls: [URL]) { urls.forEach(Self.handle) }
+    /// A link now, or once boot() has set the handler (Siri's Show Target can arrive first too).
+    static func handle(_ url: URL) { if let h = onURL { h(url) } else { pending.append(url) } }
 
     /// A notification button (#57). A click can launch the app, so buttons that arrive before boot() sets the handler wait.
     private static var pendingActions: [(String, String?)] = []
@@ -57,7 +57,7 @@ struct MenuBarLabel: View {
 @main
 struct NightwatchApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var store = Store()
+    @StateObject private var store = Store.shared
     private let location = LocationProvider()
 
     var body: some Scene {
@@ -86,7 +86,6 @@ struct NightwatchApp: App {
     private func boot() async {
         guard store.scheduler == nil, !store.booting else { return }
         store.booting = true
-        IntentHost.store = store   // Siri's actions read the same plan the popover shows (#53)
         AppDelegate.onURL = { [store] url in
             // A web link from the widget (Apple Weather's legal page) opens in the browser, whichever way macOS routes it.
             if url.scheme == "https" || url.scheme == "http" { NSWorkspace.shared.open(url); return }

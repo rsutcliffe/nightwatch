@@ -181,7 +181,21 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let cloudy = snap(p, t, fetchedAt: november)
     #expect(Copy.siriBest(cloudy, session: nil, site: testSite).hasSuffix("No targets are suggested tonight."))
     var s = cloudy
-    s.targets = [WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "23:40", group: .galaxies)]
-    #expect(Copy.siriBest(s, session: nil, site: testSite) == "Tonight's best targets: Andromeda Galaxy, best 23:40.")
+    s.targets = [WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "Best 00:40 · 64° up", group: .galaxies)]
+    #expect(Copy.siriBest(s, session: nil, site: testSite) == "Tonight's best targets: Andromeda Galaxy, best 00:40 · 64° up.")
     #expect(Copy.siriEvents([]) == "No events tonight.")
+}
+
+@Test func siriReadsEachClauseOnceWithOneFullStop() throws {
+    // Cloudy tonight, clear tomorrow: the reason and "Tomorrow …" once each, not "Tomorrow: Tomorrow".
+    let (p, t) = try plans(november, Array(repeating: 100, count: 24))
+    let (_, clearTomorrow) = try plans(november, Array(repeating: 0, count: 24))
+    var s = snap(p, clearTomorrow, fetchedAt: november)
+    s.tomorrow = "Tomorrow 21:10–01:40"
+    let cloudy = Copy.siriTonight(s)
+    #expect(cloudy.contains(" Tomorrow 21:10–01:40.") && !cloudy.contains("Tomorrow: ") && !cloudy.contains(".."))
+    // A reason without its own full stop gets one.
+    s.reason = "Held back by a 40% moon"
+    #expect(Copy.siriTonight(s).contains("Held back by a 40% moon. "))
+    _ = t
 }
