@@ -221,29 +221,15 @@ struct TargetsView: View {
         let order = Dictionary(uniqueKeysWithValues: (session?.slots ?? []).enumerated().map { ($1.id, $0) })
         return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
-                        .font(.title2.weight(.semibold))
-                    if canPlanTomorrow && !isEvents {
-                        Picker("Night", selection: $ui.tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
-                            .pickerStyle(.segmented).labelsHidden().fixedSize().padding(.leading, 8)
-                    }
-                    // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
-                    // Tonight, so it never jumps to tomorrow by itself on a later refresh.
-                    Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
-                    Spacer()
-                    if isEvents {
-                        Picker("Sort", selection: $ui.eventSort) {
-                            ForEach(EventSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented).fixedSize()
-                    } else {
-                        Picker("Sort", selection: $ui.sort) {
-                            ForEach(TargetSort.allCases, id: \.self) { Text(sortLabel($0)).tag($0) }
-                        }
-                        .pickerStyle(.segmented).fixedSize()
-                    }
+                // Title and controls on one line when they fit; otherwise the controls go under the title, so a long title
+                // ("Eyes and binoculars") is never squeezed into a column (owner's screenshot, 29 September 2026).
+                ViewThatFits(in: .horizontal) {
+                    HStack { headerTitle; headerControls }
+                    VStack(alignment: .leading, spacing: 8) { headerTitle; HStack { headerControls } }
                 }
+                // A refresh that takes the switch away (tonight clears, or tomorrow clouds over) also puts it back to
+                // Tonight, so it never jumps to tomorrow by itself on a later refresh.
+                Color.clear.frame(width: 0, height: 0).onChange(of: canPlanTomorrow) { _, can in if !can { ui.tomorrow = false } }
                 if let p = plan, let s = store.site {
                     ClearSkyBars(bars: Planner.clearSkyBars(plan: p, site: s), label: Copy.barsLabel(plan: p, site: s), trackHeight: 14, labels: false).frame(maxWidth: 360)
                     if showingTomorrow, let w = p.primary {
@@ -358,6 +344,30 @@ struct TargetsView: View {
         else { base = t.name }
         guard let i = planIndex else { return base }
         return base + ", " + Copy.inPlan(i).lowercased()
+    }
+
+    private var headerTitle: some View {
+        Text(ui.section == .favourites ? "Favourites" : ui.section == .eyes ? "Eyes and binoculars" : selectedGroup.displayName)
+            .font(.title2.weight(.semibold)).lineLimit(1).fixedSize()
+    }
+
+    @ViewBuilder private var headerControls: some View {
+        if canPlanTomorrow && !isEvents {
+            Picker("Night", selection: $ui.tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
+                .pickerStyle(.segmented).labelsHidden().fixedSize().padding(.leading, 8)
+        }
+        Spacer(minLength: 12)
+        if isEvents {
+            Picker("Sort", selection: $ui.eventSort) {
+                ForEach(EventSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented).fixedSize()
+        } else {
+            Picker("Sort", selection: $ui.sort) {
+                ForEach(TargetSort.allCases, id: \.self) { Text(sortLabel($0)).tag($0) }
+            }
+            .pickerStyle(.segmented).fixedSize()
+        }
     }
 
     private func nearMoon(_ t: RankedTarget) -> Bool {
