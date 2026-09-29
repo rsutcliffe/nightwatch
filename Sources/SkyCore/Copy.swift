@@ -269,6 +269,36 @@ public struct Copy: Sendable {
         return text
     }
 
+    // Siri and Spotlight (#53). Spoken answers from the cached forecast, naming its source as the widget does.
+    static func siriSource(_ s: WidgetSnapshot) -> String? { s.source.map { "Forecast from \($0)." } }
+
+    /// "Is Tonight Clear": "Sky score 72 at Home. Clear tonight. Clear 20:40–03:10. Tomorrow: … Forecast from Apple Weather."
+    public static func siriTonight(_ s: WidgetSnapshot?) -> String {
+        guard let s else { return "Nightwatch has no forecast yet. Open it once to set where you observe." }
+        return ["Sky score \(s.score) at \(s.siteName).", s.headline.hasSuffix(".") ? s.headline : s.headline + ".",
+                s.window.map { $0.hasSuffix(".") ? $0 : $0 + "." }, s.reason, s.tomorrow.map { "Tomorrow: \($0)." }, siriSource(s)]
+            .compactMap { $0 }.joined(separator: " ")
+    }
+
+    /// "Best Targets Tonight": Tonight's plan when there is one, else the popover's best three.
+    public static func siriBest(_ s: WidgetSnapshot?, session: SessionPlan?, site: Site?) -> String {
+        guard let s else { return siriTonight(nil) }
+        if let session, let site {
+            let list = session.slots.map { "\($0.target.commonName ?? $0.target.catalogueID) at \(hhmm($0.start, site: site))" }
+            return "Tonight's plan: " + list.joined(separator: ", then ") + "."
+        }
+        guard !s.targets.isEmpty else { return [s.headline.hasSuffix(".") ? s.headline : s.headline + ".", "No targets are suggested tonight."].joined(separator: " ") }
+        return "Tonight's best targets: " + s.targets.map { "\($0.name), best \($0.best)" }.joined(separator: "; ") + "."
+    }
+
+    /// "Events Tonight": up to three, with whether it will be clear then.
+    public static func siriEvents(_ events: [SkyEvent]) -> String {
+        guard !events.isEmpty else { return "No events tonight." }
+        return events.prefix(3).map { e in
+            [e.title + ".", e.clear.map { $0 ? "Clear then." : "Cloudy then." }].compactMap { $0 }.joined(separator: " ")
+        }.joined(separator: " ")
+    }
+
     public func scoreBand(_ score: Int) -> String {
         switch score { case 80...: "Excellent"; case 50..<80: "Fair"; case 20..<50: "Poor"; default: "Overcast" }
     }

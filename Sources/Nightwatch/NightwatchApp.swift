@@ -86,6 +86,7 @@ struct NightwatchApp: App {
     private func boot() async {
         guard store.scheduler == nil, !store.booting else { return }
         store.booting = true
+        IntentHost.store = store   // Siri's actions read the same plan the popover shows (#53)
         AppDelegate.onURL = { [store] url in
             // A web link from the widget (Apple Weather's legal page) opens in the browser, whichever way macOS routes it.
             if url.scheme == "https" || url.scheme == "http" { NSWorkspace.shared.open(url); return }

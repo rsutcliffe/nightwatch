@@ -163,3 +163,25 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     let back = try dec.decode(WidgetSnapshot.self, from: enc.encode(s))   // ISO dates drop fractions of a second, so compare the fields
     #expect(back.weatherMarkFile == s.weatherMarkFile && back.weatherLegalURL == s.weatherLegalURL)
 }
+
+// Siri and Spotlight (#53): spoken answers built from the same snapshot as the widget.
+@Test func siriSaysTonightFromTheCachedSnapshot() throws {
+    let (p, t) = try plans(november, Array(repeating: 0, count: 24))
+    var s = snap(p, t, fetchedAt: november)
+    s.source = "Apple Weather"
+    let text = Copy.siriTonight(s)
+    #expect(text.hasPrefix("Sky score \(s.score) at Test site. "))
+    #expect(text.hasSuffix(" Forecast from Apple Weather."))
+    #expect(!text.contains("..") && !text.contains(" nil"))
+    #expect(Copy.siriTonight(nil) == "Nightwatch has no forecast yet. Open it once to set where you observe.")
+}
+
+@Test func siriListsTheBestTargetsAndEvents() throws {
+    let (p, t) = try plans(november, Array(repeating: 100, count: 24))
+    let cloudy = snap(p, t, fetchedAt: november)
+    #expect(Copy.siriBest(cloudy, session: nil, site: testSite).hasSuffix("No targets are suggested tonight."))
+    var s = cloudy
+    s.targets = [WidgetTarget(id: "M31", catalogueID: "M31", name: "Andromeda Galaxy", best: "23:40", group: .galaxies)]
+    #expect(Copy.siriBest(s, session: nil, site: testSite) == "Tonight's best targets: Andromeda Galaxy, best 23:40.")
+    #expect(Copy.siriEvents([]) == "No events tonight.")
+}

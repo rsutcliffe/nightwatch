@@ -141,6 +141,9 @@ final class Store: ObservableObject {
                                    favourites: config.favourites, added: e.added, removed: e.removed, now: now, site: site)
     }
 
+    /// The clear-sky notifications switch (Settings › Alerts), for Siri (#53).
+    func setNotifications(_ on: Bool) { config.notifyEnabled = on; saveConfig() }
+
     /// "Open plan": Targets on the first planned target's group, where the strip is, with no page open over it.
     func openPlan() {
         let group = session(for: plan)?.slots.first?.target.group ?? .nebulae
@@ -287,13 +290,18 @@ final class Store: ObservableObject {
     /// The mark URL already tried this session: a failed fetch is not retried until the next launch (no loop).
     private var triedWeatherMark: String?
 
+    /// Tonight as the widget shows it, from the cached forecast; nil before one for this site. Siri reads it too (#53).
+    func snapshot() -> WidgetSnapshot? {
+        guard let plan, let tomorrow, let fc = forecast, let site, forecastMatches(site) else { return nil }
+        return WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
+                                   bright: config.brightNights, alerts: config.alerts, copy: copy,
+                                   source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
+    }
+
     private func writeWidgetSnapshot() {
         guard let group = Bundle.main.object(forInfoDictionaryKey: "NightwatchAppGroup") as? String,
               let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group),
-              let plan, let tomorrow, let fc = forecast, let site, forecastMatches(site) else { return }
-        let snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: fc.fetchedAt, site: site, rule: config.goRule,
-                                       bright: config.brightNights, alerts: config.alerts, copy: copy,
-                                       source: fc.cloudSource ?? "Open-Meteo", aurora: aurora, auroraSettings: config.aurora)
+              let fc = forecast, let snap = snapshot() else { return }
         var s = snap
         // Apple Weather's attribution (v1.0.1): the mark as a file the widget can read, fetched once per mark URL.
         if let mark = fc.attributionMarkURL, let legal = fc.attributionLegalURL {
