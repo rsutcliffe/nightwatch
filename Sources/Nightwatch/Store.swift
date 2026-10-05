@@ -328,6 +328,8 @@ final class Store: ObservableObject {
         await refreshAuxiliary(now: now)
         await recompute(now: now)
         refreshing = false
+        // A new site has its own aurora status (1.4): ask now, not at the next 5-minute tick. The poll keeps its own gaps.
+        await pollAurora(now: now)
         // The site changed while this ran (location fix, Settings, config reload) and its own refresh hit the guard above.
         if self.site != site { await refresh(force: false) }
     }
