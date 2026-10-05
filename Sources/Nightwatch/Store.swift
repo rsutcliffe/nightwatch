@@ -48,7 +48,9 @@ final class Store: ObservableObject {
     /// The status for the site being observed from: never the UK's abroad, nor NOAA's figure for another place.
     var auroraHere: AuroraStatus? { aurora.flatMap { a in site.map(a.applies(to:)) == true ? a : nil } }
     private var auroraState: AuroraAlertState?
-    private var lastAuroraFetch: Date?
+    /// When each thing was last asked for: AuroraWatch UK, or one of NOAA's grid points. A site at another grid point is
+    /// asked for at once, while AuroraWatch UK keeps its 3-minute floor however often the site changes.
+    private var auroraFetched: [String: Date] = [:]
 
     nonisolated static let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nightwatch", isDirectory: true)
     static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
@@ -259,7 +261,9 @@ final class Store: ObservableObject {
             if send { sendSettings() }
         }
         let siteChanged = site.map { !forecastMatches($0) } ?? false
-        Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()) } }
+        // Turning aurora alerts on, or lowering the level, takes effect now and not at the next 5-minute tick: the poll
+        // keeps its own gaps, so this asks the source only when there is no status for this site yet (refresh polls too).
+        Task { if siteChanged { await refresh(force: true) } else { await recompute(now: Date()); await pollAurora() } }
         checkTerrain()
     }
 
@@ -484,11 +488,13 @@ final class Store: ObservableObject {
     /// NOAA's forecast elsewhere (every 15). On a failed fetch the last status is kept.
     func pollAurora(now: Date = Date()) async {
         guard config.aurora.enabled, let site, Ephemeris.sunAltitude(at: now, site: site) <= AuroraAlert.sunBelowDeg else { return }
-        // Boot, the 5-minute timer and every wake can all land here: never ask a source twice within 3 minutes, nor
-        // sooner than its own gap unless the status held is for another site (the site has just changed).
-        let source = AuroraSource.for(site), gap = now.timeIntervalSince(lastAuroraFetch ?? .distantPast)
+        // Boot, the 5-minute timer and every wake can all land here: never ask a source for the same thing twice within
+        // 3 minutes, nor sooner than its own gap unless no status for this site is held yet. A site at another of NOAA's
+        // grid points is asked for at once.
+        let source = AuroraSource.for(site), key = source == .noaa ? "\(Ovation.cell(site))" : source.rawValue
+        let gap = now.timeIntervalSince(auroraFetched[key] ?? .distantPast)
         if gap >= source.minFetchGap || (aurora?.applies(to: site) != true && gap >= 180) {
-            lastAuroraFetch = now
+            auroraFetched[key] = now
             let fetched: AuroraStatus? = source == .noaa
                 ? (try? await fetcher.get(Ovation.url)).flatMap { try? Ovation.parse($0, site: site) }
                 : (try? await fetcher.get(AuroraWatch.url)).flatMap { try? AuroraWatch.parse($0) }
