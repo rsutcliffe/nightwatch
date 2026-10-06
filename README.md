@@ -2,11 +2,11 @@
 
 # Nightwatch
 
+Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. [delphi-dolphin.com/nightwatch](https://delphi-dolphin.com/nightwatch)
+
 ![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
 
 *The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
-
-Silent macOS menu-bar app: tells you when tonight is clear enough for a long imaging session, and what to point at.
 
 <img src="docs/images/screenshot-popover-clear-night.png" width="360" alt="The Nightwatch popover at the BocaTauce car park on Tenerife: tonight's sky score of 93, a clear window from 21:07 to 06:43, 9.6 hours, with Open-Meteo agreeing, clear sky by hour at 92% clear, darkness, the Moon 34% lit and rising at 02:39, seeing of 0.5 to 0.75 arcseconds, wind of 2 km/h, low dew risk and good transparency, and the three best targets">
 
