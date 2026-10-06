@@ -12,7 +12,7 @@ struct AboutView: View {
             Image(systemName: "star").font(.system(size: TextScale.pt(36))).foregroundStyle(Theme.accent)
             Text("Nightwatch").font(Font.scaled(.title2).weight(.semibold))
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev") · MIT licence").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-            if let u = store.availableUpdate { Link("Nightwatch \(u.version) is available ↗", destination: u.url).font(Font.scaled(.caption)) }
+            if let u = store.availableUpdate { Link("Nightwatch \(u.version) is available ↗", destination: ReleaseCheck.latestPage).font(Font.scaled(.caption)) }
             // The only way the project hears from the people using it (v0.6.7).
             HStack(spacing: 14) {
                 Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
@@ -21,7 +21,7 @@ struct AboutView: View {
                 Link("Privacy ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!)   // App Store rule 5.1.1
             }
             .font(Font.scaled(.callout))
-            Button("What the numbers mean") { openWindow(id: "numbers") }.font(Font.scaled(.callout))   // #59
+            Button("What the numbers mean") { openWindow(id: "numbers") }.buttonStyle(ScaledButtonStyle())   // #59
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(Font.scaled(.caption)).frame(maxWidth: .infinity, alignment: .leading) }
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
