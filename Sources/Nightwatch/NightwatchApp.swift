@@ -83,7 +83,7 @@ struct NightwatchApp: App {
         Window("Welcome to Nightwatch", id: "welcome") { WelcomeView().environmentObject(store).scaledText().id(store.config.textSize) }   // rebuilt on a change, as textSized does
             .windowResizability(.contentSize).defaultPosition(.center)
         Window("About Nightwatch", id: "about") { AboutView().environmentObject(store).textSized(store.config.textSize) }
-            .defaultSize(width: 420, height: 420).defaultPosition(.center)
+            .defaultSize(width: 420, height: 640).defaultPosition(.center)
         Window("What the numbers mean", id: "numbers") { NumbersView().textSized(store.config.textSize) }
             .defaultSize(width: 780, height: 620).defaultPosition(.center)
     }

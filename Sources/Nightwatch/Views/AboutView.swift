@@ -24,15 +24,21 @@ struct AboutView: View {
             Button("What the numbers mean") { openWindow(id: "numbers") }.buttonStyle(ScaledButtonStyle())   // #59
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(Font.scaled(.caption)).frame(maxWidth: .infinity, alignment: .leading) }
+                .frame(minHeight: TextScale.pt(110))   // squeezed to an empty box before: the window opened shorter than its contents
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
-            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).font(Font.scaled(.caption2))
-            Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).font(Font.scaled(.caption2))
-            Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
+            Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
+            Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
+            Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }
         .padding(20).frame(width: TextScale.pt(420)).background(Theme.bg).foregroundStyle(Theme.text).preferredColorScheme(.dark)
     }
+}
+
+private extension View {
+    /// A credit line in full, on as many centred lines as it needs: they were cut to one line and an ellipsis.
+    func wrapped() -> some View { multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true) }
 }
 
 /// Small original turtle silhouette. Unlabelled, decorative.
