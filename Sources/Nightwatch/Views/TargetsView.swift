@@ -229,12 +229,15 @@ struct TargetsView: View {
         // marked on its card, because by score a farther site can sit above a nearer one that is nearly as good.
         let nearest = SiteComparison.nearestClear(store.sitePlans)
         let radius = Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit)
+        // With nothing clear tonight, "Nearest clear" has nothing to put first: the choice is not offered, and the page
+        // keeps its usual order (owner's UAT, 6 October 2026). The choice itself is remembered for a night that has one.
+        let sort = nearest == nil ? SiteSort.score : ui.siteSort
         return ScrollView {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Dark sites").font(Font.scaled(.title2).weight(.semibold))
                     Spacer(minLength: 12)
-                    if !store.sitePlans.isEmpty {
+                    if nearest != nil {
                         Picker("Sort", selection: $ui.siteSort) {
                             ForEach(SiteSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                         }
@@ -242,7 +245,7 @@ struct TargetsView: View {
                     }
                 }
                 HStack(spacing: 6) {
-                    Text("Within \(radius) of \(store.site?.name ?? "home") · \(ui.siteSort == .score ? "sorted by tonight's score" : "nearest clear sky first")").foregroundStyle(Theme.dim)
+                    Text("Within \(radius) of \(store.site?.name ?? "home") · \(sort == .score ? "sorted by tonight's score" : "nearest clear sky first")").foregroundStyle(Theme.dim)
                     if store.isAway { Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(.link) }
                 }
                 .font(Font.scaled(.caption))
@@ -266,7 +269,7 @@ struct TargetsView: View {
             ScrollViewReader { proxy in
                 GlassGroup(spacing: 12) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 2), spacing: 12) {
-                        ForEach(SiteComparison.sorted(store.sitePlans, by: ui.siteSort)) { DarkSiteCard(plan: $0, nearestClear: $0.id == nearest?.id).id($0.id) }
+                        ForEach(SiteComparison.sorted(store.sitePlans, by: sort)) { DarkSiteCard(plan: $0, nearestClear: $0.id == nearest?.id).id($0.id) }
                         ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(plan: SitePlan.missing($0)).id($0.id) }
                     }.padding(20)
                 }
