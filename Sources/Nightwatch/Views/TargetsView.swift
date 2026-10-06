@@ -134,7 +134,9 @@ struct TargetsView: View {
             }
             .listStyle(.sidebar)
             .safeAreaInset(edge: .bottom) { filters }
-            .navigationSplitViewColumnWidth(232)
+            // As wide as its longest name needs at the chosen Text size: at Extra large a fixed 232 cut "Eyes and binoculars"
+            // to "Eyes and binocul…" (owner's screenshot, 6 October 2026).
+            .navigationSplitViewColumnWidth(TextScale.pt(232))
         } detail: {
             if let ev = ui.selectedEvent {
                 // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
