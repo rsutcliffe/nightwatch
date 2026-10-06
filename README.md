@@ -85,7 +85,9 @@ The widget comes with a signed build only, since it shares its snapshot with the
 
 To add it: right-click the desktop › Edit Widgets… › Nightwatch. If widgets won't stay on the desktop, turn on System Settings › Desktop & Dock › Widgets › Show widgets › On Desktop.
 
-If the widget shows only grey bars after you replace an older copy of Nightwatch with a newer one, macOS is still holding the old version on record and throws away what the new widget draws. Nightwatch can't correct this from inside its sandbox. Run these two commands in Terminal, and the widget fills in within a minute; if it doesn't, remove it and add it again:
+From 1.5.4 the widget follows an update by itself. macOS goes on running the copy of the widget it first started, even after Nightwatch has been replaced by a newer version, and then refuses what that old copy draws; the widget now notices it has been replaced and steps aside, and macOS starts the new one within seconds.
+
+Updating to 1.5.4 from an earlier version is the last time this can show: the old widget, which does not know to step aside, may keep its last picture, or show only grey bars if you add it after updating. These two commands in Terminal end the old widget, and the new one fills in within a minute:
 
 ```bash
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f -R -trusted /Applications/Nightwatch.app
