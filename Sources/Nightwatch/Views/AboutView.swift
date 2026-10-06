@@ -28,8 +28,7 @@ struct AboutView: View {
             Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
             Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
-            // Great A'Tuin, in the style of the constellation figures (the owner's artwork, 6 October 2026). Decorative.
-            EventArt(name: "great-atuin").frame(width: 120, height: 120)
+            TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }
         .padding(20).frame(width: TextScale.pt(420)).background(Theme.bg).foregroundStyle(Theme.text).preferredColorScheme(.dark)
     }
@@ -38,4 +37,18 @@ struct AboutView: View {
 private extension View {
     /// A credit line in full, on as many centred lines as it needs: they were cut to one line and an ellipsis.
     func wrapped() -> some View { multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true) }
+}
+
+/// Small original turtle silhouette. Unlabelled, decorative.
+struct TurtleGlyph: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let w = size.width, h = size.height
+            var shell = Path(); shell.addEllipse(in: CGRect(x: w * 0.2, y: h * 0.1, width: w * 0.6, height: h * 0.7))
+            var head = Path(); head.addEllipse(in: CGRect(x: w * 0.78, y: h * 0.35, width: w * 0.2, height: h * 0.3))
+            var legs = Path()
+            for x in [0.25, 0.65] { legs.addEllipse(in: CGRect(x: w * x, y: h * 0.7, width: w * 0.12, height: h * 0.28)) }
+            ctx.fill(shell, with: .foreground); ctx.fill(head, with: .foreground); ctx.fill(legs, with: .foreground)
+        }
+    }
 }
