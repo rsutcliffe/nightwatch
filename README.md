@@ -159,6 +159,8 @@ In Shortcuts, Sky Score, Best Targets Tonight and Events Tonight pass their answ
 - *Text me when tonight is clear:* Clear Window Tonight → If it is true → Sky Score → Send Message with that text. Run it each evening from the Shortcuts app's Automation tab.
 - *Say tonight's verdict aloud:* Sky Score → Speak Text.
 
+Untick **Show When Run** on each Nightwatch step. With it ticked the shortcut shows that step's card and waits for Done before it carries on, so nothing is spoken or sent until you click.
+
 Nightwatch has to be running on the Mac, and the answers come from the forecast it already holds. On macOS 27, Siri can search Nightwatch: "Find the Crescent Nebula in Nightwatch" opens the Targets window with that search.
 
 The Targets window also has **Eyes and binoculars**, a group of what you can see tonight without a telescope, judged by how bright each object is per patch of sky against your sky's darkness, with the Milky Way for a camera and wide lens: its core in Sagittarius when it clears 10° in darkness (shown dimmed in summer, with the reason, where it never does, as from Yorkshire) and the band through Cygnus; the next run of moonless nights in its header; and **What the numbers mean**, a window explaining every figure the app shows.
