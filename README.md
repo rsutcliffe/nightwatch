@@ -152,7 +152,14 @@ killall chronod
 
 Any. Pick a preset (DWARF Mini, DWARF 3, Draco, Seestar S30, S30 Pro, S50 and S50 Pro, APS-C at 200 mm) or type your field of view in degrees.
 
-Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off. On macOS 27, Siri can search Nightwatch: "Find the Crescent Nebula in Nightwatch" opens the Targets window with that search.
+Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off.
+
+In Shortcuts, Sky Score, Best Targets Tonight and Events Tonight pass their answer on as text, and **Clear Window Tonight** answers yes or no by your go rule, so a shortcut can act on tonight's sky. Two to build in the Shortcuts app:
+
+- *Text me when tonight is clear:* Clear Window Tonight → If it is true → Sky Score → Send Message with that text. Run it each evening from the Shortcuts app's Automation tab.
+- *Say tonight's verdict aloud:* Sky Score → Speak Text.
+
+Nightwatch has to be running on the Mac, and the answers come from the forecast it already holds. On macOS 27, Siri can search Nightwatch: "Find the Crescent Nebula in Nightwatch" opens the Targets window with that search.
 
 The Targets window also has **Eyes and binoculars**, a group of what you can see tonight without a telescope, judged by how bright each object is per patch of sky against your sky's darkness, with the Milky Way for a camera and wide lens: its core in Sagittarius when it clears 10° in darkness (shown dimmed in summer, with the reason, where it never does, as from Yorkshire) and the band through Cygnus; the next run of moonless nights in its header; and **What the numbers mean**, a window explaining every figure the app shows.
 
