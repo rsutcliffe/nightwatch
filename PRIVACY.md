@@ -1,6 +1,6 @@
 # Nightwatch privacy policy
 
-*Last updated 5 October 2026 (aurora forecast from NOAA outside the UK and Ireland). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
+*Last updated 7 October 2026 (what your location is used for, said in one place; keeping, deleting and changing your mind). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
 
 Nightwatch is a free, open-source Mac app by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
 tracking. The developer collects no data about you: nothing is sent to the developer, and there is no Nightwatch server.
@@ -10,10 +10,13 @@ tracking. The developer collects no data about you: nothing is sent to the devel
 - **Your settings:** your saved sites, telescope, alert choices and so on. If you are signed in to iCloud, they are also
   kept in your iCloud account so your other Macs share them (Apple's iCloud key-value storage, under
   [Apple's privacy policy](https://www.apple.com/legal/privacy/)); Nightwatch's developer cannot see them.
-- **Your location**, if you let Nightwatch use it. It is used to work out sunset, darkness and what is visible from where
-  you are.
+- **Your location**, if you let Nightwatch use it. It is used to get the weather forecast for where you are, and to work
+  out sunset, darkness and what is above your horizon. Nightwatch keeps it on this Mac; only its coordinates go to the
+  forecast services listed below, with nothing that says whose they are.
 - **Spotlight:** tonight's summary and tonight's targets are added to this Mac's own Spotlight index, so Spotlight and
   Siri can find them. They are replaced at every refresh.
+- **Shortcuts:** Nightwatch's actions hand tonight's answer (the sky score, targets, events, or whether there is a clear
+  window) to the Shortcuts app on this Mac. What a shortcut of yours then does with it is up to that shortcut.
 - **Caches:** forecasts, tonight's plan, sky-survey images and the place names of computed dark spots, plus a record of which alerts tonight has already sent, so
   none is sent twice.
 
@@ -68,10 +71,24 @@ or with anyone.
 
 ## Permissions
 
-- **Location** is asked for when you choose "Use this Mac's location", or at launch when your settings (including
-  those copied from 0.6) observe from this Mac. You can refuse it and add a site by hand, or turn it off later in
-  System Settings › Privacy & Security › Location Services.
+- **Location** is asked for when you choose "Use this Mac's location". If macOS has never asked you on this Mac,
+  Nightwatch also asks once at a later launch, so that "This Mac's location" can be offered in Settings. The request
+  says what the location is for. You can refuse it and add a site by typing a place name, and Nightwatch works the
+  same; or turn it off later in System Settings › Privacy & Security › Location Services.
 - **Notifications** are used only for Nightwatch's own alerts.
+
+## Keeping, deleting and changing your mind
+
+- The developer holds no data about you, so there is nothing for the developer to keep, hand over or delete.
+- What Nightwatch keeps is on your Mac, and your settings are also in your own iCloud account when this Mac is signed in
+  to iCloud. Settings › App › Reset config clears your settings, on all your Macs when they sync. Deleting the app and
+  the folders listed above removes the rest.
+- To stop Nightwatch using your location, turn it off in System Settings › Privacy & Security › Location Services, and
+  choose a saved site in Settings › Where you observe. To stop alerts, turn them off in Settings or in System Settings ›
+  Notifications.
+- The services listed above receive coordinates and your IP address when Nightwatch asks them for data. How long they
+  keep their own logs is set by their policies, linked above; Nightwatch sends them no name, account or identifier to
+  tie a request to you.
 
 ## Children
 
