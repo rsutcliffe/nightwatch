@@ -200,6 +200,10 @@ struct TargetsView: View {
                 HStack(spacing: 5) { WarningDot(size: 5); Text("Moon \(Int((p.moonIllumination * 100).rounded()))% · \(Copy.moonText(m, site: s).lowercased())") }
                     .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.statusWarning)
             }
+            // The forecast behind every page of this window, with Apple's mark and legal link when it is Apple Weather.
+            if let f = store.forecast {
+                HStack(spacing: 4) { Text("Forecast").font(.system(size: TextScale.pt(10))).foregroundStyle(Theme.dim); SourceBadge(forecast: f).buttonStyle(.plain) }
+            }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
                 Text("SHOW").font(.system(size: TextScale.pt(9.5))).foregroundStyle(Tokens.textSecondary).padding(.top, 2)

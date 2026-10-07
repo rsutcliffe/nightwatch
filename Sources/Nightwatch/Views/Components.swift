@@ -174,3 +174,23 @@ struct WindowScreenReader: NSViewRepresentable {
         }
     }
 }
+
+/// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown: the
+/// mark itself is the link, as on the widgets (owner, 27 September 2026). Shared by the popover and the Targets window,
+/// whose week, plan and dark-site scores come from the same forecast (1.6.2).
+struct SourceBadge: View {
+    let forecast: Forecast
+    var body: some View {
+        let name = Text(forecast.cloudSource ?? "Open-Meteo").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
+        let badge = Group {
+            if let m = forecast.attributionMarkURL, let url = URL(string: m) {
+                AsyncImage(url: url) { $0.resizable().scaledToFit().frame(height: 10) } placeholder: { name }
+            } else { name }
+        }
+        if let l = forecast.attributionLegalURL, let url = URL(string: l) {
+            Link(destination: url) { badge }
+                .help("Apple Weather's legal attribution and data sources")
+                .accessibilityLabel("Apple Weather, legal attribution and data sources")
+        } else { badge }
+    }
+}

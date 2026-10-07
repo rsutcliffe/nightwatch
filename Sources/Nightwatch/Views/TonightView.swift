@@ -220,22 +220,6 @@ struct TonightView: View {
         }
     }
 
-    /// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown: the
-    /// mark itself is the link, as on the widgets (owner, 27 September 2026).
-    @ViewBuilder private func sourceBadge(_ f: Forecast) -> some View {
-        let name = Text(f.cloudSource ?? "Open-Meteo").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
-        let badge = Group {
-            if let m = f.attributionMarkURL, let url = URL(string: m) {
-                AsyncImage(url: url) { $0.resizable().scaledToFit().frame(height: 10) } placeholder: { name }
-            } else { name }
-        }
-        if let l = f.attributionLegalURL, let url = URL(string: l) {
-            Link(destination: url) { badge }
-                .help("Apple Weather's legal attribution and data sources")
-                .accessibilityLabel("Apple Weather, legal attribution and data sources")
-        } else { badge }
-    }
-
     /// One centre line, evenly spread as on the large widget: the cloud source, the update time, "Refresh". The notify switch
     /// lives in Settings › Alerts (owner, 27 September 2026).
     private var footer: some View {
@@ -251,7 +235,7 @@ struct TonightView: View {
             HStack(alignment: .center, spacing: 0) {
                 if let f = store.forecast, let s = store.site {
                     // The mark on the left: its weight looked odd in the middle (owner, 27 September 2026).
-                    sourceBadge(f)
+                    SourceBadge(forecast: f)
                     Spacer(minLength: 8)
                     HStack(spacing: 6) {
                         if store.isStale { StaleBadge(fetchedAt: f.fetchedAt) }
