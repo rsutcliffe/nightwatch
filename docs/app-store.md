@@ -247,9 +247,12 @@ in the name, subtitle and keywords.
 > • Two forecasts compared: Apple Weather, with Open-Meteo as a second opinion, and 7Timer for seeing
 > • Targets chosen for your field of view, with presets for popular smart telescopes and cameras
 > • "How to shoot this" on every target: filter, exposure and frames for your telescope
+> • Tonight's plan: your favourites in the order of their best time
 > • Darker skies nearby, scored for tonight against home
-> • Aurora alerts from AuroraWatch UK
-> • Small, medium and large desktop widgets
+> • Aurora alerts for your site, wherever you observe from
+> • Tonight's events: the Moon passing in front of a star, comets and the space station
+> • Spotlight and Shortcuts actions, so a shortcut can act on tonight's sky
+> • A Text size setting, and small, medium and large desktop widgets
 >
 > Free, with no accounts, no advertising and no tracking. Nightwatch is open source.
 
@@ -286,23 +289,36 @@ whenever an entitlement or a setup step changes.
 
 ```
 Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
-photograph the sky, and suggests what to point a telescope at. No account or login.
+photograph the sky, and suggests what to point a telescope at. No account or login. It has no Dock icon: click its
+icon in the menu bar. To quit, click the power button at the top of the popover (Command-Q).
 
 Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" choose
-"Use this Mac's location" and Allow (or "Add a site..." and search for a town). The menu-bar popover then shows
-tonight's forecast. Alerts fire only on nights that pass the go rule; to see one sooner, lower
+"Use this Mac's location". macOS then asks "Nightwatch would like to use your current location": choose Allow.
+(Or choose "Add a site..." and search for a town: the app works the same without location.) The menu-bar popover
+then shows tonight's forecast. Alerts fire only on nights that pass the go rule; to see one sooner, lower
 Settings > Go rule > "Clear for at least" to 1 h on a partly clear night.
 
+If no location prompt appears: Location Services is switched off on that Mac (System Settings > Privacy & Security >
+Location Services), or that Mac has already answered for Nightwatch. macOS shows no prompt in either case, and the
+Welcome window then says "Location is not available" with the way to allow it. The attached recording shows the prompt.
+
+Privacy policy: Settings > About Nightwatch (at the foot of the Settings window) > Privacy; also the Privacy Policy URL.
+
 Outside services (read only, no user data except the site's coordinates for forecasts): Apple WeatherKit,
-Open-Meteo and 7Timer (forecasts), AuroraWatch UK (aurora status), CDS hips2fits (sky-survey images), NASA SVS
-(Moon image), Minor Planet Center and CelesTrak (comets, space station), Apple Maps (place search and maps).
+Open-Meteo and 7Timer (forecasts), AuroraWatch UK and the NOAA Space Weather Prediction Center (aurora), CDS
+hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet Center and CelesTrak (comets, space station),
+Apple Maps (place search and maps).
+
+Also in the app: Spotlight and Shortcuts actions (Sky Score, Best Targets Tonight, Events Tonight, Clear Window
+Tonight, Refresh Forecast, Show Target, Turn On or Off Clear-Sky Notifications). They read the forecast the app
+already holds. "Start at login" (Settings > App) is off until the user turns it on.
 
 Entitlements and where to see each one:
 - App Sandbox: required for the Mac App Store.
 - Location (personal-information.location): Welcome step 2 "Use this Mac's location"; Settings > Where you observe >
   "This Mac's location"; Settings > Where you observe > Add a site... > "Use this Mac's location". macOS asks
-  for permission at that moment, not at launch. Used to get the forecast for that place and to work out sunset,
-  darkness and what is above the horizon.
+  for permission when that button is pressed (and once at a later launch, if that Mac has never been asked). Used to
+  get the forecast for that place and to work out sunset, darkness and what is above the horizon.
 - Outgoing network connections (network.client): the forecasts, images and data above.
 - WeatherKit: the forecast in the popover; the Apple Weather mark under it links to the legal attribution.
 - iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
