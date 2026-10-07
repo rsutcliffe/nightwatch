@@ -273,6 +273,14 @@ the questions before they are asked: what the app is for, how to set it up, the 
 entitlement with the steps that show it in use**. App Review asks about any entitlement it cannot see working (guideline
 2.4.5(i): on 1 October 2026 it asked about location, because the reviewer had not pressed "Use this Mac's location").
 
+*On 7 October 2026 build 24 was rejected a third time, under 5.1.1(ii): "The app requests access to location data but did
+not prompt users with a macOS permission request", with advice to include `NSLocationUsageDescription` and that
+`NSLocationWhenInUseUsageDescription` "is only for iOS apps". The build had both keys. From 1.6.1 the Info.plist carries
+the macOS key alone, and its sentence names the forecast and gives an example; the prompt was seen with that text from a
+clean copy of the app. Build 24 also had no Quit control and no way to open About, where the privacy link is (5.1.1(i)
+asks for that link "within the app in an easily accessible manner"), so the store version moved to the current code
+instead of patching 1.0.0. Attach a recording that shows the prompt appearing.*
+
 Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
 whenever an entitlement or a setup step changes.
 
@@ -292,8 +300,9 @@ Open-Meteo and 7Timer (forecasts), AuroraWatch UK (aurora status), CDS hips2fits
 Entitlements and where to see each one:
 - App Sandbox: required for the Mac App Store.
 - Location (personal-information.location): Welcome step 2 "Use this Mac's location"; Settings > Where you observe >
-  "This Mac's location"; Settings > Where you observe > Add a site... > "Use this Mac's location". One fix at
-  kilometre accuracy, used to work out sunset, darkness and what is visible.
+  "This Mac's location"; Settings > Where you observe > Add a site... > "Use this Mac's location". macOS asks
+  for permission at that moment, not at launch. Used to get the forecast for that place and to work out sunset,
+  darkness and what is above the horizon.
 - Outgoing network connections (network.client): the forecasts, images and data above.
 - WeatherKit: the forecast in the popover; the Apple Weather mark under it links to the legal attribution.
 - iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your

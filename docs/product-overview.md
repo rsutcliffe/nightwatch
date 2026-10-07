@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 7 October 2026, version 1.6.0 "Hex". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 7 October 2026, version 1.6.1 "Hex, patch 1". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -224,6 +224,7 @@ Tags follow the City Watch novels.
 | 1.5.5 | Rincewind, patch 5 | 6 October 2026 | The Tonight and Tomorrow night switch and the Sort control follow the Text size setting, the last controls that stayed small beside larger text; at Standard they are unchanged; the Targets sidebar widens with Text size, so "Eyes and binoculars" shows in full; the Targets window opens on Tonight's plan, its first page, where it used to open on Nebulae |
 | 1.5.6 | Rincewind, patch 6 | 6 October 2026 | At Large and Extra large text, the chosen option in the Tonight and Tomorrow night switch and in Sort turns grey while the Targets window is not in front, as the sidebar's selection does, and returns to the accent colour when it is; where the two controls sit one above the other, both start in line with the page title |
 | 1.6.0 | Hex | 7 October 2026 | Shortcuts can use Nightwatch's answers: Sky Score, Best Targets Tonight and Events Tonight pass their answer on as text, so a shortcut can speak it or send it; a new Shortcuts action, Clear Window Tonight, answers yes or no by your go rule, for a shortcut that acts only on a clear night; telescope presets for the ZWO Seestar S30, Seestar S30 Pro and Seestar S50 Pro, each with its field of view, battery life and shooting tips; the Seestar S30 Pro preset was contributed by Stelios Petrakis (@stelabouras), the first contribution from outside the project; the Preset menu in Settings groups telescopes under their makers |
+| 1.6.1 | Hex, patch 1 | 7 October 2026 | When macOS asks whether Nightwatch may use this Mac's location, the request now says what the location is for: the weather forecast where you are, and sunset, darkness and what is above your horizon, with an example; nothing else changes, and a Mac that has already answered is not asked again |
 
 ## Install
 
