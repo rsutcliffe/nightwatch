@@ -30,7 +30,7 @@ struct SettingsView: View {
                 HStack(spacing: 12) {
                     siteRow(title: "This Mac's location", detail: automaticStatus,
                             selected: store.config.visiting == nil && store.config.activeSiteName == nil && store.autoSite != nil,
-                            enabled: store.autoSite != nil, home: thisMacIsHome) { store.config.choose(savedName: nil); store.saveConfig() }
+                            enabled: store.autoSite != nil || (store.locationNeverAsked() && !store.locationServicesOff()), home: thisMacIsHome) { useThisMac() }
                     homeStar(isHome: thisMacIsHome, name: "This Mac's location") { store.config.homeIsThisMac = true; store.saveConfig() }
                 }
                 if let v = store.config.visiting {
@@ -127,7 +127,7 @@ struct SettingsView: View {
                 Toggle("Alert only when Open-Meteo agrees", isOn: bind(\.alerts.requireAgreement))
                     .disabled(!signed && !store.config.alerts.requireAgreement)
                 if !signed {
-                    Text("Needs Apple Weather (signed build)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                    Text("Needs Apple Weather, which is not answering at the moment").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
                 choiceRow("Quiet hours start", bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 choiceRow("Quiet hours end", bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
@@ -200,6 +200,7 @@ struct SettingsView: View {
                 // The only way in: a menu-bar app never shows its own menus, so Window › About Nightwatch cannot be
                 // reached, and nothing else opened this window (owner, 6 October 2026).
                 Button("About Nightwatch") { openWindow(id: "about") }
+                Link("Privacy policy ↗", destination: AboutView.privacyPolicy).buttonStyle(.link)   // in reach without opening About (1.6.2)
             }
         }
         .formStyle(.grouped)
@@ -282,7 +283,19 @@ struct SettingsView: View {
 
     private var automaticStatus: String {
         if let a = store.autoSite { return String(format: "%.3f, %.3f · from Location Services", a.latitude, a.longitude) }
+        if store.locationServicesOff() { return "Location Services is switched off on this Mac: turn it on in System Settings › Privacy & Security › Location Services" }
+        if store.locationNeverAsked() { return "Click to observe from here. macOS asks whether Nightwatch may use this Mac's location first." }
         return "Not available: allow Nightwatch in System Settings › Privacy & Security › Location Services"
+    }
+
+    /// Observes from this Mac. Where macOS has not asked about location yet, this is what asks (1.6.2): the fix arrives,
+    /// or the row says how to allow it.
+    private func useThisMac() {
+        if store.autoSite != nil { store.config.choose(savedName: nil); store.saveConfig(); return }
+        Task { @MainActor in
+            if let fix = await store.requestLocationFix?() { store.autoSite = fix; store.config.choose(savedName: nil); store.saveConfig() }
+            store.objectWillChange.send()   // refused: the row now says where to allow it
+        }
     }
 
     private func bind<T>(_ path: WritableKeyPath<Config, T>) -> Binding<T> {
@@ -344,7 +357,7 @@ struct AddSiteSheet: View {
                     }
                     .background(RoundedRectangle(cornerRadius: 6).fill(Tokens.surfaceTile))
                 }
-                Text("Places from Apple Maps. Only what you type is sent, never where you are.")
+                Text("Places from Apple Maps: what you type is sent to find them.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if let c = coordinate { SiteMapView(coordinate: c) }

@@ -3,6 +3,8 @@ import NightwatchUI
 import SkyCore
 
 struct AboutView: View {
+    /// One address for the privacy policy: About, the welcome and the foot of Settings all open it.
+    static let privacyPolicy = URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!
     @EnvironmentObject var store: Store
     private let notice = (try? String(contentsOfFile: Bundle.main.path(forResource: "NOTICE", ofType: nil) ?? "", encoding: .utf8)) ?? ""
 
@@ -17,14 +19,14 @@ struct AboutView: View {
                 Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
                 Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
                 Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
-                Link("Privacy ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!)   // App Store rule 5.1.1
+                Link("Privacy ↗", destination: AboutView.privacyPolicy)   // App Store rule 5.1.1
             }
             .font(Font.scaled(.callout))
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             ScrollView { Text(notice.isEmpty ? "See NOTICE in the repository for data attributions." : notice).font(Font.scaled(.caption)).frame(maxWidth: .infinity, alignment: .leading) }
                 .frame(minHeight: TextScale.pt(110))   // squeezed to an empty box before: the window opened shorter than its contents
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("Weather data by Open-Meteo.com, or Apple Weather when signed for WeatherKit. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+            Text("Weather data by Apple Weather where it is available, and Open-Meteo.com. The sky score, clear windows and tiles are worked out by Nightwatch from that data: it has been modified and the figures are not Apple's own. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
             Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
             Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)

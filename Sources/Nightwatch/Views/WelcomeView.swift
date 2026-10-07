@@ -52,8 +52,9 @@ struct WelcomeView: View {
                 }
             }
             step("2  Where do you observe from?") {
-                Text("Nightwatch needs a place to forecast for. Your location stays on this Mac; only its coordinates go to the weather services.")
+                Text("Nightwatch needs a place to forecast for. Its coordinates are sent to the weather services to get the forecast, with nothing that says who you are.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
+                Link("Privacy policy ↗", destination: AboutView.privacyPolicy).buttonStyle(.link).font(Font.scaled(.caption))
                 HStack(spacing: 8) {
                     Button(store.autoSite == nil ? "Use this Mac's location" : "Using this Mac's location ✓") { useThisMac() }
                         .buttonStyle(ScaledButtonStyle(prominent: true)).disabled(state.locating || store.autoSite != nil)
@@ -68,7 +69,9 @@ struct WelcomeView: View {
                 }
                 if let s = store.site, store.config.activeSiteName != nil { Text("Observing from \(s.name) ✓").font(Font.scaled(.caption)) }
                 if state.locationFailed, store.autoSite == nil {   // a fix can still arrive after requestOnce gives up
-                    Text("Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
+                    Text(store.locationServicesOff()
+                         ? "Location Services is switched off on this Mac. Turn it on in System Settings › Privacy & Security › Location Services, or add a site."
+                         : "Location is not available. Allow Nightwatch in System Settings › Privacy & Security › Location Services, or add a site.")
                         .font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning).fixedSize(horizontal: false, vertical: true)
                 }
             }

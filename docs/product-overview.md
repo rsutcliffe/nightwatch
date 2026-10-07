@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 7 October 2026, version 1.6.1 "Hex, patch 1". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 7 October 2026, version 1.6.2 "Hex, patch 2". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -225,6 +225,7 @@ Tags follow the City Watch novels.
 | 1.5.6 | Rincewind, patch 6 | 6 October 2026 | At Large and Extra large text, the chosen option in the Tonight and Tomorrow night switch and in Sort turns grey while the Targets window is not in front, as the sidebar's selection does, and returns to the accent colour when it is; where the two controls sit one above the other, both start in line with the page title |
 | 1.6.0 | Hex | 7 October 2026 | Shortcuts can use Nightwatch's answers: Sky Score, Best Targets Tonight and Events Tonight pass their answer on as text, so a shortcut can speak it or send it; a new Shortcuts action, Clear Window Tonight, answers yes or no by your go rule, for a shortcut that acts only on a clear night; telescope presets for the ZWO Seestar S30, Seestar S30 Pro and Seestar S50 Pro, each with its field of view, battery life and shooting tips; the Seestar S30 Pro preset was contributed by Stelios Petrakis (@stelabouras), the first contribution from outside the project; the Preset menu in Settings groups telescopes under their makers |
 | 1.6.1 | Hex, patch 1 | 7 October 2026 | When macOS asks whether Nightwatch may use this Mac's location, the request now says what the location is for: the weather forecast where you are, and sunset, darkness and what is above your horizon, with an example; nothing else changes, and a Mac that has already answered is not asked again |
+| 1.6.2 | Hex, patch 2 | 7 October 2026 | Nightwatch asks to use this Mac's location only when you press a button for it: "Use this Mac's location" in the welcome, or "This Mac's location" in Settings, which now asks when clicked; it no longer asks by itself at a later launch; the request is one plain sentence, given to macOS in both of the forms it reads, as it was before 1.6.1, which may not have asked on macOS 14 to 26; when Location Services is switched off for the whole Mac, Nightwatch says so; "How to shoot this" scrolls when it is taller than the picture, where its title and first row were cut off in a window at its opening size; the privacy policy is one click away in the welcome and at the foot of Settings; the Targets window shows which forecast it is using, with the Apple Weather mark; the welcome says plainly that a site's coordinates go to the weather services |
 
 ## Install
 

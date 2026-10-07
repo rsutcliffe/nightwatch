@@ -20,6 +20,10 @@ final class Store: ObservableObject {
     @Published var availableUpdate: ReleaseCheck.Latest?
     /// Asks Location Services for one fix; set at launch, used by the welcome's "Use this Mac's location".
     var requestLocationFix: (() async -> Site?)?
+    /// Whether macOS has yet to ask about location: then "This Mac's location" asks when it is clicked, not before (1.6.2).
+    var locationNeverAsked: () -> Bool = { false }
+    /// Whether Location Services is off for the whole Mac, which calls for different words than "allow Nightwatch".
+    var locationServicesOff: () -> Bool = { false }
     @Published var events: [SkyEvent] = []
     @Published var forecast: Forecast?
     @Published var alertState: AlertState?
@@ -84,7 +88,8 @@ final class Store: ObservableObject {
         grids = LPGrids.finestFirst(LPGrids.bundled() + (world.map { [$0] } ?? []))
         try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: Store.siteCacheDir, withIntermediateDirectories: true)
-        switch LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) {
+        switch Distribution.copiesEarlierSettings
+            ? LegacyImport.run(from: LegacyImport.legacyDirectory, legacyCaches: LegacyImport.legacyCaches, to: StateFiles.directory) : .nothing {
         case .linked(let url): linkedSettings = url        // the welcome offers to import it through a file picker
         case .failed(let path): importError = "Could not copy your earlier settings from \(path). Set Nightwatch up again, or copy that file into Settings by hand."
         case .imported, .nothing: break
@@ -351,7 +356,7 @@ final class Store: ObservableObject {
         if let m = Store.configModDate(), m > (configModDate ?? .distantPast) { loadConfig() }
         guard !refreshing, !awaitingFix else { return }
         guard let site else {
-            if !configLoadFailed { lastError = "No site. Add one in Settings or allow location access." }
+            if !configLoadFailed { lastError = "No site yet. In Settings, choose This Mac's location or add a site." }
             return
         }
         refreshing = true
