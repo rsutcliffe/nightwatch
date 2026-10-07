@@ -254,7 +254,7 @@ in the name, subtitle and keywords.
 > • Spotlight and Shortcuts actions, so a shortcut can act on tonight's sky
 > • A Text size setting, and small, medium and large desktop widgets
 >
-> Free, with no accounts, no advertising and no tracking. Nightwatch is open source.
+> No accounts, no advertising and no tracking. Nightwatch is open source.
 
 ## App privacy answers
 
@@ -278,9 +278,13 @@ entitlement with the steps that show it in use**. App Review asks about any enti
 
 *On 7 October 2026 build 24 was rejected a third time, under 5.1.1(ii): "The app requests access to location data but did
 not prompt users with a macOS permission request", with advice to include `NSLocationUsageDescription` and that
-`NSLocationWhenInUseUsageDescription` "is only for iOS apps". The build had both keys. From 1.6.1 the Info.plist carries
-the macOS key alone, and its sentence names the forecast and gives an example; the prompt was seen with that text from a
-clean copy of the app. Build 24 also had no Quit control and no way to open About, where the privacy link is (5.1.1(i)
+`NSLocationWhenInUseUsageDescription` "is only for iOS apps". The build had both keys. 1.6.1 dropped the iOS key, and the prompt
+still appeared on macOS 27 from a clean copy of the app. But CoreLocation's header says `requestWhenInUseAuthorization`
+(macOS 10.15 and later) "will do nothing" without `NSLocationWhenInUseUsageDescription`, and earlier macOS versions could
+not be tested, so 1.6.2 carries both keys again with one specific sentence, and says why in the Notes. The likelier
+reason the reviewer saw no prompt: macOS asks once per app and nothing resets it (`tccutil` has no Location service), so
+a review Mac that answered in an earlier round never asks again. From 1.6.2 location is asked only from a button (the
+welcome's, or "This Mac's location" in Settings), never at launch. Build 24 also had no Quit control and no way to open About, where the privacy link is (5.1.1(i)
 asks for that link "within the app in an easily accessible manner"), so the store version moved to the current code
 instead of patching 1.0.0. Attach a recording that shows the prompt appearing.*
 
@@ -292,41 +296,50 @@ Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonig
 photograph the sky, and suggests what to point a telescope at. No account or login. It has no Dock icon: click its
 icon in the menu bar. To quit, click the power button at the top of the popover (Command-Q).
 
-Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" choose
+Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" click
 "Use this Mac's location". macOS then asks "Nightwatch would like to use your current location": choose Allow.
-(Or choose "Add a site..." and search for a town: the app works the same without location.) The menu-bar popover
-then shows tonight's forecast. Alerts fire only on nights that pass the go rule; to see one sooner, lower
-Settings > Go rule > "Clear for at least" to 1 h on a partly clear night.
+(Or click "Add a site..." and search for a town: the app works the same without location.) Click "Start watching".
+The menu-bar popover then shows tonight's forecast. macOS asks to allow notifications as the Welcome window closes.
 
-If no location prompt appears: Location Services is switched off on that Mac (System Settings > Privacy & Security >
-Location Services), or that Mac has already answered for Nightwatch. macOS shows no prompt in either case, and the
-Welcome window then says "Location is not available" with the way to allow it. The attached recording shows the prompt.
+Location is requested only when a button is pressed: the Welcome button above, or Settings > Where you observe >
+"This Mac's location". Nothing asks at launch. If no prompt appears, Location Services is switched off on that Mac
+(the app then says so), or that Mac has already answered for Nightwatch: macOS asks once per app, and tccutil does
+not reset it. The attached screenshot and recording show the prompt.
 
-Privacy policy: Settings > About Nightwatch (at the foot of the Settings window) > Privacy; also the Privacy Policy URL.
+Info.plist has NSLocationUsageDescription, the macOS key. It also keeps NSLocationWhenInUseUsageDescription with the
+same sentence, because the CoreLocation header for requestWhenInUseAuthorization (macOS 10.15 and later) says the
+request does nothing without that key.
 
-Outside services (read only, no user data except the site's coordinates for forecasts): Apple WeatherKit,
-Open-Meteo and 7Timer (forecasts), AuroraWatch UK and the NOAA Space Weather Prediction Center (aurora), CDS
-hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet Center and CelesTrak (comets, space station),
-Apple Maps (place search and maps).
+Alerts are local notifications: a heads-up an hour before sunset on a night that passes the go rule, and a nudge
+just before the clear spell. They cannot be forced in daylight; the attached screenshot shows them.
+
+Privacy policy: in the Welcome window (step 2), at the foot of Settings, and in Settings > About Nightwatch.
+
+Outside services (read only): Apple WeatherKit, Open-Meteo and 7Timer (forecasts; sent the site's coordinates),
+Apple Maps (place search, sent what is typed; maps and place names, sent coordinates), AuroraWatch UK and the NOAA
+Space Weather Prediction Center (aurora), CDS hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet
+Center and CelesTrak (comets, space station). Nothing identifies the user.
 
 Also in the app: Spotlight and Shortcuts actions (Sky Score, Best Targets Tonight, Events Tonight, Clear Window
-Tonight, Refresh Forecast, Show Target, Turn On or Off Clear-Sky Notifications). They read the forecast the app
-already holds. "Start at login" (Settings > App) is off until the user turns it on.
+Tonight, Refresh Forecast, Show Target, Turn On or Off Clear-Sky Notifications) that read the forecast the app
+already holds; on macOS 27, searching Nightwatch's targets from Siri. An event's page has "Add to Calendar", which
+writes a calendar file and asks for no calendar access. The widget opens targets through nightwatch:// links.
+"Start at login" (Settings > App) is off until the user turns it on.
 
 Entitlements and where to see each one:
 - App Sandbox: required for the Mac App Store.
-- Location (personal-information.location): Welcome step 2 "Use this Mac's location"; Settings > Where you observe >
-  "This Mac's location"; Settings > Where you observe > Add a site... > "Use this Mac's location". macOS asks
-  for permission when that button is pressed (and once at a later launch, if that Mac has never been asked). Used to
-  get the forecast for that place and to work out sunset, darkness and what is above the horizon.
-- Outgoing network connections (network.client): the forecasts, images and data above.
-- WeatherKit: the forecast in the popover; the Apple Weather mark under it links to the legal attribution.
+- Location (personal-information.location): the two buttons above. Used to get the forecast for that place and to
+  work out sunset, darkness and what is above the horizon.
+- Outgoing network connections (network.client): the services above.
+- WeatherKit: the forecast in the popover and the Targets window; the Apple Weather mark in each links to the
+  legal attribution.
 - iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
-  other Macs". Change a setting on one Mac and it appears on another signed in to the same Apple Account.
+  other Macs". Signed out of iCloud it reads "Not signed in to iCloud: settings stay on this Mac."
 - App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
   Edit Widgets; it shows the same sky score as the popover.
-- User-selected files, read only (files.user-selected.read-only): Settings > Where you observe > Horizon... >
-  "Measure from a photo..." opens a photo the user chooses, reads its direction, lens and tilt, and is not kept.
+- User-selected files, read only (files.user-selected.read-only): first add a site (Settings > Where you observe >
+  Add a site..., search for any town). On that site's row click Horizon..., then "Measure from a photo...": it
+  opens a photo the user chooses, reads its direction, lens and tilt, and does not keep it.
 ```
 
 The table behind it, for checking against the build (`codesign -d --entitlements - --xml` on the store app):

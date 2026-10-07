@@ -1,6 +1,6 @@
 # Nightwatch privacy policy
 
-*Last updated 7 October 2026 (what your location is used for, said in one place; keeping, deleting and changing your mind). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
+*Last updated 7 October 2026 (location is asked for only when you press a button; what it is used for, said in one place; keeping, deleting and changing your mind). Applies to Nightwatch 0.7.0 and later, from GitHub, delphi-dolphin.com or the Mac App Store.*
 
 Nightwatch is a free, open-source Mac app by Richard Sutcliffe. It has no accounts, no analytics, no advertising and no
 tracking. The developer collects no data about you: nothing is sent to the developer, and there is no Nightwatch server.
@@ -67,15 +67,17 @@ kept. Only the heights you use are saved, and the photo's position only if you p
 Nightwatch's own requests (all of the above except Apple Weather and Apple Maps) identify themselves as Nightwatch and its version, as
 the services ask. These services receive your IP
 address as part of any internet request, and their own privacy policies apply. Nightwatch shares nothing else with them
-or with anyone.
+or with anyone. None of them receives your name, an account or any identifier from Nightwatch, so none holds anything
+from Nightwatch that says who you are.
 
 ## Permissions
 
-- **Location** is asked for when you choose "Use this Mac's location". If macOS has never asked you on this Mac,
-  Nightwatch also asks once at a later launch, so that "This Mac's location" can be offered in Settings. The request
+- **Location** is asked for only when you press a button for it: "Use this Mac's location" in the welcome, or
+  "This Mac's location" in Settings › Where you observe. Nightwatch never brings up the request by itself. The request
   says what the location is for. You can refuse it and add a site by typing a place name, and Nightwatch works the
   same; or turn it off later in System Settings › Privacy & Security › Location Services.
-- **Notifications** are used only for Nightwatch's own alerts.
+- **Notifications** are asked for as the welcome closes, after it has said what they are for.
+  They are used only for Nightwatch's own alerts.
 
 ## Keeping, deleting and changing your mind
 
