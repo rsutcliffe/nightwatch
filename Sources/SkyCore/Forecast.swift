@@ -17,7 +17,7 @@ public struct HourlyConditions: Codable, Equatable, Sendable {
     /// The chance of rain or snow in this hour, 0 to 100 (#180); nil from a forecast cached by an earlier version or a source without one.
     public var rainChancePct: Int? = nil
     /// Aerosol optical depth at 550 nm in this hour (#183): how much smoke, dust and pollution the air carries. Nil without
-    /// the air-quality forecast: dark sites, a failed request, or a forecast cached by an earlier version.
+    /// the air-quality forecast: a failed request, or a forecast cached by an earlier version.
     public var aerosolDepth: Double? = nil
 
     public init(time: Date, cloudTotal: Int, cloudLow: Int?, cloudMid: Int?, cloudHigh: Int?, tempC: Double?, dewPointC: Double?,
@@ -289,8 +289,9 @@ public enum ForecastService {
     }
 
     /// Cloud hours from `primary` (WeatherKit by default) when it answers, else Open-Meteo; 7Timer seeing merged on top either way.
-    /// `secondOpinion`: this is the site being observed from, so also keep Open-Meteo's cloud when the primary answers, and
-    /// ask for the aerosol depth behind the haze line (#183); dark sites and home-while-away pass false and get neither.
+    /// `secondOpinion`: also keep Open-Meteo's cloud when the primary answers (the active site only; dark sites pass false).
+    /// Every site gets the aerosol depth behind the haze line (#183), since haze costs sky score and a dark site or home
+    /// scored without it would look better than the site it is compared with.
     public static func fetch(site: Site, fetcher: Fetcher, now: Date, primary: CloudProvider? = WeatherKitSource.provider,
                              secondOpinion wantSecond: Bool = true) async throws -> Forecast {
         var hours: [HourlyConditions]
@@ -311,7 +312,7 @@ public enum ForecastService {
             hours = merge(hours: hours, seeing: samples)
             seeingSource = "7Timer"
         }
-        if wantSecond, let data = try? await fetcher.get(AirQuality.url(latitude: site.latitude, longitude: site.longitude)),
+        if let data = try? await fetcher.get(AirQuality.url(latitude: site.latitude, longitude: site.longitude)),
            let samples = try? AirQuality.parse(data), !samples.isEmpty {
             hours = merge(hours: hours, aerosol: samples)
         }

@@ -269,7 +269,7 @@ And, once the build has the rain line (#180), after "Two forecasts compared":
 
 The same build adds one outside service, so the Notes for App Review change with it. In "Outside services (read
 only)", after "Open-Meteo and 7Timer (forecasts; sent the site's coordinates)", add: "Open-Meteo's air-quality service
-(smoke and haze forecast; sent the coordinates of the site being observed from)". The App privacy answers stay as they
+(smoke and haze forecast; sent each site's coordinates)". The App privacy answers stay as they
 are: it is the same data type, Precise Location, not linked to the person, used for app functionality.
 
 One screenshot of the horizon dial would back the first line: `docs/images/screenshot-horizon.png` is the README's.
