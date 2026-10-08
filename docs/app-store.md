@@ -256,6 +256,18 @@ in the name, subtitle and keywords.
 >
 > No accounts, no advertising and no tracking. Nightwatch is open source.
 
+**For the next submission** (owner, 8 October 2026: say more about the horizon; neither line is in the 1.6.4 listing).
+Add after "Targets chosen for your field of view":
+
+> • Your own horizon: mark the houses, trees or hills that block your sky, or measure them from a phone photo, and
+>   Nightwatch only suggests what clears them
+
+And, once the build has the rain line (#180), after "Two forecasts compared":
+
+> • A warning when rain is forecast after the clear window, for a telescope left running outside
+
+One screenshot of the horizon dial would back the first line: `docs/images/screenshot-horizon.png` is the README's.
+
 ## App privacy answers
 
 Apple counts data as collected when it leaves the Mac and is kept longer than it takes to answer the request.
@@ -287,6 +299,12 @@ a review Mac that answered in an earlier round never asks again. From 1.6.2 loca
 welcome's, or "This Mac's location" in Settings), never at launch. Build 24 also had no Quit control and no way to open About, where the privacy link is (5.1.1(i)
 asks for that link "within the app in an easily accessible manner"), so the store version moved to the current code
 instead of patching 1.0.0. Attach a recording that shows the prompt appearing.*
+
+*On 8 October 2026 the fourth submission went in: 1.6.4 (build 48), tested through TestFlight first, as 1.6.3 (build 47)
+was. The version page was saved as 1.6.4 with build 48, the description below, these Notes with a recording of the
+location prompt appearing, and five new screenshots. The reply in App Review's message thread carried four attachments
+(two recordings and two stills). Then **Update Review** on the version page and **Resubmit to App Review**: the status
+read "Waiting for Review" at about 15:19 BST.*
 
 Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
 whenever an entitlement or a setup step changes.

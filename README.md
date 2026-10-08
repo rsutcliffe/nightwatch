@@ -4,6 +4,8 @@
 
 Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. See the [product page](https://delphi-dolphin.com/nightwatch).
 
+**Trees, houses or a balcony roof in the way?** Tell Nightwatch how much sky you can actually see, direction by direction or from a phone photo, and it only suggests targets that clear it. See [Your horizon](#your-horizon).
+
 ![The full Moon on 26 September 2026, photographed with a DWARF Mini](docs/images/moon-dwarf-mini.jpg)
 
 *The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
@@ -46,7 +48,7 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 <img src="docs/images/screenshot-dark-sites-madrid.png" width="728" alt="Dark sites within 50 km of Madrid: two car parks near Rascafría, 47 and 50 km to the north-north-west, each with a map, Very dark against home at Bortle 8, and a note that it was found from light-pollution data">
 
-**Your horizon:** how high houses, trees or hills block the sky in each direction, with the hills found from terrain data.
+**Your horizon:** mark how high houses, trees or hills block the sky in each direction, or measure it from a phone photo, and every target, best time and plan follows it. The hills are found from terrain data.
 
 <img src="docs/images/screenshot-horizon.png" width="600" alt="The horizon at the Malham National Park car park: a dial of the sky seen from above with the hills as a thin brown band, each direction at open sky with the hills' height noted, and Hills reach 7 degrees to the N, NE and NW, 6 to the W, so nothing changes">
 
@@ -172,6 +174,8 @@ The Targets window also has **Eyes and binoculars**, a group of what you can see
 **The week ahead**, second in the Targets sidebar, lists tonight and the next nights, as far as the forecast reaches (up to ten), one row per night in date order: the clear sky by hour, the clear window or the longest clear run, darkness, the Moon, and seeing for the first three nights. It makes the best night of the week easy to pick. Moon and darkness are exact; cloud from three days out is marked "Less certain", with how many days ahead it is. Tonight and tomorrow have an Open plan button.
 
 ## Your horizon
+
+If you observe from a garden, a yard or a balcony, a target can be well up and still behind the house. Nightwatch plans around the sky you actually have.
 
 Houses, trees and hills hide part of the sky. Settings › Where you observe › **Horizon…** on a saved site sets how high the sky is blocked towards N, NE, E, SE, S, SW, W and NW, drawn on a dial of the sky seen from above. Nightwatch then counts a target as up only once it clears the horizon in its direction: the target lists, the popover's best three, Tonight's plan ("Clear of your horizon 22:50–00:20"), each target's best time and the altitude chart all follow it, and events hidden by it are marked. The horizon only ever raises the bar: the go rule's "Targets must reach" still sets the lowest height worth imaging through, since below about 20° a target's light crosses three times the air or more, so a direction below it changes nothing and reads "below your Go rule".
 
