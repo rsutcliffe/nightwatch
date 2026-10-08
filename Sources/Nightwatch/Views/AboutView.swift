@@ -3,7 +3,8 @@ import NightwatchUI
 import SkyCore
 
 struct AboutView: View {
-    /// One address for the privacy policy: About, the welcome and the foot of Settings all open it.
+    /// One address for the privacy policy: the welcome and the foot of Settings open it. Not About as well (1.6.3): it is
+    /// opened from the foot of Settings, where the link already is, as with What the numbers mean.
     static let privacyPolicy = URL(string: "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md")!
     @EnvironmentObject var store: Store
     private let notice = (try? String(contentsOfFile: Bundle.main.path(forResource: "NOTICE", ofType: nil) ?? "", encoding: .utf8)) ?? ""
@@ -19,7 +20,6 @@ struct AboutView: View {
                 Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
                 Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
                 Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
-                Link("Privacy ↗", destination: AboutView.privacyPolicy)   // App Store rule 5.1.1
             }
             .font(Font.scaled(.callout))
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)

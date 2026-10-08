@@ -96,6 +96,7 @@ final class Store: ObservableObject {
         }
         StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
+        if forecast?.cloudSource == "Apple Weather" { applePause.record(answered: true, now: .distantPast) }
         plan = Store.read("plan.json")             // content in the popover before the first fetch
         alertState = Store.readFile(StateFiles.url(StateFiles.alerts)) ?? Store.read(StateFiles.alerts)   // Caches only if the move failed
         aurora = Store.read("aurora.json")
@@ -349,6 +350,16 @@ final class Store: ObservableObject {
         checkTerrain()
     }
 
+    private var applePause = PrimaryPause()
+
+    /// Every forecast goes through here, so one refusal from Apple Weather spares it the rest of the pass (`PrimaryPause`).
+    private func fetchForecast(_ site: Site, now: Date, secondOpinion: Bool = true) async throws -> Forecast {
+        let ask = !applePause.paused(now: now)
+        let fc = try await ForecastService.fetch(site: site, fetcher: fetcher, now: now, primary: ask ? WeatherKitSource.provider : nil, secondOpinion: secondOpinion)
+        if ask { applePause.record(answered: fc.cloudSource == "Apple Weather", now: now) }
+        return fc
+    }
+
     /// Fetch when the cache is older than 30 minutes (or forced), then recompute everything.
     /// Also reloads config.json first when it changed on disk (another Mac editing it through a synced symlink),
     /// and treats a forecast for other coordinates as stale.
@@ -362,9 +373,9 @@ final class Store: ObservableObject {
         refreshing = true
         checkTerrain()
         let now = Date()
-        if force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > 30 * 60 }) ?? true {
+        if force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > applePause.maxAge(fromPrimary: forecast?.cloudSource == "Apple Weather") }) ?? true {
             do {
-                forecast = try await ForecastService.fetch(site: site, fetcher: fetcher, now: now)
+                forecast = try await fetchForecast(site, now: now)
                 Store.write(forecast, "forecast.json")
                 lastError = nil
             } catch {
@@ -579,7 +590,7 @@ final class Store: ObservableObject {
             var fc: Forecast? = Store.readFile(cacheURL)
             if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true {
                 let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
-                let fresh = try? await ForecastService.fetch(site: siteAsSite, fetcher: fetcher, now: now, secondOpinion: false)
+                let fresh = try? await fetchForecast(siteAsSite, now: now, secondOpinion: false)
                 guard gen == darkSitesGeneration else { return }
                 if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) }
             }
@@ -747,7 +758,7 @@ final class Store: ObservableObject {
         var fc: Forecast? = Store.readFile(url)
         if let f = fc, abs(f.latitude - home.latitude) > 0.01 || abs(f.longitude - home.longitude) > 0.01 { fc = nil }
         if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, attemptDue("home-forecast", every: 10 * 60, now: now),
-           let fresh = try? await ForecastService.fetch(site: home, fetcher: fetcher, now: now, secondOpinion: false) {
+           let fresh = try? await fetchForecast(home, now: now, secondOpinion: false) {
             fc = fresh; Store.writeFile(fresh, url)
         }
         guard let fc, now.timeIntervalSince(fc.fetchedAt) <= 24 * 3600,

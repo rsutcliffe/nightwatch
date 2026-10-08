@@ -200,7 +200,7 @@ struct SettingsView: View {
                 // The only way in: a menu-bar app never shows its own menus, so Window › About Nightwatch cannot be
                 // reached, and nothing else opened this window (owner, 6 October 2026).
                 Button("About Nightwatch") { openWindow(id: "about") }
-                Link("Privacy policy ↗", destination: AboutView.privacyPolicy).buttonStyle(.link)   // in reach without opening About (1.6.2)
+                Link("Privacy policy ↗", destination: AboutView.privacyPolicy).buttonStyle(.link)   // here and in the welcome, not in About as well (1.6.3)
             }
         }
         .formStyle(.grouped)
