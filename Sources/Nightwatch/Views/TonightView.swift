@@ -175,7 +175,8 @@ struct TonightView: View {
         return VStack(spacing: 8.5) {
             TileRow {
                 StatTile(label: "Dark", value: dark)
-                MoonTile(value: moon == .down ? "Down tonight" : pct, line: moon.flatMap { $0 == .down ? nil : Copy.moonText($0, site: site) }, at: moonAt)
+                // "Down" over "tonight", as "34%" sits over "Sets 06:10": on one line the tile broke the word, "Down tonig" / "ht" (1.6.4).
+                MoonTile(value: moon == .down ? "Down" : pct, line: moon.flatMap { $0 == .down ? "tonight" : Copy.moonText($0, site: site) }, at: moonAt)
                 StatTile(label: "Seeing", value: seeingText)
             }
             TileRow {

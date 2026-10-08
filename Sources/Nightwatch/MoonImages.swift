@@ -29,7 +29,7 @@ enum MoonImages {
 
 final class MoonLoader: ObservableObject { @Published var image: NSImage? }
 
-/// The popover's Moon tile: the rendered Moon (32 pt, dark rim) beside "{n}%" and "Sets 06:10" (or "Down tonight" alone).
+/// The popover's Moon tile: the rendered Moon (32 pt, dark rim) beside "{n}%" and "Sets 06:10" (or "Down" and "tonight").
 struct MoonTile: View {
     let value: String
     let line: String?

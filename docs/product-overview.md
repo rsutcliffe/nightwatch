@@ -1,6 +1,6 @@
 # Nightwatch: product overview
 
-*As of 8 October 2026, version 1.6.3 "Hex, patch 3". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
+*As of 8 October 2026, version 1.6.4 "Hex, patch 4". Free and open source, MIT licence. https://github.com/rsutcliffe/nightwatch*
 
 ## What it is
 
@@ -227,6 +227,7 @@ Tags follow the City Watch novels.
 | 1.6.1 | Hex, patch 1 | 7 October 2026 | When macOS asks whether Nightwatch may use this Mac's location, the request now says what the location is for: the weather forecast where you are, and sunset, darkness and what is above your horizon, with an example; nothing else changes, and a Mac that has already answered is not asked again |
 | 1.6.2 | Hex, patch 2 | 7 October 2026 | Nightwatch asks to use this Mac's location only when you press a button for it: "Use this Mac's location" in the welcome, or "This Mac's location" in Settings, which now asks when clicked; it no longer asks by itself at a later launch; the request is one plain sentence, given to macOS in both of the forms it reads, as it was before 1.6.1, which may not have asked on macOS 14 to 26; when Location Services is switched off for the whole Mac, Nightwatch says so; "How to shoot this" scrolls when it is taller than the picture, where its title and first row were cut off in a window at its opening size; the privacy policy is one click away in the welcome and at the foot of Settings; the Targets window shows which forecast it is using, with the Apple Weather mark; the welcome says plainly that a site's coordinates go to the weather services |
 | 1.6.3 | Hex, patch 3 | 8 October 2026 | When Apple Weather does not answer, Nightwatch leaves it alone for five minutes, where it used to ask again for every dark site, and takes those forecasts from Open-Meteo; once Apple Weather has answered on this Mac, a forecast that had to come from Open-Meteo is replaced after five minutes, where it used to stay for thirty, so the Apple Weather forecast is back soon after Apple answers again; the privacy policy link is in the welcome and at the foot of Settings, and no longer a second time in About, which opens from the foot of Settings |
+| 1.6.4 | Hex, patch 4 | 8 October 2026 | On a night when the Moon stays below the horizon, the popover's Moon tile reads "Down" with "tonight" under it, where "Down tonight" on one line was broken in the middle of the word |
 
 ## Install
 
