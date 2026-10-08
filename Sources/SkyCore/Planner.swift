@@ -658,8 +658,11 @@ extension Planner {
         return p
     }
 
-    /// An aerosol optical depth at or above this, averaged through the clear window, counts as haze (#183). Light lost is
-    /// 1 − e^(−depth × air mass): at 0.4 a third of a target's light overhead and over half at 30° up. Over the year to
+    /// An aerosol optical depth at or above this, averaged through the clear window, counts as haze (#183; the owner
+    /// confirmed the level, 8 October 2026). NOAA's Global Monitoring Laboratory: "A value of 0.01 corresponds to an
+    /// extremely clean atmosphere, and a value of 0.4 would correspond to a very hazy condition", with 0.1 to 0.15 the
+    /// United States average (gml.noaa.gov/grad/surfrad/aod). Light lost is 1 − e^(−depth × air mass): at 0.4 a third of
+    /// a target's light overhead and over half at 30° up. Over the year to
     /// 30 September 2026, on each night's 21:00–03:00 average, it was reached on 1% of nights in northern England, 6% in
     /// Tenerife (Saharan dust), 7% in Calgary (wildfire smoke) and 75% in Delhi; 0.2 would be 10 to 30% of ordinary nights.
     /// ponytail: one fixed starting level and no part in the sky score; tune it, or score it, once real nights have been seen.
