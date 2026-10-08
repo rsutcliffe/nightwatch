@@ -265,6 +265,12 @@ Add after "Targets chosen for your field of view":
 And, once the build has the rain line (#180), after "Two forecasts compared":
 
 > • A warning when rain is forecast after the clear window, for a telescope left running outside
+> • A warning when wildfire smoke or haze will dim a clear night (#183)
+
+The same build adds one outside service, so the Notes for App Review change with it. In "Outside services (read
+only)", after "Open-Meteo and 7Timer (forecasts; sent the site's coordinates)", add: "Open-Meteo's air-quality service
+(smoke and haze forecast; sent the coordinates of the site being observed from)". The App privacy answers stay as they
+are: it is the same data type, Precise Location, not linked to the person, used for app functionality.
 
 One screenshot of the horizon dial would back the first line: `docs/images/screenshot-horizon.png` is the README's.
 
