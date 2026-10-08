@@ -293,7 +293,7 @@ whenever an entitlement or a setup step changes.
 
 ```
 Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
-photograph the sky, and suggests what to point a telescope at. No account or login. It has no Dock icon: click its
+photograph the sky, and suggests targets. No account or login. It has no Dock icon: click its
 icon in the menu bar. To quit, click the power button at the top of the popover (Command-Q).
 
 Setup: on first launch the Welcome window asks two questions. In step 2 "Where do you observe from?" click
@@ -304,7 +304,7 @@ The menu-bar popover then shows tonight's forecast. macOS asks to allow notifica
 Location is requested only when a button is pressed: the Welcome button above, or Settings > Where you observe >
 "This Mac's location". Nothing asks at launch. If no prompt appears, Location Services is switched off on that Mac
 (the app then says so), or that Mac has already answered for Nightwatch: macOS asks once per app, and tccutil does
-not reset it. The attached screenshot and recording show the prompt.
+not reset it. The attachments show the prompt.
 
 Info.plist has NSLocationUsageDescription, the macOS key. It also keeps NSLocationWhenInUseUsageDescription with the
 same sentence, because the CoreLocation header for requestWhenInUseAuthorization (macOS 10.15 and later) says the
@@ -332,7 +332,8 @@ Entitlements and where to see each one:
   work out sunset, darkness and what is above the horizon.
 - Outgoing network connections (network.client): the services above.
 - WeatherKit: the forecast in the popover and the Targets window; the Apple Weather mark in each links to the
-  legal attribution.
+  legal attribution. If Apple Weather does not answer, the app uses Open-Meteo and names it there, as in the
+  recording.
 - iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
   other Macs". Signed out of iCloud it reads "Not signed in to iCloud: settings stay on this Mac."
 - App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
