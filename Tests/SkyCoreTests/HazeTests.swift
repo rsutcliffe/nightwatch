@@ -170,6 +170,14 @@ private func target(_ id: String, _ group: TargetGroup, mag: Double?, alt: Doubl
     #expect(Planner.best(from: ranked, hazy: true).map(\.id) == ["saturn", "bright-cluster", "bright-nebula"])
     // With no planet up, the galaxy comes back as the third, still the brightest of its kind.
     #expect(Planner.best(from: ranked.filter { $0.group != .planets }, hazy: true).map(\.id) == ["bright-cluster", "bright-nebula", "bright-galaxy"])
+    // A big diffuse nebula with a bright total (the California Nebula, magnitude 6 across 145′) loses to a small bright one:
+    // its light is spread too thin to survive haze.
+    let spread = RankedTarget(id: "big-diffuse", name: "big-diffuse", subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: 145, magnitude: 6,
+                              fit: .fits, peakAltDeg: 70, peakTime: Date(timeIntervalSince1970: 0), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+    let compact = RankedTarget(id: "small-bright", name: "small-bright", subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: 8, magnitude: 8,
+                               fit: .fits, peakAltDeg: 40, peakTime: Date(timeIntervalSince1970: 0), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+    #expect(Planner.best(from: [spread, compact], hazy: true).map(\.id) == ["small-bright"])
+    #expect(Planner.hazeBrightness(spread) > Planner.hazeBrightness(compact))
     // A favourite still takes its slot.
     let fav = target("faint-nebula", .nebulae, mag: 10, alt: 85)
     #expect(Planner.best(from: ranked, favourites: [fav], hazy: true).map(\.id) == ["saturn", "bright-cluster", "faint-nebula"])

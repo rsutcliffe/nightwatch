@@ -496,13 +496,24 @@ extension Planner {
     /// Top three across groups, at most one per group, deep sky first. The highest usable favourite that is not Moon-washed
     /// takes a slot (v1.0.1), in place of its own group's pick, else of the last. `favourites` are the usable ones, which
     /// includes any the list's magnitude cut left out.
+    /// How bright a deep-sky target looks through haze, lower being brighter. A cluster's stars show one by one, so its
+    /// total magnitude counts. A nebula's or galaxy's light is judged spread over its size, as Eyes and binoculars does:
+    /// by total magnitude the first hazy night seen (Niamey, 8 October 2026) offered the California Nebula, magnitude 6
+    /// across two and a half degrees, which haze leaves nothing of. One with no magnitude or size comes last.
+    static func hazeBrightness(_ t: RankedTarget) -> Double {
+        guard let m = t.magnitude else { return .infinity }
+        if t.group == .clusters { return m }
+        guard let a = t.sizeArcmin, a > 0 else { return .infinity }
+        return EyeViews.surfaceBrightness(magnitude: m, majorArcmin: a, minorArcmin: t.minorArcmin)
+    }
+
     /// `hazy` (#183): smoke or dust dims faint targets most, so the bright kinds come first (planets and the Moon, then
     /// star clusters), and each deep-sky pick is the brightest on the list rather than the best placed.
     static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = [], hazy: Bool = false) -> [RankedTarget] {
         var picked: [RankedTarget] = []
         for g in hazy ? [TargetGroup.planets, .clusters, .nebulae, .galaxies] : [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
             let usable = ranked.filter { $0.group == g && !$0.moonWashed }
-            let pick = hazy && g != .planets ? usable.min { ($0.magnitude ?? 99) < ($1.magnitude ?? 99) } : usable.first
+            let pick = hazy && g != .planets ? usable.min { hazeBrightness($0) < hazeBrightness($1) } : usable.first
             if let t = pick { picked.append(t) }
             if picked.count == 3 { break }
         }
