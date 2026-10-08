@@ -28,9 +28,9 @@ public struct Copy: Sendable {
     }
 
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
-    /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
+    /// from 00:00, so this window is less certain than usual."), then the rain line (#180); the tomorrow preview passes false.
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
-        let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) : ""
+        let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) + rainLine(plan: plan, site: site) : ""
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
@@ -44,6 +44,17 @@ public struct Copy: Sendable {
     public func secondOpinionLine(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
         if let advice = Copy.advice(plan, site: site, alerts: alerts) { return " " + advice.sentence }
         return plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? ""
+    }
+
+    /// "Rain possible from 03:00" (#180): for a telescope left running after the window, so it is only said on a night with
+    /// a clear window, and only when rain is forecast before sunrise.
+    public static func rain(_ plan: NightPlan, site: Site) -> String? {
+        plan.rainFrom.map { "Rain possible from \(hhmm($0, site: site))" }
+    }
+
+    /// The rain line as a tonight notification ends, with its leading space; "" on a dry night.
+    public func rainLine(plan: NightPlan, site: Site) -> String {
+        Copy.rain(plan, site: site).map { " " + $0 + "." } ?? ""
     }
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.

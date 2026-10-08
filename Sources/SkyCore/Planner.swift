@@ -255,6 +255,8 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var agreement: Agreement? = nil
     /// Every favourite, usable tonight or not (v1.0.1), in the order they were added.
     public var favourites: [FavouriteTarget] = []
+    /// When rain becomes likely between the window opening and sunrise (#180); nil on a dry night or without a window.
+    public var rainFrom: Date? = nil
 }
 
 extension NightPlan {
@@ -280,6 +282,7 @@ extension NightPlan {
         moonUpFraction = try c.decodeIfPresent(Double.self, forKey: .moonUpFraction)
         agreement = try c.decodeIfPresent(Agreement.self, forKey: .agreement)
         favourites = try c.decodeIfPresent([FavouriteTarget].self, forKey: .favourites) ?? []
+        rainFrom = try c.decodeIfPresent(Date.self, forKey: .rainFrom)
     }
 }
 
@@ -541,6 +544,7 @@ extension Planner {
                                  seeingAvailable: dark.contains { $0.seeing != nil },
                                  limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: darkness == nil ? nil : aboveFraction)
         darkPlan.agreement = agreement(plan: darkPlan, second: forecast.secondOpinion, rule: rule)
+        darkPlan.rainFrom = primary.flatMap { rainFrom(hours: forecast.hours, window: $0, sunrise: night.sunrise) }
         darkPlan.favourites = favouriteTargets(favourites, ranked: targets, catalog: catalog, constellations: constellations, stars: stars,
                                                window: rankingWindow, night: night, site: site, fov: fov, rule: rule)
         if primary != nil { darkPlan.best = best(from: targets, favourites: darkPlan.favourites.filter { $0.notTonight == nil }.map(\.target)) }
@@ -643,7 +647,21 @@ extension Planner {
                          mode: .bright, brightTargets: primary.map { brightTargets(during: $0, site: site, fov: fov) } ?? [],
                          limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: moonUpFraction(from: ns, to: ne, site: site))
         p.agreement = agreement(plan: p, second: forecast.secondOpinion, rule: brightRule)
+        p.rainFrom = primary.flatMap { rainFrom(hours: forecast.hours, window: $0, sunrise: night.sunrise) }
         return p
+    }
+
+    /// A chance of rain at or above this counts as a risk to a telescope left running outside (owner, 8 October 2026).
+    /// ponytail: one fixed starting level, to tune from real nights as the aurora bands were; a setting if it misjudges.
+    public static let rainRiskPct = 30
+
+    /// The first hour, from the one the window opens in until sunrise, with rain at least that likely, never earlier than
+    /// the window's start; nil when there is none, or the forecast has no rain chance. A clear window has little rain
+    /// inside it: this is for the hours after, while a long stack is still running.
+    public static func rainFrom(hours: [HourlyConditions], window: ClearWindow, sunrise: Date) -> Date? {
+        hours.sorted { $0.time < $1.time }
+            .first { $0.time.addingTimeInterval(3600) > window.start && $0.time < sunrise && ($0.rainChancePct ?? 0) >= rainRiskPct }
+            .map { max($0.time, window.start) }
     }
 }
 

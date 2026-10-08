@@ -108,6 +108,9 @@ struct TonightView: View {
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
+                    if let rain = Copy.rain(plan, site: site) {
+                        Text(rain).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
                     Text("No astronomical darkness").font(.system(size: TextScale.pt(15), weight: .medium))
                     Text("Too far north or south for this date.").font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)

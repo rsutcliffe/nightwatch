@@ -25,6 +25,8 @@ public enum NumbersGuide {
                    body: "How clear the air is to faint light: haze, dust and thin high cloud dim nebulae and galaxies even when the sky looks clear. From 7Timer."),
         GuideEntry(id: "wind", title: "Wind and dew risk",
                    body: "Wind above 10 km/h starts to cost points, the most it can cost by 40 km/h, since a small telescope shakes in it. Dew risk is how close the air comes to its dew point: within 2 °C is High (fit the dew heater), within 4 °C Medium."),
+        GuideEntry(id: "rain", title: "Rain possible from",
+                   body: "Shown on a night with a clear window when rain becomes likely before sunrise: a \(Planner.rainRiskPct)% chance or more in any hour, from the same forecast as the cloud. It is for a telescope left running after the window closes, so you know when to bring it in. A night that stays dry shows nothing."),
         GuideEntry(id: "bortle", title: "Bortle",
                    body: "How dark your sky is, from 1 (pristine) to 9 (inner city). Your site’s class is set in Settings; dark sites show theirs, so you can see what a drive would gain."),
         GuideEntry(id: "eq", title: "EQ tilt",

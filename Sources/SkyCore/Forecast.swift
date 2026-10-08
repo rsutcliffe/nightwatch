@@ -14,6 +14,8 @@ public struct HourlyConditions: Codable, Equatable, Sendable {
     public var visibilityM: Double?
     public var seeing: Int?
     public var transparency: Int?
+    /// The chance of rain or snow in this hour, 0 to 100 (#180); nil from a forecast cached by an earlier version or a source without one.
+    public var rainChancePct: Int? = nil
 
     public init(time: Date, cloudTotal: Int, cloudLow: Int?, cloudMid: Int?, cloudHigh: Int?, tempC: Double?, dewPointC: Double?,
                 humidityPct: Int?, windKmh: Double?, gustKmh: Double?, visibilityM: Double?, seeing: Int?, transparency: Int?) {
@@ -118,7 +120,7 @@ public enum ForecastError: Error { case malformed(String) }
 
 public enum OpenMeteo {
     static let variables = ["cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "dew_point_2m", "temperature_2m",
-                            "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility"]
+                            "relative_humidity_2m", "wind_speed_10m", "wind_gusts_10m", "visibility", "precipitation_probability"]
 
     /// `pastDays`: also return that many days before today. The second opinion asks for 1: Open-Meteo starts at 00:00 local,
     /// so a patrol just after midnight would otherwise lack the evening hours of tonight's darkness.
@@ -149,6 +151,7 @@ public enum OpenMeteo {
             let wind_speed_10m: [Double?]?
             let wind_gusts_10m: [Double?]?
             let visibility: [Double?]?
+            let precipitation_probability: [Double?]?
         }
     }
 
@@ -162,13 +165,15 @@ public enum OpenMeteo {
         for (i, ts) in p.hourly.time.enumerated() {
             guard let local = f.date(from: ts) else { throw ForecastError.malformed("time \(ts)") }
             func at<T>(_ a: [T?]?) -> T? { guard let a, i < a.count else { return nil }; return a[i] }
-            out.append(HourlyConditions(
+            var h = HourlyConditions(
                 time: local.addingTimeInterval(-p.utc_offset_seconds),
                 cloudTotal: at(p.hourly.cloud_cover) ?? 100,
                 cloudLow: at(p.hourly.cloud_cover_low), cloudMid: at(p.hourly.cloud_cover_mid), cloudHigh: at(p.hourly.cloud_cover_high),
                 tempC: at(p.hourly.temperature_2m), dewPointC: at(p.hourly.dew_point_2m), humidityPct: at(p.hourly.relative_humidity_2m),
                 windKmh: at(p.hourly.wind_speed_10m), gustKmh: at(p.hourly.wind_gusts_10m), visibilityM: at(p.hourly.visibility),
-                seeing: nil, transparency: nil))
+                seeing: nil, transparency: nil)
+            h.rainChancePct = at(p.hourly.precipitation_probability).map { Int($0.rounded()) }
+            out.append(h)
         }
         return out
     }
