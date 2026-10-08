@@ -251,3 +251,25 @@ public enum ForecastService {
                         cloudSource: cloudSource, attributionMarkURL: markURL, attributionLegalURL: legalURL, secondOpinion: second)
     }
 }
+
+/// Apple Weather can refuse a Mac for a while: HTTP 429 for three hours on 7 October 2026, to Apple's own Weather menu as
+/// well. Asking again for each dark site only collects more refusals, so after one failure the primary is left alone for
+/// five minutes and those fetches go straight to Open-Meteo. And once Apple Weather has answered on this Mac, a forecast
+/// that had to come from Open-Meteo is replaced after five minutes, not thirty, so Apple Weather is back soon after it
+/// answers again. A build not signed for Apple Weather never has an answer, and keeps the thirty-minute cache.
+public struct PrimaryPause {
+    public static let length: TimeInterval = 5 * 60
+    private var failedAt: Date?
+    private var hasAnswered = false
+    public init() {}
+
+    public func paused(now: Date) -> Bool { failedAt.map { now.timeIntervalSince($0) < Self.length } ?? false }
+
+    /// What a fetch that asked the primary came back with.
+    public mutating func record(answered: Bool, now: Date) {
+        if answered { hasAnswered = true; failedAt = nil } else { failedAt = now }
+    }
+
+    /// How old the active site's forecast may grow before it is fetched again.
+    public func maxAge(fromPrimary: Bool) -> TimeInterval { hasAnswered && !fromPrimary ? Self.length : 30 * 60 }
+}

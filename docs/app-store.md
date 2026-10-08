@@ -313,7 +313,7 @@ request does nothing without that key.
 Alerts are local notifications: a heads-up an hour before sunset on a night that passes the go rule, and a nudge
 just before the clear spell. They cannot be forced in daylight; the attached screenshot shows them.
 
-Privacy policy: in the Welcome window (step 2), at the foot of Settings, and in Settings > About Nightwatch.
+Privacy policy: in the Welcome window (step 2) and at the foot of Settings.
 
 Outside services (read only): Apple WeatherKit, Open-Meteo and 7Timer (forecasts; sent the site's coordinates),
 Apple Maps (place search, sent what is typed; maps and place names, sent coordinates), AuroraWatch UK and the NOAA
