@@ -108,6 +108,9 @@ struct TonightView: View {
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
+                    if let haze = Copy.haze(plan) {
+                        Text(haze).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
                     if let rain = Copy.rain(plan, site: site) {
                         Text(rain).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }

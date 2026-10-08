@@ -257,6 +257,10 @@ public struct NightPlan: Codable, Equatable, Sendable {
     public var favourites: [FavouriteTarget] = []
     /// When rain becomes likely between the window opening and sunrise (#180); nil on a dry night or without a window.
     public var rainFrom: Date? = nil
+    /// The average aerosol optical depth through the clear window (#183); nil without a window or the air-quality forecast.
+    public var hazeDepth: Double? = nil
+    /// Enough smoke, dust or pollution through the window to dim faint targets.
+    public var hazy: Bool { (hazeDepth ?? 0) >= Planner.hazeDepth }
 }
 
 extension NightPlan {
@@ -283,6 +287,7 @@ extension NightPlan {
         agreement = try c.decodeIfPresent(Agreement.self, forKey: .agreement)
         favourites = try c.decodeIfPresent([FavouriteTarget].self, forKey: .favourites) ?? []
         rainFrom = try c.decodeIfPresent(Date.self, forKey: .rainFrom)
+        hazeDepth = try c.decodeIfPresent(Double.self, forKey: .hazeDepth)
     }
 }
 
@@ -545,6 +550,7 @@ extension Planner {
                                  limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: darkness == nil ? nil : aboveFraction)
         darkPlan.agreement = agreement(plan: darkPlan, second: forecast.secondOpinion, rule: rule)
         darkPlan.rainFrom = primary.flatMap { rainFrom(hours: forecast.hours, window: $0, sunrise: night.sunrise) }
+        darkPlan.hazeDepth = primary.flatMap { haze(hours: forecast.hours, window: $0) }
         darkPlan.favourites = favouriteTargets(favourites, ranked: targets, catalog: catalog, constellations: constellations, stars: stars,
                                                window: rankingWindow, night: night, site: site, fov: fov, rule: rule)
         if primary != nil { darkPlan.best = best(from: targets, favourites: darkPlan.favourites.filter { $0.notTonight == nil }.map(\.target)) }
@@ -648,7 +654,22 @@ extension Planner {
                          limiting: primary == nil ? [] : limitingFactors(inputs), moonUpFraction: moonUpFraction(from: ns, to: ne, site: site))
         p.agreement = agreement(plan: p, second: forecast.secondOpinion, rule: brightRule)
         p.rainFrom = primary.flatMap { rainFrom(hours: forecast.hours, window: $0, sunrise: night.sunrise) }
+        p.hazeDepth = primary.flatMap { haze(hours: forecast.hours, window: $0) }
         return p
+    }
+
+    /// An aerosol optical depth at or above this, averaged through the clear window, counts as haze (#183). Light lost is
+    /// 1 − e^(−depth × air mass): at 0.4 a third of a target's light overhead and over half at 30° up. Over the year to
+    /// 30 September 2026, on each night's 21:00–03:00 average, it was reached on 1% of nights in northern England, 6% in
+    /// Tenerife (Saharan dust), 7% in Calgary (wildfire smoke) and 75% in Delhi; 0.2 would be 10 to 30% of ordinary nights.
+    /// ponytail: one fixed starting level and no part in the sky score; tune it, or score it, once real nights have been seen.
+    public static let hazeDepth = 0.4
+
+    /// The average aerosol depth over the hours the window touches, to two places as the source gives it (so an average
+    /// of exactly the level is not lost to rounding error); nil when none of them has a figure.
+    public static func haze(hours: [HourlyConditions], window: ClearWindow) -> Double? {
+        let depths = hours.filter { window.overlapsHour(startingAt: $0.time) }.compactMap(\.aerosolDepth)
+        return depths.isEmpty ? nil : (depths.reduce(0, +) / Double(depths.count) * 100).rounded() / 100
     }
 
     /// A chance of rain at or above this counts as a risk to a telescope left running outside (owner, 8 October 2026).

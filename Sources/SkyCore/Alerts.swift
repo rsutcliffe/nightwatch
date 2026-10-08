@@ -152,7 +152,7 @@ public enum AlertEngine {
                     let (start, hours) = window(tonight)
                     // With Tonight's plan (#57) the heads-up says where to start; the advice sentence still follows.
                     let planText = session.flatMap { Copy.headsUpPlan($0, plan: tonight, site: site) }
-                    let body = firstClear() + (planText.map { $0 + copy.secondOpinionLine(plan: tonight, site: site, alerts: settings) + copy.rainLine(plan: tonight, site: site) }
+                    let body = firstClear() + (planText.map { $0 + copy.closingLines(plan: tonight, site: site, alerts: settings) }
                         ?? copy.notificationBody(plan: tonight, site: site, alerts: settings))
                         + (Copy.alsoTonight(events, night: tonight.night, site: site).map { " " + $0 } ?? "")
                     note = AlertNotification(kind: .headsUp, title: tonight.mode == .bright ? copy.brightHeadsUpTitle(windowStart: start, targets: tonight.brightTargets) : copy.headsUpTitle(windowStart: start, hours: hours), body: body,

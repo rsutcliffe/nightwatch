@@ -39,7 +39,8 @@ nearby dark-sky sites if that feature is on). They go to:
 - **Apple Weather (WeatherKit)**, on builds signed for it. macOS makes these requests on Nightwatch's behalf and
   identifies the app to Apple, as it does for every app using Apple Weather. See
   [Apple's privacy policy](https://www.apple.com/legal/privacy/).
-- **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion, and once for each saved site
+- **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion; for the place you are
+  observing from, its air-quality service, for how much smoke, dust or haze is in the air; and once for each saved site
   (and again if it moves) the ground's height at points up to 20 km around it, for the hills on its horizon. No name,
   account or device identifier goes with the coordinates.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.

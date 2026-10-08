@@ -28,9 +28,9 @@ public struct Copy: Sendable {
     }
 
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
-    /// from 00:00, so this window is less certain than usual."), then the rain line (#180); the tomorrow preview passes false.
+    /// from 00:00, so this window is less certain than usual."), then the haze and rain lines; the tomorrow preview passes false.
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
-        let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) + rainLine(plan: plan, site: site) : ""
+        let line = agreement ? closingLines(plan: plan, site: site, alerts: alerts) : ""
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
@@ -40,7 +40,7 @@ public struct Copy: Sendable {
         return parts.joined(separator: ". ") + "." + line
     }
 
-    /// The second opinion as a notification ends, with its leading space; "" without one. Shared by every body that carries it.
+    /// The second opinion as a notification ends, with its leading space; "" without one.
     public func secondOpinionLine(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
         if let advice = Copy.advice(plan, site: site, alerts: alerts) { return " " + advice.sentence }
         return plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? ""
@@ -55,6 +55,23 @@ public struct Copy: Sendable {
     /// The rain line as a tonight notification ends, with its leading space; "" on a dry night.
     public func rainLine(plan: NightPlan, site: Site) -> String {
         Copy.rain(plan, site: site).map { " " + $0 + "." } ?? ""
+    }
+
+    /// "Haze or smoke: faint targets will be dim" (#183): a cloudless night that will still disappoint on a nebula or a
+    /// galaxy. Only with a clear window, and only when the air through it is hazy (`NightPlan.hazy`).
+    public static func haze(_ plan: NightPlan) -> String? {
+        plan.hazy ? "Haze or smoke: faint targets will be dim" : nil
+    }
+
+    /// The haze line as a tonight notification ends, with its leading space; "" in clean air.
+    public func hazeLine(plan: NightPlan) -> String {
+        plan.hazy ? " Haze or smoke in the air, so faint targets will be dim." : ""
+    }
+
+    /// What a tonight notification ends with: the second opinion, then haze (#183), then rain (#180), each "" when it has
+    /// nothing to say. Shared by every body that carries them.
+    public func closingLines(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
+        secondOpinionLine(plan: plan, site: site, alerts: alerts) + hazeLine(plan: plan) + rainLine(plan: plan, site: site)
     }
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.

@@ -25,6 +25,8 @@ public enum NumbersGuide {
                    body: "How clear the air is to faint light: haze, dust and thin high cloud dim nebulae and galaxies even when the sky looks clear. From 7Timer."),
         GuideEntry(id: "wind", title: "Wind and dew risk",
                    body: "Wind above 10 km/h starts to cost points, the most it can cost by 40 km/h, since a small telescope shakes in it. Dew risk is how close the air comes to its dew point: within 2 °C is High (fit the dew heater), within 4 °C Medium."),
+        GuideEntry(id: "haze", title: "Haze or smoke",
+                   body: "Shown on a night with a clear window when the air through it is forecast to carry enough smoke, dust or pollution to dim faint targets: an aerosol optical depth of \(Planner.hazeDepth) or more, from the Copernicus Atmosphere Monitoring Service through Open-Meteo. At that depth about a third of a nebula’s or galaxy’s light is lost overhead, and over half at 30° up. The Moon, planets and bright clusters still work. The sky score does not count it."),
         GuideEntry(id: "rain", title: "Rain possible from",
                    body: "Shown on a night with a clear window when rain becomes likely before sunrise: a \(Planner.rainRiskPct)% chance or more in any hour, from the same forecast as the cloud. It is for a telescope left running after the window closes, so you know when to bring it in. A night that stays dry shows nothing."),
         GuideEntry(id: "bortle", title: "Bortle",
