@@ -499,21 +499,26 @@ extension Planner {
     /// How bright a deep-sky target looks through haze, lower being brighter. A cluster's stars show one by one, so its
     /// total magnitude counts. A nebula's or galaxy's light is judged spread over its size, as Eyes and binoculars does:
     /// by total magnitude the first hazy night seen (Niamey, 8 October 2026) offered the California Nebula, magnitude 6
-    /// across two and a half degrees, which haze leaves nothing of. One with no magnitude or size comes last.
+    /// across two and a half degrees, which haze leaves nothing of. One with no magnitude or size comes last. The Moon
+    /// outshines everything, and a planet counts by its magnitude: best placed alone offered Uranus over Saturn.
     static func hazeBrightness(_ t: RankedTarget) -> Double {
+        if t.id == "moon" { return -13 }
         guard let m = t.magnitude else { return .infinity }
-        if t.group == .clusters { return m }
+        if t.group == .clusters || t.group == .planets { return m }
         guard let a = t.sizeArcmin, a > 0 else { return .infinity }
         return EyeViews.surfaceBrightness(magnitude: m, majorArcmin: a, minorArcmin: t.minorArcmin)
     }
 
     /// `hazy` (#183): smoke or dust dims faint targets most, so the bright kinds come first (planets and the Moon, then
-    /// star clusters), and each deep-sky pick is the brightest on the list rather than the best placed.
+    /// star clusters), and each pick is the brightest of its kind rather than the best placed. A deep-sky target under 5′
+    /// ("Small in frame") is passed over while a bigger one is on the list: surface brightness alone chose IC 5117, a
+    /// planetary nebula two arcseconds across, which a small telescope shows as a star.
     static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = [], hazy: Bool = false) -> [RankedTarget] {
         var picked: [RankedTarget] = []
         for g in hazy ? [TargetGroup.planets, .clusters, .nebulae, .galaxies] : [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
             let usable = ranked.filter { $0.group == g && !$0.moonWashed }
-            let pick = hazy && g != .planets ? usable.min { hazeBrightness($0) < hazeBrightness($1) } : usable.first
+            let roomy = usable.filter { g == .planets || $0.fit != .small }
+            let pick = hazy ? (roomy.isEmpty ? usable : roomy).min { hazeBrightness($0) < hazeBrightness($1) } : usable.first
             if let t = pick { picked.append(t) }
             if picked.count == 3 { break }
         }

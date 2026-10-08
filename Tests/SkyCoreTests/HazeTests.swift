@@ -165,8 +165,9 @@ private func target(_ id: String, _ group: TargetGroup, mag: Double?, alt: Doubl
     let ranked = [target("faint-nebula", .nebulae, mag: 10, alt: 85), target("bright-nebula", .nebulae, mag: 4, alt: 50),
                   target("faint-galaxy", .galaxies, mag: 11, alt: 80), target("bright-galaxy", .galaxies, mag: 3.4, alt: 45),
                   target("faint-cluster", .clusters, mag: 9, alt: 75), target("bright-cluster", .clusters, mag: 1.6, alt: 40),
-                  target("saturn", .planets, mag: nil, alt: 60)]
+                  target("uranus", .planets, mag: 5.7, alt: 82), target("saturn", .planets, mag: 0.6, alt: 60)]
     #expect(Planner.best(from: ranked).map(\.id) == ["faint-nebula", "faint-galaxy", "faint-cluster"])   // a clean night: unchanged
+    #expect(Planner.best(from: ranked.filter { $0.group == .planets }).map(\.id) == ["uranus"])            // best placed, as before
     #expect(Planner.best(from: ranked, hazy: true).map(\.id) == ["saturn", "bright-cluster", "bright-nebula"])
     // With no planet up, the galaxy comes back as the third, still the brightest of its kind.
     #expect(Planner.best(from: ranked.filter { $0.group != .planets }, hazy: true).map(\.id) == ["bright-cluster", "bright-nebula", "bright-galaxy"])
@@ -178,6 +179,17 @@ private func target(_ id: String, _ group: TargetGroup, mag: Double?, alt: Doubl
                                fit: .fits, peakAltDeg: 40, peakTime: Date(timeIntervalSince1970: 0), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
     #expect(Planner.best(from: [spread, compact], hazy: true).map(\.id) == ["small-bright"])
     #expect(Planner.hazeBrightness(spread) > Planner.hazeBrightness(compact))
+    // A planetary nebula a few arcseconds across has the highest surface brightness of all and shows as a star: it is
+    // passed over while anything bigger is on the list, and offered only when it is all there is.
+    let speck = RankedTarget(id: "speck", name: "speck", subtitle: "", group: .nebulae, raHours: 0, decDeg: 0, sizeArcmin: 0.03, magnitude: 11.5,
+                             fit: .small, peakAltDeg: 59, peakTime: Date(timeIntervalSince1970: 0), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+    #expect(Planner.hazeBrightness(speck) < Planner.hazeBrightness(compact))
+    #expect(Planner.best(from: [speck, spread, compact], hazy: true).map(\.id) == ["small-bright"])
+    #expect(Planner.best(from: [speck], hazy: true).map(\.id) == ["speck"])
+    // The Moon leads the planets when it is up.
+    let moon = RankedTarget(id: "moon", name: "Moon", subtitle: "", group: .planets, raHours: 0, decDeg: 0, sizeArcmin: 31, magnitude: nil,
+                            fit: .fits, peakAltDeg: 20, peakTime: Date(timeIntervalSince1970: 0), moonSepDeg: 0, moonWashed: false, visibleFraction: 1)
+    #expect(Planner.best(from: ranked + [moon], hazy: true).first?.id == "moon")
     // A favourite still takes its slot.
     let fav = target("faint-nebula", .nebulae, mag: 10, alt: 85)
     #expect(Planner.best(from: ranked, favourites: [fav], hazy: true).map(\.id) == ["saturn", "bright-cluster", "faint-nebula"])
