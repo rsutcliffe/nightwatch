@@ -86,7 +86,7 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
     #expect(s.items.map(\.id) == ["NGC7000", "M33"] && s.items[1].added && !s.items[0].added)
     #expect(Copy.planDetail(s.items[1], presetID: nil, site: sheffield).hasPrefix("Added for this night · Up "))
     #expect(Copy.planDetail(s.items[0], presetID: "dwarf-mini", site: sheffield).hasSuffix("at 70° · Duo-Band · 200 × 30 s"))
-    // Taken off again, a target added for the night goes where a favourite goes: under "Taken off", with Put back.
+    // Taken off again, a target added for the night is a taken-off row with Put back, as a favourite is.
     c = SessionPlanner.choose("M33", on: false, isFavourite: false, in: c)
     #expect(c == PlanChoices(added: [], removed: ["M33"]))
     s = try #require(make(p, favourites: ["NGC7000"], choices: c))
@@ -259,11 +259,11 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
     let s = try #require(make(p, favourites: ["A", "B"]))
     #expect(s.items.map(\.id) == ["A", "B"])                                       // the plan itself is untouched
     // D is the highest, three hours in. That leaves four and a half hours before B, where C is best an hour after D: both
-    // are shown at once, in time order, and each is headed with the plan's own gap.
+    // are shown at once, in time order, between the two favourites.
     #expect(s.suggestions.map(\.id) == ["D", "C"])
-    #expect(s.suggestions.allSatisfy { $0.afterID == "A" && $0.free == 7.5 * 3600 })
-    #expect(Copy.planGap(s.suggestions[0]) == "7 h 30 min free · suggested")
-    #expect(Copy.planDetail(s.suggestions[0], presetID: nil, site: sheffield).hasPrefix("Up "))   // worded as a plan row, not "Added for this night"
+    #expect(s.rows.map(\.id) == ["A", "D", "C", "B"])
+    #expect(Copy.planOffDetail(s.rows[1], nightWords: "tonight", presetID: nil, site: sheffield)?.hasPrefix("Suggested · Up ") == true)
+    #expect(Copy.planOffDetail(s.rows[0], nightWords: "tonight", presetID: nil, site: sheffield) == nil)   // a plan row has its own wording
 }
 
 @Test func threeHoursIsAGapAndLessIsNot() throws {
@@ -277,44 +277,80 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
     #expect(try #require(make(bare, favourites: ["A", "B"])).suggestions.isEmpty)
 }
 
-// Seen by the owner on the first version: it showed one suggestion at a time, so Add to plan brought the next one up in
-// the same place and the button looked as if it had done nothing. Every suggestion for a gap is now shown at once, and
-// adding one leaves the others as they were, including beside the target just added.
-@Test func addingASuggestionLeavesTheOthersWhereTheyWere() throws {
-    let (p, _) = try gapNight { w in [at("C", 4.5, alt: 60, in: w), at("D", 3, alt: 80, in: w)] }
-    #expect(try #require(make(p, favourites: ["A", "B"])).suggestions.map(\.id) == ["D", "C"])
-    let addedD = try #require(make(p, favourites: ["A", "B"], choices: PlanChoices(added: ["D"])))
-    #expect(addedD.items.map(\.id) == ["A", "D", "B"] && addedD.items[1].added)
-    #expect(addedD.suggestions.map(\.id) == ["C"] && addedD.suggestions[0].afterID == "D" && addedD.suggestions[0].free == 4.5 * 3600)
-    let addedC = try #require(make(p, favourites: ["A", "B"], choices: PlanChoices(added: ["C"])))
-    #expect(addedC.items.map(\.id) == ["A", "C", "B"] && addedC.suggestions.map(\.id) == ["D"])
-    let both = try #require(make(p, favourites: ["A", "B"], choices: PlanChoices(added: ["D", "C"])))
-    #expect(both.items.map(\.id) == ["A", "D", "C", "B"] && both.suggestions.isEmpty)
+// The owner's recording, 9 October 2026: suggestions he had not touched left and others arrived each time he added a row,
+// took one off or put one back, a suggestion taken off brought up a replacement, and with every row taken off there were
+// none. The night now has one set, built from the favourites and the window, and every row keeps its place.
+@Test func theSuggestionsAreOneSetWhateverIsAddedOrTakenOff() throws {
+    let (p, _) = try gapNight { w in [at("C", 4.5, alt: 60, in: w), at("D", 3, alt: 80, in: w), at("E", 3.2, alt: 70, in: w), at("X", 7, alt: 50, in: w)] }   // X: too close to B to be suggested
+    let order = ["A", "D", "C", "B"]
+    func rows(_ c: PlanChoices) throws -> [PlanRow] { try #require(make(p, favourites: ["A", "B"], choices: c)).rows }
+    func kinds(_ r: [PlanRow]) -> String {
+        r.map { switch $0 { case .item: "in"; case .suggestion: "suggested"; case .takenOff: "off" } }.joined(separator: " ")
+    }
+    #expect(try rows(PlanChoices()).map(\.id) == order && kinds(try rows(PlanChoices())) == "in suggested suggested in")
+    // Add to plan on D: it is a plan row where it stood, and C is still offered.
+    var c = SessionPlanner.choose("D", on: true, isFavourite: false, in: PlanChoices())
+    #expect(try rows(c).map(\.id) == order && kinds(try rows(c)) == "in in suggested in")
+    #expect(try #require(make(p, favourites: ["A", "B"], choices: c)).items[1].added)
+    // "Not tonight" on D: taken off with Put back, in the same place. E, the next best, does not take its turn.
+    c = SessionPlanner.choose("D", on: false, isFavourite: false, in: c)
+    #expect(try rows(c).map(\.id) == order && kinds(try rows(c)) == "in off suggested in")
+    c = SessionPlanner.choose("D", on: true, isFavourite: false, in: c)                    // Put back
+    c = SessionPlanner.choose("C", on: true, isFavourite: false, in: c)
+    #expect(try rows(c).map(\.id) == order && kinds(try rows(c)) == "in in in in")
+    c = PlanChoices()
+    // A favourite taken off stays where it was with Put back, and the gap it leaves is not filled with new suggestions.
+    c = SessionPlanner.choose("B", on: false, isFavourite: true, in: c)
+    #expect(try rows(c).map(\.id) == order && kinds(try rows(c)) == "in suggested suggested off")
+    #expect(Copy.planOffDetail(try rows(c)[3], nightWords: "tomorrow night", presetID: nil, site: sheffield)?.hasPrefix("Taken off tomorrow night · Up ") == true)
+    // Every favourite taken off: the suggestions are still there.
+    c = SessionPlanner.choose("A", on: false, isFavourite: true, in: c)
+    #expect(try rows(c).map(\.id) == order && kinds(try rows(c)) == "off suggested suggested off")
+    // A target added from its own page takes its place by best time and moves nothing else; taken off, it keeps that place.
+    c = SessionPlanner.choose("X", on: true, isFavourite: false, in: c)
+    #expect(try rows(c).map(\.id) == ["A", "D", "C", "X", "B"] && kinds(try rows(c)) == "off suggested suggested in off")
+    c = SessionPlanner.choose("X", on: false, isFavourite: false, in: c)
+    #expect(try rows(c).map(\.id) == ["A", "D", "C", "X", "B"] && kinds(try rows(c)) == "off suggested suggested off off")
+}
+
+// Owner, 9 October 2026: "If there are no favourites at all but the night is clear we should add the suggestions for the
+// user to review and agree or remove."
+@Test func aClearNightWithNoFavouritesStillHasSuggestions() throws {
+    let w = try #require(try nightWith([]).primary)
+    let length = w.end.timeIntervalSince(w.start) / 3600
+    let p = try nightWith((0...Int(length)).map { at("T\($0)", Double($0), alt: 60 + Double($0 % 5), in: w) }, favourites: [FavouriteTarget(target: at("gone", 0, alt: 1, in: w), notTonight: "Below 30° in tonight's window")])
+    var none = p; none.favourites = []
+    let s = try #require(make(none, favourites: []))
+    #expect(s.items.isEmpty && s.suggestions.count == SessionPlanner.gapSuggestionLimit)   // the whole window is one gap
+    let added = try #require(make(none, favourites: [], choices: PlanChoices(added: [s.suggestions[0].id])))
+    #expect(added.items.map(\.id) == [s.suggestions[0].id] && added.rows.map(\.id) == s.rows.map(\.id))
 }
 
 @Test func aGapIsNeverGivenMoreThanThreeSuggestions() throws {
     // Eight hours with a good target best every hour: three are offered, each at least an hour from its neighbours.
     let (p, w) = try gapNight({ w in (1...7).map { at("T\($0)", Double($0), alt: 60 + Double($0), in: w) } }, apart: 8)
-    let s = try #require(make(p, favourites: ["A", "B"])).suggestions
+    let s = try #require(make(p, favourites: ["A", "B"])).suggestions.filter { $0.peakTime < w.start.addingTimeInterval(8 * 3600) }
     #expect(s.count == SessionPlanner.gapSuggestionLimit)
-    let times = [w.start] + s.map(\.target.peakTime) + [w.start.addingTimeInterval(8 * 3600)]
+    let times = [w.start] + s.map(\.peakTime) + [w.start.addingTimeInterval(8 * 3600)]
     #expect(zip(times, times.dropFirst()).allSatisfy { $1.timeIntervalSince($0) >= SessionPlanner.gapMarginHours * 3600 })
 }
 
-@Test func aSuggestionIsNeverSomethingTheUserAlreadyDecidedOn() throws {
+@Test func aSuggestionIsNeverAFavourite() throws {
     let w = try #require(try nightWith([]).primary)
-    let a = at("A", 0, alt: 86, in: w), b = at("B", 7.5, alt: 60, in: w), x = at("X", 4, alt: 85, in: w), d = at("D", 3, alt: 80, in: w)
+    let a = at("A", 0, alt: 86, in: w), b = at("B", 7.5, alt: 60, in: w), x = at("X", 4, alt: 85, in: w), d = at("D", 2, alt: 80, in: w)
     let p = try nightWith([a, b, x, d], favourites: [a, b, x].map { FavouriteTarget(target: $0, notTonight: nil) })
-    // X is a favourite taken off for the night: it is in "Taken off", with Put back, and is not offered again as a suggestion.
+    // X is a favourite taken off for the night: it is a taken-off row, never a suggestion, and still marks the end of the
+    // gap D is offered for.
     let s = try #require(make(p, favourites: ["A", "B", "X"], choices: PlanChoices(removed: ["X"])))
     #expect(s.takenOff.map(\.id) == ["X"] && s.suggestions.map(\.id) == ["D"])
+    #expect(s.suggestions == (try #require(make(p, favourites: ["A", "B", "X"]))).suggestions)
 }
 
 @Test func aSuggestionEndsWithThePlanAndFollowsTheHazeRule() throws {
     let (p, w) = try gapNight { w in [at("high-faint", 3, alt: 80, in: w, mag: 9), at("low-bright", 4, alt: 60, in: w, mag: 5)] }
-    let items = try #require(make(p, favourites: ["A", "B"])).items
+    let anchors = try #require(make(p, favourites: ["A", "B"])).items.map(\.target)
     func offer(_ plan: NightPlan, end: Date) -> [String] {
-        SessionPlanner.suggestions(items: items, plan: plan, excluding: ["A", "B"], window: ClearWindow(start: w.start, end: end)).map(\.id)
+        SessionPlanner.suggestions(anchors: anchors, plan: plan, excluding: ["A", "B"], window: ClearWindow(start: w.start, end: end)).map(\.id)
     }
     #expect(offer(p, end: w.end) == ["high-faint", "low-bright"])   // in the order chosen: the highest first
     // A finish time before a target's best moment rules it out.
@@ -326,7 +362,7 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
 }
 
 // The owner, on seeing the first version: "cover the gaps before the first row and after the last too".
-@Test func theHoursBeforeTheFirstRowAndAfterTheLastAreGapsToo() throws {
+@Test func theHoursBeforeTheFirstFavouriteAndAfterTheLastAreGapsToo() throws {
     let w = try #require(try nightWith([]).primary)
     let length = w.end.timeIntervalSince(w.start) / 3600
     // One favourite, best four hours in: over three hours free before it, and over three after it on a late-September night.
@@ -336,32 +372,14 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
     let p = try nightWith([only, before, opening, tooClose, after, closing], favourites: [FavouriteTarget(target: only, notTonight: nil)])
     let s = try #require(make(p, favourites: ["only"]))
     #expect(length - 4 >= SessionPlanner.gapHours)
-    #expect(s.suggestions.map(\.id) == ["before", "after"])
-    #expect(s.suggestions[0].afterID == nil && s.suggestions[0].free == 4 * 3600)             // from the window opening to the first best time
-    #expect(s.suggestions[1].afterID == "only" && abs(s.suggestions[1].free - (length - 4) * 3600) < 1)
+    #expect(s.rows.map(\.id) == ["before", "only", "after"])
     // A target best as the window opens, or as it closes, can fill an end: there is no neighbour there to clash with.
     let ends = try nightWith([only, opening, closing], favourites: [FavouriteTarget(target: only, notTonight: nil)])
-    #expect(try #require(make(ends, favourites: ["only"])).suggestions.map(\.id) == ["opening", "closing"])
-    // A first row best as the window opens leaves nothing before it, and an empty plan is offered nothing.
+    #expect(try #require(make(ends, favourites: ["only"])).rows.map(\.id) == ["opening", "only", "closing"])
+    // A first favourite best as the window opens leaves nothing before it.
     let early = at("early", 0, alt: 70, in: w)
     let flush = try nightWith([early, before, after], favourites: [FavouriteTarget(target: early, notTonight: nil)])
-    #expect(try #require(make(flush, favourites: ["early"])).suggestions.allSatisfy { $0.afterID == "early" })
-    #expect(try #require(make(flush, favourites: [])).suggestions.isEmpty)
-}
-
-// "We have two behaviours now and need to settle on one" (owner, 9 October 2026): a suggestion added and then taken off
-// went back to being a dashed row in its slot, while a favourite taken off left for "Taken off". Now both leave.
-@Test func aSuggestionTakenOffAfterBeingAddedGoesToTakenOffAndIsNotOfferedAgain() throws {
-    let (p, _) = try gapNight { w in [at("C", 4.5, alt: 60, in: w), at("D", 3, alt: 80, in: w), at("E", 3.2, alt: 70, in: w)] }
-    var c = SessionPlanner.choose("D", on: true, isFavourite: false, in: PlanChoices())    // Add to plan on the dashed row
-    c = SessionPlanner.choose("D", on: false, isFavourite: false, in: c)                   // then "Not tonight" on it
-    let s = try #require(make(p, favourites: ["A", "B"], choices: c))
-    #expect(s.items.map(\.id) == ["A", "B"] && s.takenOff.map(\.id) == ["D"])
-    #expect(!s.suggestions.contains { $0.id == "D" })
-    #expect(s.suggestions.first?.id == "E")                                                // the next best takes the offer
-    // Put back returns it to the plan, as it does a favourite.
-    let back = try #require(make(p, favourites: ["A", "B"], choices: SessionPlanner.choose("D", on: true, isFavourite: false, in: c)))
-    #expect(back.items.map(\.id) == ["A", "D", "B"] && back.takenOff.isEmpty)
+    #expect(try #require(make(flush, favourites: ["early"])).rows.first?.id == "early")
 }
 
 @Test func suggestionsPreferMessierAndCaldwellObjects() throws {

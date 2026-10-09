@@ -26,6 +26,9 @@ final class TargetsViewState: ObservableObject {
     @Published var siteSort: SiteSort = .score
     /// Tonight | Tomorrow night: planning for tomorrow night (owner, 28 September 2026).
     @Published var tomorrow = false
+    /// Tonight's plan shows its suggested targets (owner, 9 October 2026: off until asked for). Kept here so it outlasts
+    /// a visit to another page of the window.
+    @Published var planSuggestions = false
 }
 
 struct TargetsView: View {
@@ -148,7 +151,7 @@ struct TargetsView: View {
             } else {
                 switch ui.section {
                 case .darkSites: darkSitesList
-                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
+                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow, showSuggestions: $ui.planSuggestions) { ui.selected = $0 }
                 case .week: WeekView { tomorrow in ui.tomorrow = tomorrow; ui.section = .plan }
                 case .group, .favourites, .eyes: grid
                 }
