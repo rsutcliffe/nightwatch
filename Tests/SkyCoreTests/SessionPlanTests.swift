@@ -269,14 +269,22 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
     #expect(try #require(make(bare, favourites: ["A", "B"])).suggestions.isEmpty)
 }
 
-@Test func addingASuggestionFillsTheGapOneChoiceAtATime() throws {
+// Seen by the owner on the first version: Add to plan put the target in the plan and at once offered another in the gap
+// that remained, in the same place, so the dashed row with its plus and its button looked as if nothing had happened.
+@Test func addingASuggestionTakesItsDashedRowAwayAndOffersNoOtherBesideIt() throws {
     let (p, _) = try gapNight { w in [at("C", 4.5, alt: 60, in: w), at("D", 3, alt: 80, in: w)] }
+    #expect(try #require(make(p, favourites: ["A", "B"])).suggestions.map(\.id) == ["D"])
     let s = try #require(make(p, favourites: ["A", "B"], choices: PlanChoices(added: ["D"])))
-    #expect(s.items.map(\.id) == ["A", "D", "B"])
-    // A to D is three hours with nothing best inside it; D to B is four and a half, and C is best an hour and a half in.
-    #expect(s.suggestions.map(\.id) == ["C"] && s.suggestions[0].afterID == "D")
-    let full = try #require(make(p, favourites: ["A", "B"], choices: PlanChoices(added: ["D", "C"])))
-    #expect(full.items.map(\.id) == ["A", "D", "C", "B"] && full.suggestions.isEmpty)
+    #expect(s.items.map(\.id) == ["A", "D", "B"] && s.items[1].added)
+    // D to B is four and a half hours with C best inside it, but D was added for the night: nothing more is offered.
+    #expect(s.suggestions.isEmpty)
+    // Taken off again, the suggestion returns.
+    #expect(try #require(make(p, favourites: ["A", "B"], choices: PlanChoices())).suggestions.map(\.id) == ["D"])
+    // The same before the first row and after the last when that row was added by hand.
+    let w = try #require(p.primary)
+    let lone = at("lone", 4, alt: 70, in: w)
+    let q = try nightWith([lone, at("before", 1, alt: 75, in: w), at("after", 6, alt: 72, in: w)], favourites: [FavouriteTarget(target: at("unused", 4, alt: 1, in: w), notTonight: nil)])
+    #expect(try #require(make(q, favourites: [], choices: PlanChoices(added: ["lone"]))).suggestions.isEmpty)
 }
 
 @Test func aSuggestionIsNeverSomethingTheUserAlreadyDecidedOn() throws {
@@ -291,7 +299,9 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
 @Test func aSuggestionEndsWithThePlanAndFollowsTheHazeRule() throws {
     let (p, w) = try gapNight { w in [at("high-faint", 3, alt: 80, in: w, mag: 9), at("low-bright", 4, alt: 60, in: w, mag: 5)] }
     let items = try #require(make(p, favourites: ["A", "B"])).items
-    func offer(_ plan: NightPlan, end: Date) -> [String] { SessionPlanner.suggestions(items: items, plan: plan, excluding: ["A", "B"], end: end).map(\.id) }
+    func offer(_ plan: NightPlan, end: Date) -> [String] {
+        SessionPlanner.suggestions(items: items, plan: plan, excluding: ["A", "B"], window: ClearWindow(start: w.start, end: end)).map(\.id)
+    }
     #expect(offer(p, end: w.end) == ["high-faint"])
     // A finish time before a target's best moment rules it out.
     #expect(offer(p, end: w.start.addingTimeInterval(3.5 * 3600)) == ["high-faint"])
@@ -299,4 +309,28 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
     // In haze the brightest is offered, not the highest.
     var hazy = p; hazy.hazeDepth = 1.0
     #expect(hazy.hazy && offer(hazy, end: w.end) == ["low-bright"])
+}
+
+// The owner, on seeing the first version: "cover the gaps before the first row and after the last too".
+@Test func theHoursBeforeTheFirstRowAndAfterTheLastAreGapsToo() throws {
+    let w = try #require(try nightWith([]).primary)
+    let length = w.end.timeIntervalSince(w.start) / 3600
+    // One favourite, best four hours in: over three hours free before it, and over three after it on a late-September night.
+    let only = at("only", 4, alt: 70, in: w)
+    let before = at("before", 1, alt: 75, in: w), opening = at("opening", 0, alt: 60, in: w), tooClose = at("too-close", 3.5, alt: 89, in: w)
+    let after = at("after", 6, alt: 72, in: w), closing = at("closing", length, alt: 65, in: w)
+    let p = try nightWith([only, before, opening, tooClose, after, closing], favourites: [FavouriteTarget(target: only, notTonight: nil)])
+    let s = try #require(make(p, favourites: ["only"]))
+    #expect(length - 4 >= SessionPlanner.gapHours)
+    #expect(s.suggestions.map(\.id) == ["before", "after"])
+    #expect(s.suggestions[0].afterID == nil && s.suggestions[0].free == 4 * 3600)             // from the window opening to the first best time
+    #expect(s.suggestions[1].afterID == "only" && abs(s.suggestions[1].free - (length - 4) * 3600) < 1)
+    // A target best as the window opens, or as it closes, can fill an end: there is no neighbour there to clash with.
+    let ends = try nightWith([only, opening, closing], favourites: [FavouriteTarget(target: only, notTonight: nil)])
+    #expect(try #require(make(ends, favourites: ["only"])).suggestions.map(\.id) == ["opening", "closing"])
+    // A first row best as the window opens leaves nothing before it, and an empty plan is offered nothing.
+    let early = at("early", 0, alt: 70, in: w)
+    let flush = try nightWith([early, before, after], favourites: [FavouriteTarget(target: early, notTonight: nil)])
+    #expect(try #require(make(flush, favourites: ["early"])).suggestions.allSatisfy { $0.afterID == "early" })
+    #expect(try #require(make(flush, favourites: [])).suggestions.isEmpty)
 }

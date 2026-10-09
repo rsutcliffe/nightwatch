@@ -48,6 +48,7 @@ struct PlanView: View {
                                   site: s, nightWords: isTomorrow ? "tomorrow night" : "tonight", styles: styles)
                     }
                     VStack(spacing: 8) {
+                        if let gap = session.suggestions.first(where: { $0.afterID == nil }) { suggestion(gap, night: p.night.key, site: s) }   // before the first row
                         ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in
                             row(item, index: styles[item.target.id] ?? i, night: p.night.key, site: s)
                             if let gap = session.suggestions.first(where: { $0.afterID == item.id }) { suggestion(gap, night: p.night.key, site: s) }
