@@ -80,41 +80,35 @@ public struct SessionPlan: Equatable, Sendable {
 public enum SessionPlanner {
     /// Best times this close together count as the same time.
     public static let clashMinutes: Double = 30
-    /// Best times this far apart leave room for another target between them (owner, 9 October 2026: "3 hours is the right size").
+    /// A suggestion's best time is at least this far from the best time of every other row, favourite or suggestion, and
+    /// a suggested deep-sky object is clear of the horizon for at least this long. Owner, 9 October 2026: "most deep space
+    /// object need 3-4 hours of time to capture all the pictures required for image stacking, you're typically not
+    /// tracking more than 3 or 4 objects in one night". At this spacing a nine-hour window holds four rows at most.
     public static let gapHours: Double = 3
-    /// A suggestion's best time keeps this clear of the plan items either side, so it is a target of its own and not a clash.
-    public static let gapMarginHours: Double = 1
 
-    /// The most suggestions one gap between plan rows is given, however long it is.
-    /// ponytail: a fixed cap so a long empty night is not filled with a dozen dashed rows; raise it if three is too few.
-    public static let gapSuggestionLimit = 3
-
-    /// One set of suggestions for the night, for each gap of `gapHours` or more between the best times of neighbouring
-    /// favourites, before the first (from the window opening) and after the last (to the end of the plan). `anchors` are
-    /// the favourites that can be in the plan that night, by best time, whether or not they have been taken off, so the
-    /// set does not change as the user adds and takes off rows. With no favourites the whole window is one gap, so a
-    /// clear night still has something to review.
+    /// One set of suggestions for the night: targets for the stretches of `gapHours` or more with no favourite best in
+    /// them, between neighbouring favourites, before the first (from the window opening) and after the last (to the end
+    /// of the plan). `anchors` are the favourites that can be in the plan that night, by best time, whether or not they
+    /// have been taken off, so the set does not change as the user adds and takes off rows. With no favourites the
+    /// whole window is one stretch, so a clear night still has something to review.
     ///
-    /// (Three earlier versions measured the gaps between the rows then in the plan. Every press redrew the gaps, so
-    /// suggestions the user had not touched left and others arrived, a suggestion taken off brought up a replacement
-    /// without end, and a plan with no rows was offered nothing. Owner, 9 October 2026: "one set of recommendations
-    /// built from what would be most visible in the gaps".)
+    /// (Earlier versions measured between the rows then in the plan, so every press brought suggestions and took them
+    /// away, and offered up to three a gap an hour apart, which the owner called "dumping a ton of options".)
     ///
-    /// The first for a gap is the highest target that night whose best time falls inside it, `gapMarginHours` clear of
+    /// The first for a stretch is the highest target that night whose best time falls inside it, `gapHours` clear of
     /// the favourites beside it, a Messier or Caldwell object when there is one. It then counts as a row itself, and
-    /// what is left of the gap either side is filled the same way while it is still `gapHours` long, up to
-    /// `gapSuggestionLimit` for the gap. In the order chosen, which `make` sorts by best time.
+    /// what is left either side is filled the same way. In the order chosen, which `make` sorts by best time.
     ///
     /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never a
-    /// favourite, one washed out by the Moon, or one too big or too small for the frame. In haze the brightest wins,
-    /// not the highest (`Planner.hazeBrightness`).
+    /// favourite, one washed out by the Moon, one too big or too small for the frame, or a deep-sky object clear of the
+    /// horizon for under `gapHours`. In haze the brightest wins, not the highest (`Planner.hazeBrightness`).
     static func suggestions(anchors: [RankedTarget], plan: NightPlan, excluding: Set<String>, window: ClearWindow) -> [RankedTarget] {
-        let margin = gapMarginHours * 3600
+        let gap = gapHours * 3600
         var used = excluding, out: [RankedTarget] = []
         func best(from: Date, to: Date) -> RankedTarget? {
             let candidates = plan.targets.filter { t in
-                [TargetGroup.nebulae, .galaxies, .clusters, .planets].contains(t.group) && !used.contains(t.id) && !t.moonWashed
-                    && (t.group == .planets || t.fit == .fits) && t.viewable != nil
+                guard [TargetGroup.nebulae, .galaxies, .clusters, .planets].contains(t.group), !used.contains(t.id), !t.moonWashed, let v = t.viewable else { return false }
+                return (t.group == .planets || (t.fit == .fits && v.end.timeIntervalSince(v.start) >= gap))
                     && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
             // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
@@ -122,21 +116,18 @@ public enum SessionPlanner {
             return plan.hazy ? pool.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
                              : pool.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
         }
-        /// `lo` and `hi` bound the stretch being filled; a bound that is a row (a favourite or a suggestion) is kept clear
-        /// of by the margin, and a bound that is the window's edge is not.
-        func fill(lo: Date, loIsRow: Bool, hi: Date, hiIsRow: Bool, left: inout Int) {
-            guard left > 0, hi.timeIntervalSince(lo) >= gapHours * 3600,
-                  let t = best(from: loIsRow ? lo.addingTimeInterval(margin) : lo, to: hiIsRow ? hi.addingTimeInterval(-margin) : hi) else { return }
-            used.insert(t.id); left -= 1
+        /// `lo` and `hi` bound the stretch being filled; a bound that is a row (a favourite or a suggestion) is kept
+        /// `gapHours` clear of, and a bound that is the window's edge is not.
+        func fill(lo: Date, loIsRow: Bool, hi: Date, hiIsRow: Bool) {
+            guard hi.timeIntervalSince(lo) >= gap,
+                  let t = best(from: loIsRow ? lo.addingTimeInterval(gap) : lo, to: hiIsRow ? hi.addingTimeInterval(-gap) : hi) else { return }
+            used.insert(t.id)
             out.append(t)
-            fill(lo: lo, loIsRow: loIsRow, hi: t.peakTime, hiIsRow: true, left: &left)
-            fill(lo: t.peakTime, loIsRow: true, hi: hi, hiIsRow: hiIsRow, left: &left)
+            fill(lo: lo, loIsRow: loIsRow, hi: t.peakTime, hiIsRow: true)
+            fill(lo: t.peakTime, loIsRow: true, hi: hi, hiIsRow: hiIsRow)
         }
         let edges = [(window.start, false)] + anchors.map { ($0.peakTime, true) } + [(window.end, false)]
-        for (a, b) in zip(edges, edges.dropFirst()) {
-            var left = gapSuggestionLimit
-            fill(lo: a.0, loIsRow: a.1, hi: b.0, hiIsRow: b.1, left: &left)
-        }
+        for (a, b) in zip(edges, edges.dropFirst()) { fill(lo: a.0, loIsRow: a.1, hi: b.0, hiIsRow: b.1) }
         return out
     }
 
@@ -163,18 +154,15 @@ public enum SessionPlanner {
             if choices.removed.contains(id) { takenOff.append(t); continue }
             items.append(PlanItem(target: t, added: !favourites.contains(id)))
         }
-        // A target added for the night and then taken off is a taken-off row too, with Put back, as a favourite is.
-        for id in choices.removed where seen.insert(id).inserted {
-            if let t = byID[id], let v = t.viewable, v.start < end { takenOff.append(t) }
-        }
         items.sort { ($0.target.peakTime, $0.id) < ($1.target.peakTime, $1.id) }
         for i in items.indices {
             items[i].clashes = items.filter { o in
                 o.id != items[i].id && abs(o.target.peakTime.timeIntervalSince(items[i].target.peakTime)) <= clashMinutes * 60
             }.map(\.target)
         }
-        // The suggestions are the same set whatever the night's choices. One the user added is a plan row, and one added
-        // and then taken off is a taken-off row with Put back: each stays where it stood, and none is offered twice.
+        // The suggestions are the same set whatever the night's choices; one the user added is a plan row instead.
+        // Only favourites are ever taken-off rows, so the page holds a favourite's row, a suggestion, or a target the
+        // user added, and nothing he has let go of.
         let window = ClearWindow(start: w.start, end: end)
         let suggested = Self.suggestions(anchors: anchors.sorted { $0.peakTime < $1.peakTime }, plan: plan, excluding: Set(favourites), window: window)
         let spoken = Set(items.map(\.id) + takenOff.map(\.id))
@@ -183,13 +171,15 @@ public enum SessionPlanner {
     }
 
     /// The night's choices after a target is put in (`on`) or taken out. Put in: a favourite is simply back, any other
-    /// target is added for the night. Taken out: it is remembered as taken off whichever it was, so its row stays in
-    /// place with Put back, and a suggestion taken off is not replaced by another.
+    /// target is added for the night. Taken out: a favourite is remembered as taken off, so its row stays in place with
+    /// Put back; any other target just leaves the plan (a suggestion goes back to being that suggestion). For a few
+    /// hours on 9 October 2026 every target taken off was remembered and kept a row: after one session of trying things
+    /// the owner's page held ten of them ("too many options on this page now").
     public static func choose(_ id: String, on: Bool, isFavourite: Bool, in choices: PlanChoices) -> PlanChoices {
         var c = choices
         c.added.removeAll { $0 == id }
         c.removed.removeAll { $0 == id }
-        if !on { c.removed.append(id) } else if !isFavourite { c.added.append(id) }
+        if on { if !isFavourite { c.added.append(id) } } else if isFavourite { c.removed.append(id) }
         return c
     }
 
