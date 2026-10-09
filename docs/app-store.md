@@ -287,6 +287,13 @@ Nightwatch itself keeps nothing, but the forecast services receive coordinates, 
 
 Nothing else is collected.
 
+From 1.7.0 the app bundle carries the same answer as a privacy manifest, `Sources/Nightwatch/PrivacyInfo.xcprivacy`
+(in the built app at `Contents/Resources/`): no tracking, precise location for app functionality, not linked. Apple asks
+for collected data in the manifest "on all platforms". It asks for reasons for certain system APIs "on iOS, iPadOS,
+tvOS, visionOS, and watchOS", which leaves out macOS; the two Nightwatch uses are declared anyway (its own stored
+preferences, CA92.1; timestamps of files in its own container, C617.1). 1.6.4 was accepted for review without one. A test
+keeps the manifest in step with these answers and with the code: change both together.
+
 ## Notes for App Review
 
 Both 1.0.0 rejections asked for information, not fixes, and each answer cost days back in the queue. So the Notes answer
