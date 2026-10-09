@@ -68,7 +68,7 @@ public struct SessionPlan: Equatable, Sendable {
     public let omitted: [PlanOmission]
     /// The clear window, ended by Stop by when that comes first.
     public let window: ClearWindow
-    /// One target for each long gap between neighbouring items; empty when the plan has none.
+    /// Targets offered for the long gaps between neighbouring items and at either end, by best time; empty when there are none.
     public var suggestions: [PlanSuggestion] = []
 }
 
@@ -80,42 +80,56 @@ public enum SessionPlanner {
     /// A suggestion's best time keeps this clear of the plan items either side, so it is a target of its own and not a clash.
     public static let gapMarginHours: Double = 1
 
-    /// One target for each gap of `gapHours` or more: between the best times of neighbouring plan items, before the first
+    /// The most suggestions one gap between plan rows is given, however long it is.
+    /// ponytail: a fixed cap so a long empty night is not filled with a dozen dashed rows; raise it if three is too few.
+    public static let gapSuggestionLimit = 3
+
+    /// Targets for each gap of `gapHours` or more: between the best times of neighbouring plan items, before the first
     /// item (from the window opening) and after the last (to the end of the plan; owner, 9 October 2026: "cover the gaps
-    /// before the first row and after the last too"). It is the highest one that night whose best time falls inside the
-    /// gap, `gapMarginHours` clear of the plan items beside it. An empty plan gets none: its page says what a plan is
-    /// made from. Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are;
-    /// never one already in the plan, taken off or left out of it, washed out by the Moon, or too big or too small for
-    /// the frame. In haze the brightest wins, not the highest (`Planner.hazeBrightness`). A gap beside a target added
-    /// for the night gets no suggestion: the first version offered another at once in the gap that remained, in the
-    /// very place the row just added had been, so pressing Add to plan looked as if it had done nothing (owner,
-    /// 9 October 2026). Add one and its dashed row goes; take it off again and the suggestion returns.
+    /// before the first row and after the last too"). The first is the highest one that night whose best time falls
+    /// inside the gap, `gapMarginHours` clear of the plan items beside it. It then counts as a row itself, and what is
+    /// left of the gap either side is filled the same way while it is still `gapHours` long, up to
+    /// `gapSuggestionLimit` for the gap. So every suggestion for a gap is on show at once, and adding one turns that
+    /// row into a plan row where it stands and leaves the others as they were. (The first version showed one at a
+    /// time: adding it brought the next up in the same place, and the button looked as if it had done nothing. The
+    /// owner then used the suggestions either side of a target he had added to space out his night, which is why a gap
+    /// beside an added target is filled like any other.) In the order chosen, which `make` sorts by best time.
+    ///
+    /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never
+    /// one already in the plan, taken off or left out of it, washed out by the Moon, or too big or too small for the
+    /// frame. In haze the brightest wins, not the highest (`Planner.hazeBrightness`). An empty plan gets none: its page
+    /// says what a plan is made from.
     static func suggestions(items: [PlanItem], plan: NightPlan, excluding: Set<String>, window: ClearWindow) -> [PlanSuggestion] {
         guard let first = items.first, let last = items.last else { return [] }
         let margin = gapMarginHours * 3600
-        // Each gap: the item it follows, the span a suggestion's best time may fall in, and how long the gap is.
-        var gaps: [(after: String?, from: Date, to: Date, free: TimeInterval)] = []
-        if !first.added {
-            gaps.append((nil, window.start, first.target.peakTime.addingTimeInterval(-margin), first.target.peakTime.timeIntervalSince(window.start)))
-        }
-        for (a, b) in zip(items, items.dropFirst()) where !a.added && !b.added {
-            gaps.append((a.id, a.target.peakTime.addingTimeInterval(margin), b.target.peakTime.addingTimeInterval(-margin),
-                         b.target.peakTime.timeIntervalSince(a.target.peakTime)))
-        }
-        if !last.added {
-            gaps.append((last.id, last.target.peakTime.addingTimeInterval(margin), window.end, window.end.timeIntervalSince(last.target.peakTime)))
-        }
         var used = excluding, out: [PlanSuggestion] = []
-        for gap in gaps where gap.free >= gapHours * 3600 {
-            let to = min(gap.to, window.end)   // never a target best after the finish time
+        func best(from: Date, to: Date) -> RankedTarget? {
             let candidates = plan.targets.filter { t in
                 [TargetGroup.nebulae, .galaxies, .clusters, .planets].contains(t.group) && !used.contains(t.id) && !t.moonWashed
-                    && (t.group == .planets || t.fit == .fits) && t.viewable != nil && t.peakTime >= gap.from && t.peakTime <= to
+                    && (t.group == .planets || t.fit == .fits) && t.viewable != nil
+                    && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
-            let pick = plan.hazy ? candidates.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
-                                 : candidates.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
-            if let t = pick { out.append(PlanSuggestion(target: t, afterID: gap.after, free: gap.free)); used.insert(t.id) }
+            return plan.hazy ? candidates.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
+                             : candidates.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
         }
+        /// `lo` and `hi` bound the stretch being filled; a bound that is a row (a plan item or a suggestion) is kept clear
+        /// of by the margin, and a bound that is the window's edge is not. `after` and `free` describe the plan's own gap.
+        func fill(after: String?, free: TimeInterval, lo: Date, loIsRow: Bool, hi: Date, hiIsRow: Bool, left: inout Int) {
+            guard left > 0, hi.timeIntervalSince(lo) >= gapHours * 3600,
+                  let t = best(from: loIsRow ? lo.addingTimeInterval(margin) : lo, to: hiIsRow ? hi.addingTimeInterval(-margin) : hi) else { return }
+            used.insert(t.id); left -= 1
+            out.append(PlanSuggestion(target: t, afterID: after, free: free))
+            fill(after: after, free: free, lo: lo, loIsRow: loIsRow, hi: t.peakTime, hiIsRow: true, left: &left)
+            fill(after: after, free: free, lo: t.peakTime, loIsRow: true, hi: hi, hiIsRow: hiIsRow, left: &left)
+        }
+        var left = gapSuggestionLimit
+        fill(after: nil, free: first.target.peakTime.timeIntervalSince(window.start), lo: window.start, loIsRow: false, hi: first.target.peakTime, hiIsRow: true, left: &left)
+        for (a, b) in zip(items, items.dropFirst()) {
+            left = gapSuggestionLimit
+            fill(after: a.id, free: b.target.peakTime.timeIntervalSince(a.target.peakTime), lo: a.target.peakTime, loIsRow: true, hi: b.target.peakTime, hiIsRow: true, left: &left)
+        }
+        left = gapSuggestionLimit
+        fill(after: last.id, free: window.end.timeIntervalSince(last.target.peakTime), lo: last.target.peakTime, loIsRow: true, hi: window.end, hiIsRow: false, left: &left)
         return out
     }
 
@@ -148,6 +162,7 @@ public enum SessionPlanner {
         }
         // Favourites and added targets are spoken for whatever became of them: in the plan, taken off, or left out.
         let suggestions = Self.suggestions(items: items, plan: plan, excluding: Set(favourites + choices.added), window: ClearWindow(start: w.start, end: end))
+            .sorted { ($0.target.peakTime, $0.id) < ($1.target.peakTime, $1.id) }
         return SessionPlan(items: items, takenOff: takenOff.sorted { $0.peakTime < $1.peakTime }, omitted: omitted,
                            window: ClearWindow(start: w.start, end: end), suggestions: suggestions)
     }
