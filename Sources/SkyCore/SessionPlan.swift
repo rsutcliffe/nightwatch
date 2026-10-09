@@ -87,7 +87,8 @@ public enum SessionPlanner {
     /// Targets for each gap of `gapHours` or more: between the best times of neighbouring plan items, before the first
     /// item (from the window opening) and after the last (to the end of the plan; owner, 9 October 2026: "cover the gaps
     /// before the first row and after the last too"). The first is the highest one that night whose best time falls
-    /// inside the gap, `gapMarginHours` clear of the plan items beside it. It then counts as a row itself, and what is
+    /// inside the gap, `gapMarginHours` clear of the plan items beside it, a Messier or Caldwell object when there is
+    /// one. It then counts as a row itself, and what is
     /// left of the gap either side is filled the same way while it is still `gapHours` long, up to
     /// `gapSuggestionLimit` for the gap. So every suggestion for a gap is on show at once, and adding one turns that
     /// row into a plan row where it stands and leaves the others as they were. (The first version showed one at a
@@ -96,7 +97,7 @@ public enum SessionPlanner {
     /// beside an added target is filled like any other.) In the order chosen, which `make` sorts by best time.
     ///
     /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never
-    /// one already in the plan, taken off or left out of it, washed out by the Moon, or too big or too small for the
+    /// one already in the plan, taken off for the night (favourite or not) or left out of it, washed out by the Moon, or too big or too small for the
     /// frame. In haze the brightest wins, not the highest (`Planner.hazeBrightness`). An empty plan gets none: its page
     /// says what a plan is made from.
     static func suggestions(items: [PlanItem], plan: NightPlan, excluding: Set<String>, window: ClearWindow) -> [PlanSuggestion] {
@@ -109,8 +110,10 @@ public enum SessionPlanner {
                     && (t.group == .planets || t.fit == .fits) && t.viewable != nil
                     && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
-            return plan.hazy ? candidates.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
-                             : candidates.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
+            // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
+            let pool = candidates.contains(where: \.isShowpiece) ? candidates.filter(\.isShowpiece) : candidates
+            return plan.hazy ? pool.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
+                             : pool.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
         }
         /// `lo` and `hi` bound the stretch being filled; a bound that is a row (a plan item or a suggestion) is kept clear
         /// of by the margin, and a bound that is the window's edge is not. `after` and `free` describe the plan's own gap.
@@ -154,6 +157,11 @@ public enum SessionPlanner {
             if choices.removed.contains(id) { takenOff.append(t); continue }
             items.append(PlanItem(target: t, added: !favourites.contains(id)))
         }
+        // A target added for the night and then taken off is listed with the favourites taken off, with Put back, and is
+        // not suggested again that night: "Not tonight" does one thing whatever the row was (owner, 9 October 2026).
+        for id in choices.removed where seen.insert(id).inserted {
+            if let t = byID[id], let v = t.viewable, v.start < end { takenOff.append(t) }
+        }
         items.sort { ($0.target.peakTime, $0.id) < ($1.target.peakTime, $1.id) }
         for i in items.indices {
             items[i].clashes = items.filter { o in
@@ -161,19 +169,22 @@ public enum SessionPlanner {
             }.map(\.target)
         }
         // Favourites and added targets are spoken for whatever became of them: in the plan, taken off, or left out.
-        let suggestions = Self.suggestions(items: items, plan: plan, excluding: Set(favourites + choices.added), window: ClearWindow(start: w.start, end: end))
+        let suggestions = Self.suggestions(items: items, plan: plan, excluding: Set(favourites + choices.added + choices.removed), window: ClearWindow(start: w.start, end: end))
             .sorted { ($0.target.peakTime, $0.id) < ($1.target.peakTime, $1.id) }
         return SessionPlan(items: items, takenOff: takenOff.sorted { $0.peakTime < $1.peakTime }, omitted: omitted,
                            window: ClearWindow(start: w.start, end: end), suggestions: suggestions)
     }
 
-    /// The night's choices after a target is put in (`on`) or taken out. A favourite is taken off or put back; any other
-    /// target is added for the night or dropped.
+    /// The night's choices after a target is put in (`on`) or taken out. Put in: a favourite is simply back, any other
+    /// target is added for the night. Taken out: it is remembered as taken off whichever it was, so it is listed under
+    /// "Taken off" with Put back and is not offered again as a suggestion. Before 9 October 2026 a target added for the
+    /// night was just dropped, and one added from a suggestion went straight back to being that suggestion: the owner
+    /// asked for one behaviour, and a favourite's is the one the plan already had.
     public static func choose(_ id: String, on: Bool, isFavourite: Bool, in choices: PlanChoices) -> PlanChoices {
         var c = choices
         c.added.removeAll { $0 == id }
         c.removed.removeAll { $0 == id }
-        if isFavourite { if !on { c.removed.append(id) } } else if on { c.added.append(id) }
+        if !on { c.removed.append(id) } else if !isFavourite { c.added.append(id) }
         return c
     }
 

@@ -204,6 +204,12 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// target's light is spread, for Eyes and binoculars (#63). Optional, so plans cached before it still decode.
     public var minorArcmin: Double? = nil
 
+    /// A Messier or Caldwell object: the showpieces most observers know, which the plan's suggestions prefer (owner,
+    /// 9 October 2026, after "highest" alone offered NGC 744, a sparse cluster that happens to pass overhead).
+    public var isShowpiece: Bool {
+        caldwell != nil || (catalogueID.first == "M" && catalogueID.count > 1 && catalogueID.dropFirst().allSatisfy(\.isNumber))
+    }
+
     /// Beside the catalogue ID on a card: the Caldwell number, unless it already is the ID ("C14").
     public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
     /// A card's second line, so the name people know is never cut (owner, 28 September 2026): "Little Sombrero Galaxy",

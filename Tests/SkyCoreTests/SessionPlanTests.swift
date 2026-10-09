@@ -86,7 +86,13 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
     #expect(s.items.map(\.id) == ["NGC7000", "M33"] && s.items[1].added && !s.items[0].added)
     #expect(Copy.planDetail(s.items[1], presetID: nil, site: sheffield).hasPrefix("Added for this night · Up "))
     #expect(Copy.planDetail(s.items[0], presetID: "dwarf-mini", site: sheffield).hasSuffix("at 70° · Duo-Band · 200 × 30 s"))
-    #expect(SessionPlanner.choose("M33", on: false, isFavourite: false, in: c) == PlanChoices())
+    // Taken off again, a target added for the night goes where a favourite goes: under "Taken off", with Put back.
+    c = SessionPlanner.choose("M33", on: false, isFavourite: false, in: c)
+    #expect(c == PlanChoices(added: [], removed: ["M33"]))
+    s = try #require(make(p, favourites: ["NGC7000"], choices: c))
+    #expect(s.items.map(\.id) == ["NGC7000"] && s.takenOff.map(\.id) == ["M33"])
+    c = SessionPlanner.choose("M33", on: true, isFavourite: false, in: c)          // Put back
+    #expect(c == PlanChoices(added: ["M33"], removed: []))
 }
 
 @Test func favouritesThatCannotBeInThePlanSayWhy() throws {
@@ -341,4 +347,37 @@ private func gapNight(_ others: (ClearWindow) -> [RankedTarget], apart: Double =
     let flush = try nightWith([early, before, after], favourites: [FavouriteTarget(target: early, notTonight: nil)])
     #expect(try #require(make(flush, favourites: ["early"])).suggestions.allSatisfy { $0.afterID == "early" })
     #expect(try #require(make(flush, favourites: [])).suggestions.isEmpty)
+}
+
+// "We have two behaviours now and need to settle on one" (owner, 9 October 2026): a suggestion added and then taken off
+// went back to being a dashed row in its slot, while a favourite taken off left for "Taken off". Now both leave.
+@Test func aSuggestionTakenOffAfterBeingAddedGoesToTakenOffAndIsNotOfferedAgain() throws {
+    let (p, _) = try gapNight { w in [at("C", 4.5, alt: 60, in: w), at("D", 3, alt: 80, in: w), at("E", 3.2, alt: 70, in: w)] }
+    var c = SessionPlanner.choose("D", on: true, isFavourite: false, in: PlanChoices())    // Add to plan on the dashed row
+    c = SessionPlanner.choose("D", on: false, isFavourite: false, in: c)                   // then "Not tonight" on it
+    let s = try #require(make(p, favourites: ["A", "B"], choices: c))
+    #expect(s.items.map(\.id) == ["A", "B"] && s.takenOff.map(\.id) == ["D"])
+    #expect(!s.suggestions.contains { $0.id == "D" })
+    #expect(s.suggestions.first?.id == "E")                                                // the next best takes the offer
+    // Put back returns it to the plan, as it does a favourite.
+    let back = try #require(make(p, favourites: ["A", "B"], choices: SessionPlanner.choose("D", on: true, isFavourite: false, in: c)))
+    #expect(back.items.map(\.id) == ["A", "D", "B"] && back.takenOff.isEmpty)
+}
+
+@Test func suggestionsPreferMessierAndCaldwellObjects() throws {
+    let w = try #require(try nightWith([]).primary)
+    var messier = at("NGC224", 3, alt: 55, in: w); messier.catalogueID = "M31"
+    var caldwell = at("NGC869", 4.5, alt: 50, in: w); caldwell.caldwell = 14
+    let overhead = at("NGC744", 3.2, alt: 88, in: w), alsoHigh = at("NGC7789", 4.6, alt: 87, in: w)
+    #expect(messier.isShowpiece && caldwell.isShowpiece && !overhead.isShowpiece)
+    var moon = at("moon", 3, alt: 40, in: w, group: .planets); moon.catalogueID = "Moon"
+    #expect(!moon.isShowpiece)                                                              // "Moon" is not a Messier number
+    let a = at("A", 0, alt: 86, in: w), b = at("B", 7.5, alt: 60, in: w)
+    let p = try nightWith([a, b, messier, caldwell, overhead, alsoHigh], favourites: [a, b].map { FavouriteTarget(target: $0, notTonight: nil) })
+    // The Messier object is 33 degrees lower than the cluster overhead and is still the one offered; the Caldwell object
+    // follows in what is left of the gap.
+    #expect(try #require(make(p, favourites: ["A", "B"])).suggestions.map(\.id) == ["NGC224", "NGC869"])
+    // With no showpiece best in the gap, the highest is offered as before.
+    let plain = try nightWith([a, b, overhead, alsoHigh], favourites: [a, b].map { FavouriteTarget(target: $0, notTonight: nil) })
+    #expect(try #require(make(plain, favourites: ["A", "B"])).suggestions.map(\.id) == ["NGC744", "NGC7789"])
 }
