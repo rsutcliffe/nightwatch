@@ -43,6 +43,17 @@ public struct PlanOmission: Equatable, Sendable, Identifiable {
     public var id: String { target.id }
 }
 
+/// A target offered for a long gap in the plan (owner, 9 October 2026, approved mock-up): neither a favourite nor added,
+/// shown between the two plan items it would sit between until the user adds it for the night or leaves it.
+public struct PlanSuggestion: Equatable, Sendable, Identifiable {
+    public let target: RankedTarget
+    /// The plan item it follows.
+    public let afterID: String
+    /// The time between the best times of the items either side.
+    public let free: TimeInterval
+    public var id: String { target.id }
+}
+
 /// Tonight's plan, as redesigned at the owner's UAT (29 September 2026, approved mock-up): the user's favourites that are
 /// up in the clear window, plus any target added for the night, in order of their best time. The user takes off the ones
 /// they will skip; nothing is scheduled into slots, so two favourites best at the same time are flagged for the user to
@@ -56,11 +67,41 @@ public struct SessionPlan: Equatable, Sendable {
     public let omitted: [PlanOmission]
     /// The clear window, ended by Stop by when that comes first.
     public let window: ClearWindow
+    /// One target for each long gap between neighbouring items; empty when the plan has none.
+    public var suggestions: [PlanSuggestion] = []
 }
 
 public enum SessionPlanner {
     /// Best times this close together count as the same time.
     public static let clashMinutes: Double = 30
+    /// Best times this far apart leave room for another target between them (owner, 9 October 2026: "3 hours is the right size").
+    public static let gapHours: Double = 3
+    /// A suggestion's best time keeps this clear of the plan items either side, so it is a target of its own and not a clash.
+    public static let gapMarginHours: Double = 1
+
+    /// One target for each gap of `gapHours` or more between the best times of neighbouring plan items: the highest one
+    /// that night whose best time falls inside the gap, `gapMarginHours` clear of both neighbours and before the plan
+    /// ends. Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are;
+    /// never one already in the plan, taken off or left out of it, washed out by the Moon, or too big or too small for
+    /// the frame. In haze the brightest wins, not the highest (`Planner.hazeBrightness`). Adding one makes it a plan
+    /// item, and any gap still long enough either side of it then gets its own suggestion: a long gap fills one choice
+    /// at a time.
+    static func suggestions(items: [PlanItem], plan: NightPlan, excluding: Set<String>, end: Date) -> [PlanSuggestion] {
+        var used = excluding, out: [PlanSuggestion] = []
+        for (a, b) in zip(items, items.dropFirst()) {
+            let free = b.target.peakTime.timeIntervalSince(a.target.peakTime)
+            guard free >= gapHours * 3600 else { continue }
+            let from = a.target.peakTime.addingTimeInterval(gapMarginHours * 3600), to = b.target.peakTime.addingTimeInterval(-gapMarginHours * 3600)
+            let candidates = plan.targets.filter { t in
+                [TargetGroup.nebulae, .galaxies, .clusters, .planets].contains(t.group) && !used.contains(t.id) && !t.moonWashed
+                    && (t.group == .planets || t.fit == .fits) && t.viewable != nil && t.peakTime >= from && t.peakTime <= to && t.peakTime < end
+            }
+            let pick = plan.hazy ? candidates.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
+                                 : candidates.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
+            if let t = pick { out.append(PlanSuggestion(target: t, afterID: a.id, free: free)); used.insert(t.id) }
+        }
+        return out
+    }
 
     /// The plan for `plan`'s clear window, or nil on a night with no window, a bright night, or a Stop by before the
     /// window opens. Favourites come first in `favourites` order for the omissions; the plan itself is by best time.
@@ -89,8 +130,10 @@ public enum SessionPlanner {
                 o.id != items[i].id && abs(o.target.peakTime.timeIntervalSince(items[i].target.peakTime)) <= clashMinutes * 60
             }.map(\.target)
         }
+        // Favourites and added targets are spoken for whatever became of them: in the plan, taken off, or left out.
+        let suggestions = Self.suggestions(items: items, plan: plan, excluding: Set(favourites + choices.added), end: end)
         return SessionPlan(items: items, takenOff: takenOff.sorted { $0.peakTime < $1.peakTime }, omitted: omitted,
-                           window: ClearWindow(start: w.start, end: end))
+                           window: ClearWindow(start: w.start, end: end), suggestions: suggestions)
     }
 
     /// The night's choices after a target is put in (`on`) or taken out. A favourite is taken off or put back; any other

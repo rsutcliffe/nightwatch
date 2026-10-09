@@ -47,7 +47,12 @@ struct PlanView: View {
                         PlanChart(items: session.items, night: p.night, window: p.primary ?? session.window, minAltitude: store.config.goRule.minAltitudeDeg,
                                   site: s, nightWords: isTomorrow ? "tomorrow night" : "tonight", styles: styles)
                     }
-                    VStack(spacing: 8) { ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in row(item, index: styles[item.target.id] ?? i, night: p.night.key, site: s) } }
+                    VStack(spacing: 8) {
+                        ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in
+                            row(item, index: styles[item.target.id] ?? i, night: p.night.key, site: s)
+                            if let gap = session.suggestions.first(where: { $0.afterID == item.id }) { suggestion(gap, night: p.night.key, site: s) }
+                        }
+                    }
                     if session.items.isEmpty {
                         Text("Nothing left in the plan for this night.").font(Font.scaled(.callout)).foregroundStyle(Tokens.textSecondary)
                     }
@@ -119,6 +124,39 @@ struct PlanView: View {
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
         .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
+    }
+
+    /// A target for a long gap between two plan rows (owner, 9 October 2026, approved mock-up): laid out as a plan row is,
+    /// but outlined with dashes and without a fill or a chart line, since it is an offer and not yet in the plan.
+    private func suggestion(_ gap: PlanSuggestion, night: String, site: Site) -> some View {
+        let t = gap.target
+        return HStack(spacing: 16) {
+            HStack(spacing: 16) {
+                Image(systemName: "plus").font(.system(size: TextScale.pt(13), weight: .medium)).foregroundStyle(Tokens.textSecondary)
+                    .frame(width: 26, height: 10).accessibilityHidden(true)
+                Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(Tokens.textSecondary).frame(width: 58, alignment: .leading)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Copy.planGap(gap)).font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textSecondary)
+                    HStack(spacing: 6) {
+                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .semibold))
+                        if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(t.cardName).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
+                    }
+                    Text(Copy.planDetail(gap, presetID: store.config.fovPresetID, site: site))
+                        .font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .opens { onSelect(t) }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onSelect(t) }
+            Button("Add to plan") { store.setInPlan(t.id, true, night: night) }
+                .buttonStyle(SecondaryButtonStyle())
+                .accessibilityLabel("Add \(t.name) to the plan")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
     /// Taken off for this night, and favourites that cannot be in it, side by side.

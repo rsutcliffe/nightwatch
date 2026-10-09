@@ -256,6 +256,14 @@ public struct Copy: Sendable {
         return "Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%"
     }
 
+    /// Above a suggested target in the plan: "7 h 30 min free · suggested".
+    public static func planGap(_ s: PlanSuggestion) -> String { "\(duration(s.free)) free · suggested" }
+
+    /// A suggestion's detail, worded as a plan row's is: "Up 20:18–04:10 · best 23:40 at 77° · Duo-Band · 200 × 30 s".
+    public static func planDetail(_ s: PlanSuggestion, presetID: String?, site: Site) -> String {
+        planDetail(PlanItem(target: s.target, added: false), presetID: presetID, site: site)
+    }
+
     /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° · Duo-Band · 200 × 30 s", after "Added for this night" for
     /// a target that is not a favourite.
     public static func planDetail(_ item: PlanItem, presetID: String?, site: Site) -> String {
