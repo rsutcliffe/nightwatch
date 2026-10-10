@@ -158,7 +158,7 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
 // What the numbers mean (#59): every term the popover and target cards show has a plain entry.
 @Test func everyTermOnScreenIsExplained() {
     let titles = NumbersGuide.entries.map(\.title).joined(separator: " ").lowercased()
-    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "bortle", "eq tilt", "labels"] {
+    for term in ["sky score", "go rule", "clear window", "dark", "moon", "seeing", "transparency", "wind", "dew", "haze or smoke", "rain possible", "bortle", "eq tilt", "labels"] {
         #expect(titles.contains(term), "no entry for \(term)")
     }
     let text = NumbersGuide.entries.map(\.body).joined(separator: " ")
@@ -173,6 +173,8 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     // The figures quoted are the app's own.
     let rule = GoRule()
     #expect(text.contains("at least \(Int(rule.minHours)) hours") && text.contains("\(rule.maxCloudPct)%") && text.contains("\(Int(rule.minAltitudeDeg))° up"))
+    #expect(text.contains("a \(Planner.rainRiskPct)% chance or more"))
+    #expect(text.contains("an aerosol optical depth of \(Planner.hazeDepth) or more"))
 }
 
 @Test func eyesAndBinocularsEventsLeaveOutFaintPlanets() {

@@ -28,9 +28,9 @@ public struct Copy: Sendable {
     }
 
     /// `agreement`: append the second opinion (v0.5), in the popover's words when it disagrees ("A second forecast sees cloud
-    /// from 00:00, so this window is less certain than usual."); the tomorrow preview passes false.
+    /// from 00:00, so this window is less certain than usual."), then the haze and rain lines; the tomorrow preview passes false.
     public func notificationBody(plan: NightPlan, site: Site, agreement: Bool = true, alerts: AlertSettings = AlertSettings()) -> String {
-        let line = agreement ? secondOpinionLine(plan: plan, site: site, alerts: alerts) : ""
+        let line = agreement ? closingLines(plan: plan, site: site, alerts: alerts) : ""
         if plan.mode == .bright { return Copy.brightList(plan.brightTargets) + " well placed." + line }
         var parts: [String] = []
         if let set = plan.moonSet { parts.append("Moon sets \(Copy.hhmm(set, site: site))") }
@@ -40,10 +40,38 @@ public struct Copy: Sendable {
         return parts.joined(separator: ". ") + "." + line
     }
 
-    /// The second opinion as a notification ends, with its leading space; "" without one. Shared by every body that carries it.
+    /// The second opinion as a notification ends, with its leading space; "" without one.
     public func secondOpinionLine(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
         if let advice = Copy.advice(plan, site: site, alerts: alerts) { return " " + advice.sentence }
         return plan.agreement.map { " " + Copy.agreementText($0, site: site) + "." } ?? ""
+    }
+
+    /// "Rain possible from 03:00" (#180): for a telescope left running after the window, so it is only said on a night with
+    /// a clear window, and only when rain is forecast before sunrise.
+    public static func rain(_ plan: NightPlan, site: Site) -> String? {
+        plan.rainFrom.map { "Rain possible from \(hhmm($0, site: site))" }
+    }
+
+    /// The rain line as a tonight notification ends, with its leading space; "" on a dry night.
+    public func rainLine(plan: NightPlan, site: Site) -> String {
+        Copy.rain(plan, site: site).map { " " + $0 + "." } ?? ""
+    }
+
+    /// "Haze or smoke: faint targets will be dim" (#183): a cloudless night that will still disappoint on a nebula or a
+    /// galaxy. Only with a clear window, and only when the air through it is hazy (`NightPlan.hazy`).
+    public static func haze(_ plan: NightPlan) -> String? {
+        plan.hazy ? "Haze or smoke: faint targets will be dim" : nil
+    }
+
+    /// The haze line as a tonight notification ends, with its leading space; "" in clean air.
+    public func hazeLine(plan: NightPlan) -> String {
+        plan.hazy ? " Haze or smoke in the air, so faint targets will be dim." : ""
+    }
+
+    /// What a tonight notification ends with: the second opinion, then haze (#183), then rain (#180), each "" when it has
+    /// nothing to say. Shared by every body that carries them.
+    public func closingLines(plan: NightPlan, site: Site, alerts: AlertSettings) -> String {
+        secondOpinionLine(plan: plan, site: site, alerts: alerts) + hazeLine(plan: plan) + rainLine(plan: plan, site: site)
     }
 
     /// "Held back by a 97% moon and high dew risk": the two biggest losses, or nil when nothing limits the score.
@@ -226,6 +254,15 @@ public struct Copy: Sendable {
         let full = plan.primary ?? s.window
         let stop = s.window.end < full.end ? " · finish by \(hhmm(s.window.end, site: site))" : ""
         return "Clear \(span(full.start, full.end, site: site))\(stop) · \(duration(s.window.end.timeIntervalSince(s.window.start))) · Moon \(Int((plan.moonIllumination * 100).rounded()))%"
+    }
+
+    /// The detail of a row that is not in the plan, worded as a plan row's is after what it is: "Suggested · Up
+    /// 20:18–04:10 · best 23:40 at 77° · Duo-Band · 200 × 30 s", or "Taken off tonight · Up …". Nil for a plan row.
+    public static func planOffDetail(_ row: PlanRow, nightWords: String, presetID: String?, site: Site) -> String? {
+        let lead: String
+        switch row { case .item: return nil; case .suggestion: lead = "Suggested"; case .takenOff: lead = "Taken off \(nightWords)" }
+        let rest = planDetail(PlanItem(target: row.target, added: false), presetID: presetID, site: site)
+        return "\(lead) · \(rest)"
     }
 
     /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° · Duo-Band · 200 × 30 s", after "Added for this night" for

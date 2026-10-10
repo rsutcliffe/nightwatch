@@ -108,6 +108,12 @@ struct TonightView: View {
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
+                    if let haze = Copy.haze(plan) {
+                        Text(haze).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let rain = Copy.rain(plan, site: site) {
+                        Text(rain).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
                     Text("No astronomical darkness").font(.system(size: TextScale.pt(15), weight: .medium))
                     Text("Too far north or south for this date.").font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
@@ -170,7 +176,7 @@ struct TonightView: View {
         let windText = wind.isEmpty ? nil : String(format: "%.0f km/h", wind.reduce(0, +) / Double(wind.count))
         let dew = Planner.dewRisk(plan.darkHours)
         let frost = plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false
-        let transpText = Copy.transparencyText(plan.darkHours)
+        let transpText = Copy.transparencyText(plan)
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
         return VStack(spacing: 8.5) {
             TileRow {
