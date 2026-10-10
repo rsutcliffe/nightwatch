@@ -60,8 +60,9 @@ struct PlanView: View {
                     let styles = ChartLayout.styles(for: session.items.map(\.target.id), count: PlanLineStyle.all.count)
                     if !rows.isEmpty {
                         // Drawn with no lines too, so the rows do not jump up when the last one is taken off.
-                        PlanChart(items: session.items, night: p.night, window: p.primary ?? session.window, minAltitude: store.config.goRule.minAltitudeDeg,
-                                  site: s, nightWords: words, styles: styles)
+                        // The shading and the bold part of each line end with the plan, at a finish time if there is one.
+                        PlanChart(items: session.items, night: p.night, window: session.window, minAltitude: store.config.goRule.minAltitudeDeg,
+                                  site: s, nightWords: words, clear: p.primary.flatMap { $0.end > session.window.end ? $0 : nil }, styles: styles)
                     }
                     // One list by best time: a row changes how it looks where it stands, and nothing else moves.
                     VStack(spacing: 8) {

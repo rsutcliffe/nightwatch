@@ -182,8 +182,8 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     public let sizeArcmin: Double?
     public let magnitude: Double?
     public let fit: FrameFit
-    public let peakAltDeg: Double
-    public let peakTime: Date
+    public var peakAltDeg: Double
+    public var peakTime: Date
     public let moonSepDeg: Double
     public let moonWashed: Bool
     public let visibleFraction: Double

@@ -111,6 +111,27 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
     #expect(Copy.planSummary(s, plan: p, site: sheffield).contains(" · finish by 00:30 · ") && Copy.planSummary(s, plan: p, site: sheffield).hasSuffix("· Moon 78%"))
 }
 
+// Owner, 9 October 2026, on a plan reading "finish by 00:30" above the Pleiades, best at 03:48: "Doesn't respect the
+// night time end setting?" A row's times now end at the finish time.
+@Test func aFinishTimeEndsEveryRowsTimes() throws {
+    let ids = ["NGC6888", "NGC7635", "NGC281"]
+    let p = try septemberPlan(favourites: ids)
+    let whole = try #require(make(p, favourites: ids))
+    let pacman = try #require(whole.items.first { $0.id == "NGC281" }).target
+    let stop = StopBy(enabled: true, minutes: 23 * 60), finish = stop.date(night: p.night, site: sheffield)
+    #expect(pacman.peakTime > finish)                                               // the Pacman is best after 23:00
+    let s = try #require(make(p, favourites: ids, stopBy: stop))
+    #expect(s.window.end == finish && Set(s.items.map(\.id)) == Set(ids))            // still in the plan: it is up before the finish
+    #expect(s.items.allSatisfy { $0.target.peakTime <= finish && ($0.target.viewable?.end ?? .distantFuture) <= finish })
+    let capped = try #require(s.items.first { $0.id == "NGC281" }).target
+    #expect(capped.peakAltDeg < pacman.peakAltDeg && capped.peakAltDeg >= GoRule().minAltitudeDeg)   // lower than at its best, and above the floor
+    #expect(Copy.planDetail(s.items[0], presetID: nil, site: sheffield).contains("–23:00 · best "))
+    // The Crescent, best early in the evening, is as it was.
+    #expect(s.items.first { $0.id == "NGC6888" }?.target.peakTime == whole.items.first { $0.id == "NGC6888" }?.target.peakTime)
+    // With no finish time nothing is tracked again.
+    #expect(whole.items.map(\.target) == ids.compactMap { id in p.targets.first { $0.id == id } }.sorted { $0.peakTime < $1.peakTime })
+}
+
 @Test func planChoicesAreKeptPerNightAndSyncWithTheSettings() throws {
     let all = ["2026-09-28": PlanChoices(removed: ["M31"]), "2026-09-29": PlanChoices(added: ["M33"]), "2026-09-30": PlanChoices(removed: ["NGC7000"]),
                "2026-10-01": PlanChoices()]

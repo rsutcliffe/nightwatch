@@ -236,7 +236,7 @@ final class Store: ObservableObject {
     func session(for p: NightPlan?) -> SessionPlan? {
         guard config.showPlan, let p, let site else { return nil }
         return SessionPlanner.make(plan: p, favourites: config.favourites, choices: config.planChoices[p.night.key] ?? PlanChoices(),
-                                   stopBy: config.stopBy, site: site)
+                                   stopBy: config.stopBy, site: site, minAltitudeDeg: config.goRule.minAltitudeDeg)
     }
 
     /// The clear-sky notifications switch (Settings › Alerts), for Siri (#53). False when settings cannot be saved (an

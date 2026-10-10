@@ -102,14 +102,14 @@ public enum SessionPlanner {
     ///
     /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never a
     /// favourite, one washed out by the Moon, one too big or too small for the frame, or a deep-sky object clear of the
-    /// horizon for under `gapHours`. In haze the brightest wins, not the highest (`Planner.hazeBrightness`).
+    /// horizon for under `gapHours` before the plan ends. In haze the brightest wins, not the highest (`Planner.hazeBrightness`).
     static func suggestions(anchors: [RankedTarget], plan: NightPlan, excluding: Set<String>, window: ClearWindow) -> [RankedTarget] {
         let gap = gapHours * 3600
         var used = excluding, out: [RankedTarget] = []
         func best(from: Date, to: Date) -> RankedTarget? {
             let candidates = plan.targets.filter { t in
                 guard [TargetGroup.nebulae, .galaxies, .clusters, .planets].contains(t.group), !used.contains(t.id), !t.moonWashed, let v = t.viewable else { return false }
-                return (t.group == .planets || (t.fit == .fits && v.end.timeIntervalSince(v.start) >= gap))
+                return (t.group == .planets || (t.fit == .fits && min(v.end, window.end).timeIntervalSince(v.start) >= gap))
                     && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
             // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
@@ -138,25 +138,49 @@ public enum SessionPlanner {
         return out
     }
 
+    /// `t` as it stands on a night that ends at the finish time and not with the clear window: tracked again over the
+    /// shorter `window`, so its row reads "Clear of your horizon 23:18–00:30" and its best time is the highest moment
+    /// before the finish. Before 10 October 2026 a favourite up at any point before the finish kept its whole-night
+    /// times: the owner's plan read "finish by 00:30" above the Pleiades, best at 03:48. Nil when it is not clear of the
+    /// floor before the finish. The floors are `Planner.build`'s: the go rule's, 20° for a constellation, 10° for the Moon.
+    static func untilFinish(_ t: RankedTarget, window: ClearWindow, site: Site, minAltitudeDeg: Double) -> RankedTarget? {
+        let floor = t.group == .constellations ? 20 : t.id == "moon" ? 10 : minAltitudeDeg
+        let tr = Planner.track(raHours: t.raHours, decDeg: t.decDeg, window: window, site: site, minAlt: floor)
+        guard let v = tr.viewable else { return nil }
+        var out = t
+        out.peakAltDeg = tr.peakAlt; out.peakTime = tr.peakTime; out.viewable = v
+        out.altitudeSamples = Planner.altitudes(raHours: t.raHours, decDeg: t.decDeg, span: v, site: site)
+        return out
+    }
+
     /// The plan for `plan`'s clear window, or nil on a night with no window, a bright night, or a Stop by before the
     /// window opens. Favourites come first in `favourites` order for the omissions; the plan itself is by best time.
-    public static func make(plan: NightPlan, favourites: [String], choices: PlanChoices, stopBy: StopBy, site: Site) -> SessionPlan? {
+    /// `minAltitudeDeg` is the go rule's "Targets must reach", used only to track a row again under a finish time.
+    public static func make(plan: NightPlan, favourites: [String], choices: PlanChoices, stopBy: StopBy, site: Site,
+                            minAltitudeDeg: Double = GoRule().minAltitudeDeg) -> SessionPlan? {
         guard plan.mode == .dark, let w = plan.primary else { return nil }
         let end = stopBy.enabled ? min(w.end, stopBy.date(night: plan.night, site: site)) : w.end
         guard end > w.start else { return nil }
+        let window = ClearWindow(start: w.start, end: end)
+        /// A row's target, with its times ending at the finish time when there is one.
+        func placed(_ t: RankedTarget) -> RankedTarget? {
+            end < w.end ? untilFinish(t, window: window, site: site, minAltitudeDeg: minAltitudeDeg) : t
+        }
         var byID: [String: RankedTarget] = [:]
         for t in plan.targets + plan.favourites.map(\.target) where byID[t.id] == nil { byID[t.id] = t }
         let reasons = Dictionary(plan.favourites.map { ($0.target.id, $0.notTonight) }, uniquingKeysWith: { a, _ in a })
         var items: [PlanItem] = [], takenOff: [RankedTarget] = [], omitted: [PlanOmission] = [], seen = Set<String>()
         var anchors: [RankedTarget] = []   // the favourites that can be in the plan this night, taken off or not
         for id in favourites + choices.added where seen.insert(id).inserted {
-            guard let t = byID[id] else { continue }
+            guard let whole = byID[id] else { continue }
+            var t = whole
             if let reason = reasons[id] ?? nil { omitted.append(PlanOmission(target: t, reason: reason)); continue }
             if t.moonWashed { omitted.append(PlanOmission(target: t, reason: "Washed out by the Moon")); continue }
             guard let v = t.viewable else { omitted.append(PlanOmission(target: t, reason: site.horizon == nil ? "Not up in the clear window" : "Behind your horizon in the clear window")); continue }
-            guard v.start < end else {
+            guard v.start < end, let capped = placed(whole) else {
                 omitted.append(PlanOmission(target: t, reason: "Up only after your finish time, \(Copy.hhmm(end, site: site))")); continue
             }
+            t = capped
             if favourites.contains(id) { anchors.append(t) }
             if choices.removed.contains(id) { takenOff.append(t); continue }
             items.append(PlanItem(target: t, added: !favourites.contains(id)))
@@ -170,8 +194,8 @@ public enum SessionPlanner {
         // The suggestions are the same set whatever the night's choices; one the user added is a plan row instead.
         // Only favourites are ever taken-off rows, so the page holds a favourite's row, a suggestion, or a target the
         // user added, and nothing he has let go of.
-        let window = ClearWindow(start: w.start, end: end)
         let suggested = Self.suggestions(anchors: anchors.sorted { $0.peakTime < $1.peakTime }, plan: plan, excluding: Set(favourites), window: window)
+            .map { placed($0) ?? $0 }   // best before the finish already; this ends its "Clear of your horizon" there too
         let spoken = Set(items.map(\.id) + takenOff.map(\.id))
         return SessionPlan(items: items, takenOff: takenOff.sorted { $0.peakTime < $1.peakTime }, omitted: omitted, window: window,
                            suggestions: suggested.filter { !spoken.contains($0.id) }.sorted { ($0.peakTime, $0.id) < ($1.peakTime, $1.id) })
