@@ -374,6 +374,21 @@ private func kinds(_ rows: [PlanRow]) -> String {
     #expect(try #require(make(flush, favourites: ["early"])).rows.map(\.id) == ["early", "after"])
 }
 
+// Owner, 10 October 2026: "Now mix in nebulae and galaxies please."
+@Test func suggestionsAreAMixOfKinds() throws {
+    let w = try #require(try nightWith([]).primary)
+    // A cluster and a galaxy are both best in each half of a night with no favourites, the clusters higher.
+    let c1 = at("cluster-1", 1, alt: 85, in: w, group: .clusters), g1 = at("galaxy-1", 1.2, alt: 70, in: w, group: .galaxies)
+    let c2 = at("cluster-2", 5, alt: 84, in: w, group: .clusters), g2 = at("galaxy-2", 5.2, alt: 60, in: w, group: .galaxies)
+    var p = try nightWith([c1, g1, c2, g2]); p.favourites = []
+    // The highest first, a cluster; then the galaxy in the other half, though a cluster there is higher.
+    #expect(try #require(make(p, favourites: [])).suggestions.map(\.id) == ["cluster-1", "galaxy-2"])
+    // A favourite counts: with a cluster already a favourite, the one suggestion is the galaxy.
+    let fav = at("fav", 0, alt: 80, in: w, group: .clusters)
+    let q = try nightWith([fav, c2, g2], favourites: [FavouriteTarget(target: fav, notTonight: nil)])
+    #expect(try #require(make(q, favourites: ["fav"])).suggestions.map(\.id) == ["galaxy-2"])
+}
+
 @Test func suggestionsPreferMessierAndCaldwellObjects() throws {
     let w = try #require(try nightWith([]).primary)
     var messier = at("NGC224", 3.5, alt: 55, in: w); messier.catalogueID = "M31"
@@ -402,5 +417,6 @@ private func kinds(_ rows: [PlanRow]) -> String {
     let s = try #require(make(p, favourites: [])).suggestions
     print("REAL NIGHT", Copy.span(w.start, w.end, site: sheffield), s.map { "\(Copy.hhmm($0.peakTime, site: sheffield)) \($0.name) \(Int($0.peakAltDeg))°" })
     #expect((2...4).contains(s.count) && s.allSatisfy(\.isShowpiece))
+    #expect(Set(s.map(\.group)).count == s.count)                                          // one of each kind, not three clusters
     #expect(zip(s, s.dropFirst()).allSatisfy { $1.peakTime.timeIntervalSince($0.peakTime) >= SessionPlanner.gapHours * 3600 })
 }

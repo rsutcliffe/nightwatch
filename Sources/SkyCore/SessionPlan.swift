@@ -96,8 +96,9 @@ public enum SessionPlanner {
     /// away, and offered up to three a gap an hour apart, which the owner called "dumping a ton of options".)
     ///
     /// The first for a stretch is the highest target that night whose best time falls inside it, `gapHours` clear of
-    /// the favourites beside it, a Messier or Caldwell object when there is one. It then counts as a row itself, and
-    /// what is left either side is filled the same way. In the order chosen, which `make` sorts by best time.
+    /// the favourites beside it: a Messier or Caldwell object when there is one, and of the kind (nebula, galaxy,
+    /// cluster, planet) the night's rows have least of. It then counts as a row itself, and what is left either side
+    /// is filled the same way. In the order chosen, which `make` sorts by best time.
     ///
     /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never a
     /// favourite, one washed out by the Moon, one too big or too small for the frame, or a deep-sky object clear of the
@@ -113,8 +114,14 @@ public enum SessionPlanner {
             }
             // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
             let pool = candidates.contains(where: \.isShowpiece) ? candidates.filter(\.isShowpiece) : candidates
-            return plan.hazy ? pool.min { Planner.hazeBrightness($0) < Planner.hazeBrightness($1) }
-                             : pool.max { ($0.peakAltDeg, -($0.magnitude ?? 99)) < ($1.peakAltDeg, -($1.magnitude ?? 99)) }
+            // Then the kind the night has least of so far, favourites included, so the rows are a mix of nebulae,
+            // galaxies and clusters (owner, 10 October 2026: highest alone gave three star clusters, since those are
+            // what pass overhead in October). Among that kind the highest, or in haze the brightest.
+            let had = Dictionary(grouping: anchors + out, by: \.group).mapValues(\.count)
+            func key(_ t: RankedTarget) -> (Int, Double, Double) {
+                (had[t.group] ?? 0, plan.hazy ? Planner.hazeBrightness(t) : -t.peakAltDeg, t.magnitude ?? 99)
+            }
+            return pool.min { key($0) < key($1) }
         }
         /// `lo` and `hi` bound the stretch being filled; a bound that is a row (a favourite or a suggestion) is kept
         /// `gapHours` clear of, and a bound that is the window's edge is not.
