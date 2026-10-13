@@ -105,8 +105,11 @@ struct TileView: View {
 
 struct TilesView: View {
     let tiles: TonightTiles
+    @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
-        let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
+        // Three across, then two, then one as the text grows, so no value is cut off.
+        let count = typeSize.isAccessibilitySize ? 1 : typeSize >= .xxxLarge ? 2 : 3
+        let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: count)
         LazyVGrid(columns: cols, spacing: 8) {
             TileView(label: "Dark", value: tiles.dark)
             TileView(label: "Moon", value: tiles.moon, hint: tiles.moonLine)

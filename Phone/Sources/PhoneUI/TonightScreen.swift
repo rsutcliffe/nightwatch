@@ -13,6 +13,7 @@ public struct TonightScreen: View {
     var now: Date = .now
     @Environment(\.phoneTheme) private var theme
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void, alertsPrompt: AlertsPrompt? = nil, now: Date = .now) {
         self.alertsPrompt = alertsPrompt; self.now = now
@@ -24,7 +25,9 @@ public struct TonightScreen: View {
     private var regular: Bool { sizeClass == .regular }
 
     private var verdict: some View {
-        HStack(alignment: .center, spacing: 20) {
+        // At the accessibility text sizes the words need the full width, so the bezel sits above them.
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .center, spacing: 20))
+        return layout {
             ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: regular ? 170 : 104)
             VStack(alignment: .leading, spacing: 4) {
                 Text(snap.headline).font(regular ? .title.weight(.medium) : .title3.weight(.medium)).fixedSize(horizontal: false, vertical: true)
