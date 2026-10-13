@@ -399,13 +399,15 @@ Notes say so. From 1.1 it also has a visible use (Measure from a photo). Check t
 - A short screen recording (launch, Welcome with "Use this Mac's location", popover, Targets, Settings, widget)
   is in App Review Information › **Attachment**, not only in a reply. It must also show the Apple Weather mark in
   the popover footer, the Targets sidebar and the widget, and the legal page opening from the mark (5.2.5), the iCloud
-  caption in Settings › App, Siri or Shortcuts answering, and Measure from a photo. The 1.6.4 submission's only
-  attachment was `review-1.6.4-location.mp4` (read in App Store Connect on 13 October 2026), although the store
-  screenshots already show the Apple Weather mark and the app already carried it everywhere Apple lists. Apple's 13
-  October message is a request to confirm ("appears to support WeatherKit but we need to confirm"), so why the
-  reviewer did not see the mark is not known; one possibility is that Apple Weather did not answer on their Mac. One
-  walkthrough covering every entitlement, kept for every later submission, is the best defence against being asked
-  one question per round.
+  caption in Settings › App, Siri or Shortcuts answering, and Measure from a photo. The 1.6.4 submission carried two
+  whole-desktop recordings: `review-1.6.4-location.mp4` (3 minutes, in the Notes attachment, read in App Store
+  Connect on 13 October 2026) and `review-1.6.4-widget-shortcut.mp4` (90 seconds, in the reply thread). Between them
+  they show the popover, Targets, Settings, the widget and Shortcuts, so the Apple Weather mark is on screen, but only
+  a few pixels tall and never pointed at, and the legal page is never opened. The store screenshots also show the
+  mark, and the app already carried it everywhere Apple lists. Apple's 13 October message is a request to confirm
+  ("appears to support WeatherKit but we need to confirm"), so why the reviewer did not see the mark is not known;
+  one possibility is that Apple Weather did not answer on their Mac. Add close-up clips of each thing a reviewer must
+  see, in one walkthrough covering every entitlement, kept for every later submission.
 - After **Submit** (or **Resubmit to App Review**), the status reads **Waiting for Review**. "Ready for Review"
   means not submitted.
 
@@ -417,7 +419,7 @@ to ask "where do I see this?", the answer is in the Notes AND on the recording. 
 
 | Guideline | A reviewer could ask | Evidence today | Status |
 |---|---|---|---|
-| 2.1 completeness | How do I use it? Any login? Is every feature reachable? | No sign-in (box unticked in App Store Connect); Notes give setup and every entitlement; contact details filled in | **Gap: the only attachment is the location recording.** Replace it with one walkthrough of every entitlement |
+| 2.1 completeness | How do I use it? Any login? Is every feature reachable? | No sign-in (box unticked in App Store Connect); Notes give setup and every entitlement; contact details filled in | OK: two recordings (3 min and 90 s) cover the main flow. **Gap:** nothing points at the small things (the Apple Weather mark, the iCloud caption), so add close-ups to one walkthrough |
 | 2.3.3, 2.3.10 metadata | Do screenshots show the app in use? Any other platform or marketplace named? | Screenshots of the running app; description has no web address and the download is not mentioned | OK |
 | 2.3.6 age rating | Honest answers? | None throughout, 4+ | OK |
 | 2.4.5(i) sandbox | Entitlements justified? | Seven listed with where each is seen; the temporary exceptions are stripped by `scripts/appstore.sh` | OK, once the recording shows each one |
@@ -432,7 +434,7 @@ to ask "where do I see this?", the answer is in the Notes AND on the recording. 
 | 5.1.5 location | Is it needed? | Forecast, sunset, darkness and horizon for where you are | OK |
 | 5.2.1 trademarks | Third-party names? | No Discworld or Pratchett names in the listing; telescope makers are described, not named | OK |
 | 5.2.2 third-party services | Permission for the data? | Open-Meteo (CC BY 4.0), 7Timer, NOAA, AuroraWatch UK, CDS and DSS (non-profit use), NASA SVS, Minor Planet Center, CelesTrak; credited in About and `NOTICE` | OK **while the app stays free with no ads**, which several terms require |
-| **5.2.5 Apple products** | **Does it show the Apple Weather mark and legal link?** | Mark and link in the popover footer, Targets sidebar, widget and Siri cards (code); no recording of it | **Rejected 13 October.** Reply with a recording, add the Notes paragraph above |
+| **5.2.5 Apple products** | **Does it show the Apple Weather mark and legal link?** | Mark and link in the popover footer, Targets sidebar, widget and Siri cards (code); the recordings show it only in passing, a few pixels tall | **Rejected 13 October** (a request to confirm). Reply with a close-up recording, add the Notes paragraph above |
 | Export compliance | Encryption? | `ITSAppUsesNonExemptEncryption` is false | OK |
 | Privacy manifest | Required-reason APIs declared? | `PrivacyInfo.xcprivacy` is in the app | OK |
 
