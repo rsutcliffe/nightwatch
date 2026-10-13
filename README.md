@@ -229,6 +229,8 @@ See `NOTICE`. Weather data by Open-Meteo.com (CC BY 4.0). 7Timer data is for non
 
 Stelios Petrakis ([@stelabouras](https://github.com/stelabouras)) contributed the ZWO Seestar S30 Pro telescope preset (1.6.0), the first contribution from outside the project.
 
+John Munsch ([@JohnMunsch](https://github.com/JohnMunsch)) reported the flipped chip text on macOS 27 ([#179](https://github.com/rsutcliffe/nightwatch/issues/179)), with a screenshot and the versions involved.
+
 ## Release names
 
 Tags follow the City Watch novels: 0.1 Guards! Guards!, 0.2 Men at Arms, 0.3 Feet of Clay, 0.4 Jingo, 0.5 The Fifth Elephant, 0.6 Night Watch, then Thud! and Snuff. After the Watch novels come other Discworld names: 1.1 Pseudopolis Yard, the Watch's headquarters; 1.2 Great A'Tuin, the star turtle; 1.3 Twoflower, the Disc's first tourist; 1.4 Shepherd's Crown; 1.5 Rincewind; 1.6 Hex, the thinking engine of Unseen University.
