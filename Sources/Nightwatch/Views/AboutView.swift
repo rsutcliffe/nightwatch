@@ -14,12 +14,12 @@ struct AboutView: View {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 72, height: 72).accessibilityHidden(true)   // the app's own icon, not a star (owner, 6 October 2026)
             Text("Nightwatch").font(Font.scaled(.title2).weight(.semibold))
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev") · MIT licence").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-            if let u = store.availableUpdate { Link("Nightwatch \(u.version) is available ↗", destination: ReleaseCheck.latestPage).font(Font.scaled(.caption)) }
+            if let u = store.availableUpdate { Link("Nightwatch \(u.version) is available ↗", destination: ReleaseCheck.latestPage).linkCursor().font(Font.scaled(.caption)) }
             // The only way the project hears from the people using it (v0.6.7).
             HStack(spacing: 14) {
-                Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!)
-                Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!)
-                Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!)
+                Link("Website ↗", destination: URL(string: "https://delphi-dolphin.com/nightwatch")!).linkCursor()
+                Link("Send feedback ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/discussions")!).linkCursor()
+                Link("Report a problem ↗", destination: URL(string: "https://github.com/rsutcliffe/nightwatch/issues/new")!).linkCursor()
             }
             .font(Font.scaled(.callout))
             Text("Feedback goes to GitHub Discussions; problems to GitHub Issues.").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
@@ -27,8 +27,19 @@ struct AboutView: View {
                 .frame(minHeight: TextScale.pt(110))   // squeezed to an empty box before: the window opened shorter than its contents
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
             Text("Weather data by Apple Weather where it is available, and Open-Meteo.com. The sky score, clear windows and tiles are worked out by Nightwatch from that data: it has been modified and the figures are not Apple's own. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
-            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
-            Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
+            // Apple Weather's mark and legal link, kept from the last time it supplied the forecast: they stay here whichever
+            // source the forecast on show came from. Absent only on a Mac Apple Weather has never answered.
+            if let a = store.appleAttribution, let legal = URL(string: a.legal) {
+                Link(destination: legal) {
+                    if let mark = store.appleMark { Image(nsImage: mark).resizable().scaledToFit().frame(height: 12) }
+                    else { Text("Apple Weather").font(Font.scaled(.caption2)) }
+                }
+                .linkCursor()
+                .help("Apple Weather's legal attribution and data sources")
+                .accessibilityLabel("Apple Weather, legal attribution and data sources")
+            }
+            Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).linkCursor().wrapped().font(Font.scaled(.caption2))
+            Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).linkCursor().wrapped().font(Font.scaled(.caption2))
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }
