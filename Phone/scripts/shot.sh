@@ -11,5 +11,5 @@ xcrun simctl install $UDID "$(find build/dd -name Nightwatch.app -path '*iphones
 xcrun simctl terminate $UDID io.github.rsutcliffe.nightwatch.phone 2>/dev/null || true
 ARGS=(-demo); [[ -n $RED ]] && ARGS+=(-redNightMode YES) || ARGS+=(-redNightMode NO)
 xcrun simctl launch $UDID io.github.rsutcliffe.nightwatch.phone $ARGS >/dev/null
-sleep 5
+sleep 10
 xcrun simctl io $UDID screenshot "$OUT" >/dev/null

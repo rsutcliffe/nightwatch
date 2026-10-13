@@ -14,6 +14,8 @@ public struct TonightTiles: Equatable, Sendable {
     public var dew: String?
     public var dewHint: String?
     public var transparency: String?
+    /// The time whose NASA Moon picture the tile shows: the middle of the darkness (else now).
+    public var moonAt: Date?
 
     public static func make(plan: NightPlan, site: Site) -> TonightTiles {
         let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" } ?? "None"
@@ -31,7 +33,8 @@ public struct TonightTiles: Equatable, Sendable {
             dewLabel: frost ? "Frost likely" : "Dew risk",
             dew: dew?.displayName,
             dewHint: dew == .high ? "Dew heater advised" : nil,
-            transparency: Copy.transparencyText(plan.darkHours))
+            transparency: Copy.transparencyText(plan.darkHours),
+            moonAt: plan.darkSpan.map { Date(timeIntervalSince1970: ($0.start.timeIntervalSince1970 + $0.end.timeIntervalSince1970) / 2) })
     }
 }
 
@@ -67,6 +70,9 @@ public struct TonightModel: Equatable, Sendable {
     public var markURL: String?
     public var legalURL: String?
     public var fetchedAt: Date
+    /// "TONIGHT · MALHAM TARN" and "Tue 13 Oct · Bortle 3": the header the Mac's popover has.
+    public var overline: String
+    public var dateLine: String
 
     public var siteName: String { snapshot.siteName }
 
@@ -76,7 +82,12 @@ public struct TonightModel: Equatable, Sendable {
         var snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: forecast.fetchedAt, site: site, rule: config.goRule,
                                        bright: config.brightNights, alerts: config.alerts, copy: copy, source: source)
         snap.weatherLegalURL = forecast.attributionLegalURL
+        let day = DateFormatter()
+        day.locale = Locale(identifier: "en_GB"); day.timeZone = TimeZone(identifier: site.timeZoneID) ?? .current
+        day.dateFormat = "EEE d MMM"
+        let when = plan.darkSpan?.start ?? forecast.fetchedAt
         return TonightModel(snapshot: snap, tiles: TonightTiles.make(plan: plan, site: site), source: source,
-                            markURL: forecast.attributionMarkURL, legalURL: forecast.attributionLegalURL, fetchedAt: forecast.fetchedAt)
+                            markURL: forecast.attributionMarkURL, legalURL: forecast.attributionLegalURL, fetchedAt: forecast.fetchedAt,
+                            overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)")
     }
 }

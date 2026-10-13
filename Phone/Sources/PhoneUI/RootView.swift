@@ -53,6 +53,7 @@ public struct RootView: View {
         .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
         .phoneTheme(theme)
+        .environment(\.allowsOptionalDownloads, connectivity.current.allowsOptionalDownloads)
         .task { refresh() }
         .onChange(of: scenePhase) { _, p in if p == .active { refresh(); Task { await permission.refresh() } } }
         .onChange(of: connectivity.current.isOnline) { _, on in if on { refresh() } }
