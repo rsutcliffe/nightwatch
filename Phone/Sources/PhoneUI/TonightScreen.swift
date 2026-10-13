@@ -58,21 +58,7 @@ public struct TonightScreen: View {
         Card { ClearSkyBarsView(bars: snap.bars, caption: snap.barsLabel, trackHeight: height) }
     }
 
-    private var targets: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("BEST TONIGHT").font(.caption.weight(.medium)).tracking(0.8).secondary()
-            Card {
-                VStack(alignment: .leading, spacing: 10) {
-                    if snap.targets.isEmpty {
-                        Text("None above the horizon in the window.").font(.callout).secondary()
-                    }
-                    ForEach(Array(snap.targets.prefix(3).enumerated()), id: \.offset) { _, t in
-                        HStack { Text(t.name); Spacer(); Text(t.best).monospacedDigit().secondary() }.font(.callout)
-                    }
-                }
-            }
-        }
-    }
+    private func targets(height: CGFloat = 78) -> some View { PicksSection(model: model, pictureHeight: height) }
 
     private var offlineNote: some View {
         Card { Text("No connection. Showing the forecast from \(ForecastAge(fetchedAt: model.fetchedAt, now: now).text).").font(.callout) }
@@ -112,7 +98,7 @@ public struct TonightScreen: View {
             verdict(big: false)
             bars(height: 37)
             TilesView(tiles: model.tiles)
-            targets
+            targets()
             footer
         }
     }
@@ -124,7 +110,7 @@ public struct TonightScreen: View {
             verdict(big: true)
             bars(height: 90)
             TilesView(tiles: model.tiles, columns: width >= 900 ? 6 : 3)
-            targets
+            targets(height: 140)
             footer
         }
     }
@@ -135,7 +121,7 @@ public struct TonightScreen: View {
             HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 20) { header; verdict(big: true) }.frame(maxWidth: .infinity)
                 VStack(alignment: .leading, spacing: 20) { bars(height: 110); TilesView(tiles: model.tiles, columns: 2) }.frame(maxWidth: .infinity)
-                VStack(alignment: .leading, spacing: 20) { targets }.frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 20) { targets(height: 110) }.frame(maxWidth: .infinity)
             }
             footer
         }

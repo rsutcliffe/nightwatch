@@ -73,6 +73,10 @@ public struct TonightModel: Equatable, Sendable {
     /// "TONIGHT · MALHAM TARN" and "Tue 13 Oct · Bortle 3": the header the Mac's popover has.
     public var overline: String
     public var dateLine: String
+    /// "BEST TONIGHT" (or "UP TONIGHT" when nothing is recommended), the picks, and a note when there are none.
+    public var picksHeading: String
+    public var picks: [TargetPick]
+    public var picksNote: String?
 
     public var siteName: String { snapshot.siteName }
 
@@ -86,8 +90,14 @@ public struct TonightModel: Equatable, Sendable {
         day.locale = Locale(identifier: "en_GB"); day.timeZone = TimeZone(identifier: site.timeZoneID) ?? .current
         day.dateFormat = "EEE d MMM"
         let when = plan.darkSpan?.start ?? forecast.fetchedAt
+        // Deep-sky picks on a dark night; the Moon and planets on a bright one, as the Mac's popover does.
+        let chosen = plan.mode == .bright ? plan.brightTargets : plan.best
+        let note: String? = plan.mode == .bright && plan.brightTargets.isEmpty ? "No Moon or planet in a clear window tonight."
+            : plan.mode == .dark && plan.best.isEmpty ? "\(plan.targets.count) objects above the horizon during darkness. No clear window, so nothing is recommended." : nil
         return TonightModel(snapshot: snap, tiles: TonightTiles.make(plan: plan, site: site), source: source,
                             markURL: forecast.attributionMarkURL, legalURL: forecast.attributionLegalURL, fetchedAt: forecast.fetchedAt,
-                            overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)")
+                            overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)",
+                            picksHeading: chosen.isEmpty ? "UP TONIGHT" : "BEST TONIGHT",
+                            picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note)
     }
 }

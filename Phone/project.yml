@@ -20,8 +20,14 @@ targets:
     platform: iOS
     sources:
       - path: App
-        excludes: [Nightwatch.icon, Nightwatch.entitlements]
+        excludes: [Nightwatch.icon, Nightwatch.entitlements, Resources]
       - path: App/Nightwatch.icon   # the Mac app's icon, shared with iOS
+        buildPhase: resources
+      - path: App/Resources/Constellations   # the owner's artwork, copied from the Mac app
+        type: folder
+        buildPhase: resources
+      - path: App/Resources/Events           # Milky Way and no-events art, likewise
+        type: folder
         buildPhase: resources
     dependencies:
       - package: NightwatchPhone
