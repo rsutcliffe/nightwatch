@@ -19,8 +19,24 @@ struct StarField: View {
         }
     }
 
+    /// William Zhang's Milky Way photograph (Unsplash License), bundled at 1200 px; read once.
+    private static let photo: Image? = {
+        guard let url = Bundle.main.url(forResource: "milky-way", withExtension: "jpg", subdirectory: "Backdrop"),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return Image(platformData: data)
+    }()
+
     var body: some View {
-        if reduceTransparency { Color.clear } else {
+        if reduceTransparency { Color.clear } else if let photo = Self.photo {
+            // The real sky, held back so the cards on it stay readable: darker towards the foot, one red hue in red mode.
+            GeometryReader { geo in
+                photo.resizable().scaledToFill().frame(width: geo.size.width, height: geo.size.height).clipped()
+                    .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
+                    .overlay(LinearGradient(colors: [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
+                                            startPoint: .top, endPoint: .bottom))
+            }
+            .allowsHitTesting(false).accessibilityHidden(true)
+        } else {
             Canvas { ctx, size in
                 var g = Generator(state: seed.utf8.reduce(UInt64(1469598103934665603)) { ($0 ^ UInt64($1)) &* 1099511628211 })
                 func unit() -> Double { Double.random(in: 0..<1, using: &g) }

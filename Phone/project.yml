@@ -29,6 +29,9 @@ targets:
       - path: App/Resources/Events           # Milky Way and no-events art, likewise
         type: folder
         buildPhase: resources
+      - path: App/Resources/Backdrop         # the Milky Way photograph behind Tonight (Unsplash License; credited in the README)
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: NightwatchPhone
         product: PhoneCore
