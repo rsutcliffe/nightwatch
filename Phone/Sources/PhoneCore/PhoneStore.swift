@@ -26,6 +26,9 @@ public final class PhoneStore: ObservableObject {
         case failed(String)
     }
 
+    /// What the app is doing while the page is loading, so the wait can say so. Only ever a step actually being taken.
+    public enum LoadStage: Equatable, Sendable { case reading, planning }
+    @Published public private(set) var stage: LoadStage?
     @Published public private(set) var phase: Phase = .loading
     @Published public private(set) var tonight: TonightModel?
     @Published public private(set) var forecast: Forecast?
@@ -109,6 +112,8 @@ public final class PhoneStore: ObservableObject {
     }
 
     public func selectSite(_ s: Site) {
+        // The page must not go on showing the last site's night under the new site's name.
+        if s.name != site?.name { phase = .loading; tonight = nil }
         config.activeSiteName = s.name
         saveConfig()
         Task { await refresh(force: true) }
@@ -126,6 +131,7 @@ public final class PhoneStore: ObservableObject {
     /// Draw from what is saved, fetch if the policy says to, and rebuild tonight's page and the alert queue.
     public func refresh(force: Bool = false, connectivity: Connectivity = Connectivity()) async {
         guard let site else { phase = .needsSite; tonight = nil; return }
+        defer { stage = nil }
         let now = clock()
         if forecast.map({ !ForecastStore.matches($0, site: site) }) ?? false { forecast = forecastStore.load().flatMap { ForecastStore.matches($0, site: site) ? $0 : nil } }
         switch RefreshPolicy.decision(now: now, forecast: forecast, site: site, pause: pause, force: force, connectivity: connectivity) {
@@ -135,7 +141,7 @@ public final class PhoneStore: ObservableObject {
             offline = true
             if forecast == nil { phase = .failed("No connection, and no forecast saved for \(site.name) yet."); return }
         case .fetch:
-            refreshing = true
+            refreshing = true; stage = .reading
             defer { refreshing = false }
             let ask = !pause.paused(now: now)
             do {
@@ -150,6 +156,7 @@ public final class PhoneStore: ObservableObject {
                 offline = true   // keep drawing from the saved forecast, and say how old it is
             }
         }
+        stage = .planning
         await recompute(now: clock())
     }
 

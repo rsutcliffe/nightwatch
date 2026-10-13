@@ -176,3 +176,20 @@ struct Failure: Error {}
     await store.refresh()
     #expect(store.appleMarkData == nil)
 }
+
+@MainActor @Test func theLoadStageIsClearedOnceThePageIsReady() async {
+    let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: Calls())
+    await store.refresh()
+    #expect(store.stage == nil)
+}
+
+@MainActor @Test func switchingSiteDropsTheOldNightAtOnceSoItIsNeverShownUnderTheNewName() async {
+    let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: Calls())
+    await store.refresh()
+    #expect(store.tonight != nil)
+    var other = sheffield; other.name = "Malham Tarn"; other.latitude = 54.09; other.longitude = -2.17
+    store.config.sites.append(other)
+    store.selectSite(other)
+    #expect(store.phase == .loading)
+    #expect(store.tonight == nil)
+}

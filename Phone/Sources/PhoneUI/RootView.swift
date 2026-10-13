@@ -17,13 +17,18 @@ public struct RootView: View {
     private func refresh(force: Bool = false) { Task { await store.refresh(force: force, connectivity: connectivity.current) } }
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: SidebarItem? = .tonight
     enum SidebarItem: Hashable { case tonight, settings }
 
     @ViewBuilder private var phaseContent: some View {
+        phaseSwitch.animation(reduceMotion ? nil : .easeOut(duration: 0.4), value: store.phase)
+    }
+
+    @ViewBuilder private var phaseSwitch: some View {
         switch store.phase {
         case .needsSite: FirstRunScreen(store: store)
-        case .loading: VStack { WaitingText(text: "Reading tonight's forecast") }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .loading: LoadingScreen(siteName: store.site?.name ?? "your site", stage: store.stage).transition(.opacity)
         case .failed(let why):
             EmptyState(title: "No forecast yet", message: why, action: ("Try again", { refresh(force: true) }))
         case .ready:
@@ -31,6 +36,7 @@ public struct RootView: View {
                 TonightScreen(model: m, markData: store.appleMarkData, offline: store.offline, refreshing: store.refreshing,
                               onRefresh: { refresh(force: true) },
                               alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }), now: store.now)
+                    .transition(.opacity)
             }
         }
     }
