@@ -8,7 +8,9 @@ import PhoneCore
 /// time trigger. Every refresh replaces the whole queue, so a downgraded forecast cancels what it had promised.
 public struct UserNotificationScheduler: NotificationScheduling {
     private let center: UNUserNotificationCenter
-    public init(center: UNUserNotificationCenter = .current()) { self.center = center }
+    private let now: @Sendable () -> Date
+    /// `now` is the app's clock, so a demo clock shifts the queue's triggers with it.
+    public init(center: UNUserNotificationCenter = .current(), now: @escaping @Sendable () -> Date = { Date() }) { self.center = center; self.now = now }
 
     public func isAuthorised() async -> Bool {
         let s = await center.notificationSettings().authorizationStatus
@@ -25,8 +27,9 @@ public struct UserNotificationScheduler: NotificationScheduling {
         let pending = await center.pendingNotificationRequests().map(\.identifier).filter { !$0.hasPrefix("now.") }
         center.removePendingNotificationRequests(withIdentifiers: pending)
         guard await isAuthorised() else { return }
-        for a in alerts where a.fireDate > .now {
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, a.fireDate.timeIntervalSinceNow), repeats: false)
+        for a in alerts where a.fireDate > now() {
+            NSLog("Nightwatch queued %@ for %@", a.id, a.fireDate.description)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, a.fireDate.timeIntervalSince(now())), repeats: false)
             try? await center.add(UNNotificationRequest(identifier: a.id, content: Self.content(title: a.title, body: a.body), trigger: trigger))
         }
     }

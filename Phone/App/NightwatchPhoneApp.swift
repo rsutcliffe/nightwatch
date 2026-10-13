@@ -18,6 +18,15 @@ final class CloudStore: KeyValueStoring {
 
 /// iOS decides when this runs (rarely more than a few times a day, and not at all in Low Power Mode), so alerts also rely on
 /// the app being opened. It refreshes the forecast and requeues the alerts.
+/// Shows an alert as a banner even while the app is open: without this iOS keeps it quiet in the foreground.
+final class AlertPresenter: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = AlertPresenter()
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent n: UNNotification) async -> UNNotificationPresentationOptions {
+        NSLog("Nightwatch delivered %@", n.request.identifier)
+        return [.banner, .list, .sound]
+    }
+}
+
 let refreshTaskID = "io.github.rsutcliffe.nightwatch.phone.refresh"
 
 func scheduleBackgroundRefresh() {
@@ -34,13 +43,24 @@ struct NightwatchPhoneApp: App {
     init() {
         let dir = URL.applicationSupportDirectory.appendingPathComponent("Nightwatch", isDirectory: true)
         // `-demo` shows made-up conditions for a public site, for screenshots and layout checks. Never used in a release.
-        let demo = CommandLine.arguments.contains("-demo")
+        //   -demoNow 17:05   the app's clock starts at that time today, then runs
+        //   -demoCloud 90    cloud cover for every hour (default 5)
+        UNUserNotificationCenter.current().delegate = AlertPresenter.shared
+        let args = CommandLine.arguments
+        func value(_ flag: String) -> String? { args.firstIndex(of: flag).flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil } }
+        let demo = args.contains("-demo")
+        var shift: TimeInterval = 0
+        if demo, let t = value("-demoNow")?.split(separator: ":").compactMap({ Int($0) }), t.count == 2,
+           let target = Calendar.current.date(bySettingHour: t[0], minute: t[1], second: 0, of: Date()) { shift = target.timeIntervalSinceNow }
+        let clock: @Sendable () -> Date = { Date(timeIntervalSinceNow: shift) }
+        if demo { try? FileManager.default.removeItem(at: FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo")) }   // every demo launch starts clean
+        let cloud = value("-demoCloud").flatMap(Int.init) ?? 5
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
-            if demo { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), site: site) }
+            if demo { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), cloud: cloud, site: site) }
             return try await ForecastService.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
-        }, scheduler: UserNotificationScheduler())
-        if demo { s.addSite(DemoData.site) }
+        }, scheduler: UserNotificationScheduler(now: clock), clock: clock)
+        if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }   // -demoEmpty shows the first-run screen
         s.attachSync(store: CloudStore())
         BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshTaskID, using: nil) { task in
             scheduleBackgroundRefresh()
