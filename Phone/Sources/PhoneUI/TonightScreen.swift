@@ -18,11 +18,13 @@ public struct TonightScreen: View {
 
     private var snap: WidgetSnapshot { model.snapshot }
 
+    private var regular: Bool { sizeClass == .regular }
+
     private var verdict: some View {
-        HStack(alignment: .center, spacing: 16) {
-            ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel)
+        HStack(alignment: .center, spacing: 20) {
+            ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: regular ? 170 : 104)
             VStack(alignment: .leading, spacing: 4) {
-                Text(snap.headline).font(.title3.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                Text(snap.headline).font(regular ? .title.weight(.medium) : .title3.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                 if let w = snap.window { Text(w).font(.callout).foregroundStyle(theme.accent) }
                 if let r = snap.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
                 if let a = snap.agreement {
@@ -54,13 +56,13 @@ public struct TonightScreen: View {
                     Card { Text("No connection. Showing the forecast from \(ForecastAge(fetchedAt: model.fetchedAt, now: .now).text).").font(.callout) }
                         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                 }
-                if sizeClass == .regular {
-                    HStack(alignment: .top, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Card { verdict }
-                            Card { ClearSkyBarsView(bars: snap.bars, caption: snap.barsLabel, trackHeight: 70) }
+                if regular {
+                    HStack(alignment: .top, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 20) {
+                            Card(padding: 20) { verdict }
+                            Card(padding: 20) { ClearSkyBarsView(bars: snap.bars, caption: snap.barsLabel, trackHeight: 170) }
                         }
-                        VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 20) {
                             TilesView(tiles: model.tiles)
                             targets
                         }
@@ -74,8 +76,8 @@ public struct TonightScreen: View {
                 if let t = snap.tomorrow { Text(t).font(.footnote).secondary() }
                 SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
             }
-            .padding(16)
-            .frame(maxWidth: 900)
+            .padding(regular ? 28 : 16)
+            .frame(maxWidth: 1100)
             .frame(maxWidth: .infinity)
         }
         .refreshable { onRefresh() }

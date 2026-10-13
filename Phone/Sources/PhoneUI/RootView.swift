@@ -31,9 +31,12 @@ public struct RootView: View {
                     }
                 }
             }
-            .navigationTitle(store.site?.name ?? "Nightwatch")
             .navigationBarTitleDisplayModeInline()
             .toolbar {
+                // A drawn title, not .navigationTitle: the system title ignores the red palette.
+                ToolbarItem(placement: .principal) {
+                    Text(store.site?.name ?? "Nightwatch").font(.headline).foregroundStyle(theme.textPrimary)
+                }
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button { red.toggle() } label: { Image(systemName: red ? "moon.fill" : "moon") }
                         .accessibilityLabel("Red night mode")
