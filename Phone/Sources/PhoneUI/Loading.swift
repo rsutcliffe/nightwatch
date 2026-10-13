@@ -8,17 +8,17 @@ struct ShimmerText: View {
     var font: Font = .callout
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var sweep: CGFloat = -0.4
+    @State private var sweep: CGFloat = -0.5
 
     var body: some View {
-        Text(text).font(font).foregroundStyle(theme.textSecondary)
+        Text(text).font(font).foregroundStyle(theme.textSecondary.opacity(0.6))
             .overlay {
                 if !reduceMotion {
                     GeometryReader { geo in
                         Text(text).font(font).foregroundStyle(theme.textPrimary).frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
                             .mask {
-                                LinearGradient(colors: [.clear, .white, .clear], startPoint: .leading, endPoint: .trailing)
-                                    .frame(width: geo.size.width * 0.4)
+                                LinearGradient(colors: [.clear, .white, .white, .clear], startPoint: .leading, endPoint: .trailing)
+                                    .frame(width: geo.size.width * 0.5)
                                     .offset(x: geo.size.width * sweep)
                             }
                     }
@@ -26,7 +26,7 @@ struct ShimmerText: View {
             }
             .onAppear {
                 guard !reduceMotion else { return }
-                withAnimation(.linear(duration: 1.6).repeatForever(autoreverses: false)) { sweep = 1.0 }
+                withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) { sweep = 1.0 }
             }
             .animation(.easeInOut(duration: 0.25), value: text)
             .accessibilityLabel(text)

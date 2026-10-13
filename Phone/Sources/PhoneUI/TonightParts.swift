@@ -10,6 +10,8 @@ struct ScoreBezelView: View {
     let label: String
     var size: CGFloat = 104
     @Environment(\.phoneTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var arrived = false
 
     private func colour(_ s: BezelSlot) -> Color {
         switch s { case .clear: theme.accent; case .partCloud: theme.tickPartCloud; case .cloudy: theme.tickCloudy; case .daylight: theme.tickDaylight }
@@ -25,6 +27,8 @@ struct ScoreBezelView: View {
                         .offset(y: -45.5 + (hour ? 4 : 2.25))
                         .frame(width: 91, height: 91)
                         .rotationEffect(.degrees(Double(i) * 6))
+                        .opacity(arrived ? 1 : 0)
+                        .animation(reduceMotion ? nil : .easeOut(duration: 0.25).delay(Double(i) * 0.012), value: arrived)
                 }
             }
         }
@@ -35,8 +39,9 @@ struct ScoreBezelView: View {
             Circle().stroke(theme.ring, lineWidth: 0.75).frame(width: 66, height: 66)
             ticks { $0 != .clear }
             ticks { $0 == .clear }.compositingGroup().shadow(color: theme.accent.opacity(0.7), radius: 3)
-            Text("\(score)").font(.system(size: 27, weight: .light)).monospacedDigit().foregroundStyle(theme.textPrimary)
-                .contentTransition(.numericText())
+            Text("\(arrived ? score : 0)").font(.system(size: 27, weight: .light)).monospacedDigit().foregroundStyle(theme.textPrimary)
+                .contentTransition(.numericText(value: Double(arrived ? score : 0)))
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.9), value: arrived)
                 .overlay(alignment: .top) {
                     Text("SKY SCORE").font(.system(size: 9, weight: .medium)).secondary().fixedSize().offset(y: 28)
                 }
@@ -46,6 +51,7 @@ struct ScoreBezelView: View {
         .scaleEffect(size / 91).frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
+        .onAppear { arrived = true }
     }
 }
 
@@ -56,12 +62,14 @@ struct ClearSkyBarsView: View {
     let caption: String
     var trackHeight: CGFloat = 37
     @Environment(\.phoneTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var arrived = false
 
     var body: some View {
         if bars.isEmpty { EmptyView() } else {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .bottom, spacing: 3.4) {
-                    ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
+                    ForEach(Array(bars.enumerated()), id: \.offset) { i, b in
                         VStack(spacing: 2) {
                             if b.peak {
                                 Text("\(b.clearPct)% clear").font(.system(size: 9, weight: .medium)).foregroundStyle(theme.textPrimary).fixedSize()
@@ -69,8 +77,9 @@ struct ClearSkyBarsView: View {
                             ZStack(alignment: .bottom) {
                                 RoundedRectangle(cornerRadius: 2.5).fill(theme.barTrack)
                                 RoundedRectangle(cornerRadius: 2.5).fill(b.lit ? theme.accent : theme.barCloudy)
-                                    .frame(height: max(2, trackHeight * CGFloat(b.clearPct) / 100))
+                                    .frame(height: max(2, arrived ? trackHeight * CGFloat(b.clearPct) / 100 : 2))
                                     .shadow(color: b.lit ? theme.accent.opacity(0.7) : .clear, radius: 3)
+                                    .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.8).delay(Double(i) * 0.04), value: arrived)
                             }
                             .frame(height: trackHeight)
                             Text(b.hour).font(.system(size: 9.5)).secondary().fixedSize()
@@ -80,6 +89,7 @@ struct ClearSkyBarsView: View {
                 }
                 Text("Clear sky by hour").font(.caption2).secondary()
             }
+            .onAppear { arrived = true }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(caption + " " + bars.map { "\($0.hour) hundred hours \($0.clearPct) percent clear" }.joined(separator: ", "))
         }
@@ -184,8 +194,11 @@ struct SourceFooter: View {
             Spacer(minLength: 8)
             Text(model.snapshot.updated ?? "").font(.caption).secondary()
             Button { refreshes += 1; onRefresh() } label: {
-                Text(refreshing ? "Refreshing" : "Refresh").font(.callout.weight(.medium)).foregroundStyle(theme.accent)
-                    .frame(minWidth: 44, minHeight: 44)
+                Group {
+                    if refreshing { ShimmerText(text: "Reading the forecast", font: .callout.weight(.medium)) }
+                    else { Text("Refresh").font(.callout.weight(.medium)).foregroundStyle(theme.accent) }
+                }
+                .frame(minWidth: 44, minHeight: 44)
             }
             .buttonStyle(PressStyle())
             .sensoryFeedback(.impact(weight: .light), trigger: refreshes)
