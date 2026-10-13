@@ -43,7 +43,9 @@ public struct RootView: View {
                     Button { red.toggle() } label: { Image(systemName: red ? "moon.fill" : "moon") }
                         .accessibilityLabel("Red night mode")
                         .sensoryFeedback(.selection, trigger: red)
-                    Button { showSites = true } label: { Image(systemName: "mappin.and.ellipse") }.accessibilityLabel("Sites")
+                    if store.phase != .needsSite {
+                        Button { showSites = true } label: { Image(systemName: "mappin.and.ellipse") }.accessibilityLabel("Sites")
+                    }
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings")
                 }
             }
