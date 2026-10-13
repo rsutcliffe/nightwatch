@@ -23,16 +23,55 @@ struct StarField: View {
         if reduceTransparency { Color.clear } else {
             Canvas { ctx, size in
                 var g = Generator(state: seed.utf8.reduce(UInt64(1469598103934665603)) { ($0 ^ UInt64($1)) &* 1099511628211 })
-                let count = Int(size.width * size.height / 5200)
-                for _ in 0..<count {
-                    let x = Double.random(in: 0..<size.width, using: &g), y = Double.random(in: 0..<size.height, using: &g)
-                    let bright = Double.random(in: 0...1, using: &g)
-                    let r = bright > 0.96 ? 1.3 : bright > 0.8 ? 0.9 : 0.6
-                    let alpha = (theme.isRed ? 0.22 : 0.5) * (0.35 + 0.65 * bright)
-                    ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
-                             with: .color((theme.isRed ? Color(hex: 0xC0180E) : Color.white).opacity(alpha)))
+                func unit() -> Double { Double.random(in: 0..<1, using: &g) }
+                let red = theme.isRed
+                let tint = red ? Color(hex: 0xC0180E) : Color.white
+                let glow = red ? Color(hex: 0x6A0A06) : Color(hex: 0x4A5FB8)
+
+                // The Milky Way: a soft diagonal band with the faint stars crowded along it.
+                let tilt = (unit() - 0.5) * 0.5 + 0.55
+                let start = CGPoint(x: -size.width * 0.1, y: size.height * (0.10 + 0.12 * unit()))
+                let end = CGPoint(x: size.width * 1.1, y: start.y + size.height * 0.45 * (0.7 + tilt))
+                let mid = CGPoint(x: size.width * 0.5, y: (start.y + end.y) / 2 - size.height * 0.08)
+                var band = Path(); band.move(to: start); band.addQuadCurve(to: end, control: mid)
+                ctx.drawLayer { layer in
+                    layer.addFilter(.blur(radius: min(size.width, size.height) * 0.09))
+                    layer.stroke(band, with: .color(glow.opacity(red ? 0.34 : 0.55)), lineWidth: min(size.width, size.height) * 0.30)
+                }
+                ctx.drawLayer { layer in
+                    layer.addFilter(.blur(radius: min(size.width, size.height) * 0.03))
+                    layer.stroke(band, with: .color(tint.opacity(red ? 0.08 : 0.13)), lineWidth: min(size.width, size.height) * 0.09)
+                }
+                let along = Int(size.width * size.height / 900)
+                for _ in 0..<along {
+                    let t = unit()
+                    let u = 1 - t
+                    let x = u * u * start.x + 2 * u * t * mid.x + t * t * end.x
+                    let y = u * u * start.y + 2 * u * t * mid.y + t * t * end.y
+                    let spread = min(size.width, size.height) * 0.14
+                    let dx = (unit() + unit() + unit() - 1.5) * spread, dy = (unit() + unit() + unit() - 1.5) * spread
+                    let r = 0.45 + 0.7 * unit()
+                    ctx.fill(Path(ellipseIn: CGRect(x: x + dx - r, y: y + dy - r, width: r * 2, height: r * 2)),
+                             with: .color(tint.opacity((red ? 0.30 : 0.55) * (0.3 + 0.7 * unit()))))
+                }
+
+                // Scattered stars of several sizes; the brightest get a halo and a glint.
+                let scattered = Int(size.width * size.height / 7000)
+                for _ in 0..<scattered {
+                    let x = unit() * size.width, y = unit() * size.height, m = unit()
+                    let r = m > 0.97 ? 1.9 : m > 0.85 ? 1.3 : 0.8
+                    let a = (red ? 0.38 : 0.85) * (0.4 + 0.6 * m)
+                    if m > 0.97 {
+                        
+                        var glint = Path()
+                        glint.move(to: CGPoint(x: x - 5, y: y)); glint.addLine(to: CGPoint(x: x + 5, y: y))
+                        glint.move(to: CGPoint(x: x, y: y - 5)); glint.addLine(to: CGPoint(x: x, y: y + 5))
+                        ctx.stroke(glint, with: .color(tint.opacity(a * 0.35)), lineWidth: 0.5)
+                    }
+                    ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(tint.opacity(a)))
                 }
             }
+            .background(LinearGradient(colors: [theme.skyTop, theme.background], startPoint: .top, endPoint: .center))
             .allowsHitTesting(false).accessibilityHidden(true)
         }
     }

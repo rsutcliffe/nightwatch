@@ -31,18 +31,20 @@ public struct PhoneTheme: Equatable, Sendable {
     public var heroClear: [Color]
     public var heroDull: [Color]
     public var highlight: Color
+    /// The top of the sky behind Tonight, fading into the background.
+    public var skyTop: Color
     public var tile: Color
     public var outline: Color
 
     public static let normal = PhoneTheme(
-        isRed: false, background: Color(hex: 0x14171D), card: Color(hex: 0x1C1F27), track: Color(hex: 0x272A34),
+        isRed: false, background: Color(hex: 0x14171D), card: Color(hex: 0x1C1F27, opacity: 0.80), track: Color(hex: 0x272A34),
         textPrimary: Color(hex: 0xE8EAEF), textSecondary: Color(hex: 0xA8AEBE), textSecondaryHigh: Color(hex: 0xCDD2DC),
         accent: Color(hex: 0x0A84FF), warning: Color(hex: 0xEDB40D), hairline: Color(hex: 0x272A34),
         barCloudy: Color.white.opacity(0.35), barTrack: Color.white.opacity(0.07),
         tickCloudy: Color.white.opacity(0.31), tickPartCloud: Color.white.opacity(0.47), tickDaylight: Color.white.opacity(0.12),
         ring: Color.white.opacity(0.09),
         heroClear: [Color(hex: 0x1A2750), Color(hex: 0x1C1F27)], heroDull: [Color(hex: 0x262932), Color(hex: 0x1C1F27)],
-        highlight: Color.white.opacity(0.14), tile: Color.white.opacity(0.06), outline: Color(hex: 0x272A34))
+        highlight: Color.white.opacity(0.14), skyTop: Color(hex: 0x0B1030), tile: Color(hex: 0x1A1D26, opacity: 0.92), outline: Color(hex: 0x272A34))
 
     /// Red on black and nothing else, so dark adaptation survives. No yellow: a warning is drawn with a dashed outline and a "!".
     public static let red = PhoneTheme(
@@ -53,7 +55,7 @@ public struct PhoneTheme: Equatable, Sendable {
         tickCloudy: Color(hex: 0xA0140C, opacity: 0.55), tickPartCloud: Color(hex: 0xA0140C, opacity: 0.8), tickDaylight: Color(hex: 0xA0140C, opacity: 0.2),
         ring: Color(hex: 0xA0140C, opacity: 0.25),
         heroClear: [Color(hex: 0x2A0000), Color(hex: 0x120000)], heroDull: [Color(hex: 0x180000), Color(hex: 0x120000)],
-        highlight: Color(hex: 0xA0140C, opacity: 0.35), tile: Color(hex: 0x1A0000), outline: Color(hex: 0x2E0000))
+        highlight: Color(hex: 0xA0140C, opacity: 0.35), skyTop: Color(hex: 0x1A0000), tile: Color(hex: 0x1A0000, opacity: 0.92), outline: Color(hex: 0x2E0000))
 
     public static func named(red: Bool) -> PhoneTheme { red ? .red : .normal }
 }

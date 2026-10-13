@@ -42,7 +42,7 @@ public struct TonightScreen: View {
         return layout {
             ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: big ? 190 : 104)
             VStack(alignment: .leading, spacing: 5) {
-                Text(snap.headline).font(.system(big ? .largeTitle : .title2, design: .serif, weight: .medium)).fixedSize(horizontal: false, vertical: true)
+                Text(snap.headline).font(big ? .largeTitle.weight(.medium) : .title2.weight(.medium)).fixedSize(horizontal: false, vertical: true)
                 if let w = snap.window { Text(w).font(big ? .title3.weight(.medium) : .callout.weight(.medium)).monospacedDigit().foregroundStyle(theme.accent) }
                 if let r = snap.reason { Text(r).font(big ? .callout : .footnote).secondary().fixedSize(horizontal: false, vertical: true) }
                 if let a = snap.agreement {

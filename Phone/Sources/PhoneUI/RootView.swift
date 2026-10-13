@@ -16,39 +16,86 @@ public struct RootView: View {
 
     private func refresh(force: Bool = false) { Task { await store.refresh(force: force, connectivity: connectivity.current) } }
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var selection: SidebarItem? = .tonight
+    enum SidebarItem: Hashable { case tonight, settings }
+
+    @ViewBuilder private var phaseContent: some View {
+        switch store.phase {
+        case .needsSite: FirstRunScreen(store: store)
+        case .loading: VStack { WaitingText(text: "Reading tonight's forecast") }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .failed(let why):
+            EmptyState(title: "No forecast yet", message: why, action: ("Try again", { refresh(force: true) }))
+        case .ready:
+            if let m = store.tonight {
+                TonightScreen(model: m, markData: store.appleMarkData, offline: store.offline, refreshing: store.refreshing,
+                              onRefresh: { refresh(force: true) },
+                              alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }), now: store.now)
+            }
+        }
+    }
+
+    private var nightModeButton: some View {
+        Button { red.toggle() } label: { Image(systemName: red ? "moon.fill" : "moon") }
+            .accessibilityLabel("Red night mode")
+            .sensoryFeedback(.selection, trigger: red)
+    }
+
+    /// iPhone and Slide Over: one stack, with sites and settings as sheets.
+    private func stack(_ theme: PhoneTheme) -> some View {
+        NavigationStack {
+            phaseContent
+                .navigationBarTitleDisplayModeInline()
+                .toolbar {
+                    // A drawn title, not .navigationTitle: the system title ignores the red palette.
+                    ToolbarItem(placement: .principal) {
+                        Text(store.site?.name ?? "Nightwatch").font(.headline).foregroundStyle(theme.textPrimary)
+                    }
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        nightModeButton
+                        if store.phase != .needsSite {
+                            Button { showSites = true } label: { Image(systemName: "mappin.and.ellipse") }.accessibilityLabel("Sites")
+                        }
+                        Button { showSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings")
+                    }
+                }
+        }
+    }
+
+    /// iPad: a sidebar with Tonight, the sites and Settings, and the page beside it.
+    private func split(_ theme: PhoneTheme) -> some View {
+        NavigationSplitView {
+            List(selection: $selection) {
+                Section {
+                    Label("Tonight", systemImage: "moon.stars").tag(SidebarItem.tonight)
+                    Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
+                }
+                Section("Your sites") {
+                    ForEach(store.config.sites, id: \.name) { s in
+                        Button { store.selectSite(s); selection = .tonight } label: {
+                            HStack { Text(s.name); Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark").foregroundStyle(theme.accent) } }
+                        }
+                    }
+                    Button { showSites = true } label: { Label("Add or remove sites", systemImage: "plus") }
+                }
+            }
+            .scrollContentBackground(.hidden).background(theme.background)
+            .navigationTitle("Nightwatch")
+        } detail: {
+            NavigationStack {
+                Group {
+                    if selection == .settings { SettingsScreen(store: store, red: $red, permission: permission, embedded: true) } else { phaseContent }
+                }
+                .navigationBarTitleDisplayModeInline()
+                .toolbar { ToolbarItem(placement: .primaryAction) { nightModeButton } }
+            }
+        }
+    }
+
     public var body: some View {
         let theme = PhoneTheme.named(red: red)
-        NavigationStack {
-            Group {
-                switch store.phase {
-                case .needsSite: FirstRunScreen(store: store)
-                case .loading: VStack { WaitingText(text: "Reading tonight's forecast") }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                case .failed(let why):
-                    EmptyState(title: "No forecast yet", message: why, action: ("Try again", { refresh(force: true) }))
-                case .ready:
-                    if let m = store.tonight {
-                        TonightScreen(model: m, markData: store.appleMarkData, offline: store.offline, refreshing: store.refreshing,
-                                      onRefresh: { refresh(force: true) },
-                                      alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }), now: store.now)
-                    }
-                }
-            }
-            .navigationBarTitleDisplayModeInline()
-            .toolbar {
-                // A drawn title, not .navigationTitle: the system title ignores the red palette.
-                ToolbarItem(placement: .principal) {
-                    Text(store.site?.name ?? "Nightwatch").font(.headline).foregroundStyle(theme.textPrimary)
-                }
-                ToolbarItemGroup(placement: .primaryAction) {
-                    Button { red.toggle() } label: { Image(systemName: red ? "moon.fill" : "moon") }
-                        .accessibilityLabel("Red night mode")
-                        .sensoryFeedback(.selection, trigger: red)
-                    if store.phase != .needsSite {
-                        Button { showSites = true } label: { Image(systemName: "mappin.and.ellipse") }.accessibilityLabel("Sites")
-                    }
-                    Button { showSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings")
-                }
-            }
+        Group {
+            if sizeClass == .regular && store.phase != .needsSite { split(theme) } else { stack(theme) }
         }
         .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
@@ -150,39 +197,47 @@ struct SettingsScreen: View {
     @Environment(\.phoneTheme) private var theme
     @Binding var red: Bool
     @ObservedObject var permission: NotificationPermission
+    var embedded = false
     @Environment(\.dismiss) private var dismiss
 
     private func binding<T>(_ kp: WritableKeyPath<AlertSettings, T>) -> Binding<T> {
         Binding(get: { store.config.alerts[keyPath: kp] }, set: { store.config.alerts[keyPath: kp] = $0; store.saveConfig() })
     }
 
+    private var form: some View {
+        Form {
+            Section {
+                if permission.status == .denied {
+                    Text("Alerts are off for Nightwatch in iOS Settings, Notifications.").font(.footnote)
+                }
+                Toggle("Heads-up before sunset", isOn: binding(\.headsUp))
+                Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
+                Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
+                Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: binding(\.quietStartHour), in: 0...23)
+                Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
+            } header: { Text("Alerts") } footer: {
+                Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
+            }.listRowBackground(theme.card)
+            Section {
+                Toggle("Red night mode", isOn: $red)
+            } header: { Text("Display") } footer: {
+                Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")
+            }.listRowBackground(theme.card)
+        }
+        .scrollContentBackground(.hidden).background(theme.background)
+        .toggleStyle(PhoneToggleStyle())
+        .navigationBarTitleDisplayModeInline()
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    if permission.status == .denied {
-                        Text("Alerts are off for Nightwatch in iOS Settings, Notifications.").font(.footnote)
-                    }
-                    Toggle("Heads-up before sunset", isOn: binding(\.headsUp))
-                    Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
-                    Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
-                    Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: binding(\.quietStartHour), in: 0...23)
-                    Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
-                } header: { Text("Alerts") } footer: {
-                    Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
-                }.listRowBackground(theme.card)
-                Section {
-                    Toggle("Red night mode", isOn: $red)
-                } header: { Text("Display") } footer: {
-                    Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")
-                }.listRowBackground(theme.card)
-            }
-            .scrollContentBackground(.hidden).background(theme.background)
-            .toggleStyle(PhoneToggleStyle())
-            .navigationBarTitleDisplayModeInline()
-            .toolbar {
-                ToolbarItem(placement: .principal) { Text("Settings").font(.headline).foregroundStyle(theme.textPrimary) }
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+        if embedded {
+            form.toolbar { ToolbarItem(placement: .principal) { Text("Settings").font(.headline).foregroundStyle(theme.textPrimary) } }
+        } else {
+            NavigationStack {
+                form.toolbar {
+                    ToolbarItem(placement: .principal) { Text("Settings").font(.headline).foregroundStyle(theme.textPrimary) }
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                }
             }
         }
     }
