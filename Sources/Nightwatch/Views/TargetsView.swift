@@ -474,7 +474,8 @@ struct TargetsView: View {
     }
 
     /// Three columns, or two once a column would be narrower than a card can be read at (#60).
-    private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12), count: ui.narrow ? 2 : 3) }
+    /// Top-aligned, so a shorter card in a row (an event whose text takes one line beside one that takes two) starts level with its neighbour.
+    private var gridColumns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: ui.narrow ? 2 : 3) }
 
     /// The page's name, for a target page's back link.
     private var sectionTitle: String {
