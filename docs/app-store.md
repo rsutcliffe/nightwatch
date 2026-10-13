@@ -338,6 +338,13 @@ Apple Maps (place search, sent what is typed; maps and place names, sent coordin
 Space Weather Prediction Center (aurora), CDS hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet
 Center and CelesTrak (comets, space station). Nothing identifies the user.
 
+Apple Weather attribution (guideline 5.2.5): wherever the app shows a forecast supplied by Apple Weather, it shows the
+Apple Weather mark, and the mark is itself the link to Apple's legal source page. It is in the footer of the menu-bar
+popover, at the foot of the Targets window's sidebar (every page), on the desktop widget and on Siri and Spotlight
+answer cards. The attached recording shows the mark in each place and the legal page opening from it. If Apple
+Weather does not answer, the forecast comes from Open-Meteo and the footer names Open-Meteo instead; the Apple
+Weather mark is then not shown, because no Apple data is shown.
+
 Also in the app: Spotlight and Shortcuts actions (Sky Score, Best Targets Tonight, Events Tonight, Clear Window
 Tonight, Refresh Forecast, Show Target, Turn On or Off Clear-Sky Notifications) that read the forecast the app
 already holds; on macOS 27, searching Nightwatch's targets from Siri. An event's page has "Add to Calendar", which
@@ -390,9 +397,44 @@ Notes say so. From 1.1 it also has a visible use (Measure from a photo). Check t
 
 - The Notes above are current, and list every entitlement the build carries.
 - A short screen recording (launch, Welcome with "Use this Mac's location", popover, Targets, Settings, widget)
-  is in App Review Information › **Attachment**, not only in a reply.
+  is in App Review Information › **Attachment**, not only in a reply. It must also show the Apple Weather mark in
+  the popover footer, the Targets sidebar and the widget, and the legal page opening from the mark (5.2.5), the iCloud
+  caption in Settings › App, Siri or Shortcuts answering, and Measure from a photo. The 1.6.4 submission's only
+  attachment was `review-1.6.4-location.mp4` (read in App Store Connect on 13 October 2026), although the store
+  screenshots already show the Apple Weather mark and the app already carried it everywhere Apple lists. Apple's 13
+  October message is a request to confirm ("appears to support WeatherKit but we need to confirm"), so why the
+  reviewer did not see the mark is not known; one possibility is that Apple Weather did not answer on their Mac. One
+  walkthrough covering every entitlement, kept for every later submission, is the best defence against being asked
+  one question per round.
 - After **Submit** (or **Resubmit to App Review**), the status reads **Waiting for Review**. "Ready for Review"
   means not submitted.
+
+### Guideline pre-flight (13 October 2026)
+
+Written after the fourth rejection (1.6.4, guideline 5.2.5, Apple Weather attribution), against the live App Review
+Guidelines text and what App Store Connect holds for 1.6.4. Rule of the audit: for each guideline a reviewer could use
+to ask "where do I see this?", the answer is in the Notes AND on the recording. Re-run it before each submission.
+
+| Guideline | A reviewer could ask | Evidence today | Status |
+|---|---|---|---|
+| 2.1 completeness | How do I use it? Any login? Is every feature reachable? | No sign-in (box unticked in App Store Connect); Notes give setup and every entitlement; contact details filled in | **Gap: the only attachment is the location recording.** Replace it with one walkthrough of every entitlement |
+| 2.3.3, 2.3.10 metadata | Do screenshots show the app in use? Any other platform or marketplace named? | Screenshots of the running app; description has no web address and the download is not mentioned | OK |
+| 2.3.6 age rating | Honest answers? | None throughout, 4+ | OK |
+| 2.4.5(i) sandbox | Entitlements justified? | Seven listed with where each is seen; the temporary exceptions are stripped by `scripts/appstore.sh` | OK, once the recording shows each one |
+| 2.4.5(iii) no login launch without consent | Does it start by itself? | "Start at login" is off until switched on; no Dock icon; Quit in the popover | OK |
+| 2.4.5(vii) updates only through the store | Does it update itself? | The update check is gated by `Distribution.checksForUpdates`, off in the store build | OK |
+| 2.5.11 Shortcuts and Siri | Do the actions fit the app? | Seven actions, all about the forecast and targets; phrases name Nightwatch first | OK; show one on the recording |
+| 2.5.16 widgets | Related to the app? | Widget shows tonight's sky score | OK; show it on the recording |
+| 4.2 minimum functionality | Is it more than a web page? | Native forecast, planner, charts, widget, Shortcuts | OK |
+| 5.1.1(i) privacy policy | Link in metadata and in the app? | App Store Connect holds `PRIVACY.md` on GitHub; in the app at Welcome step 2 and the foot of Settings | OK. `PRIVACY.md` also changes in PR 182, so that PR waits until 1.6.4 is approved |
+| 5.1.1(ii), (iv) consent | Does it ask before location? Does it work without? | Asked only from a button; "Add a site..." works without it; the 1.6.4 recording shows the prompt | OK |
+| 5.1.2 data sharing, privacy labels | Where do coordinates go? Do the labels match? | Coordinates go to Apple WeatherKit, Open-Meteo and 7Timer; label says Precise Location, not linked to you, app functionality | OK |
+| 5.1.5 location | Is it needed? | Forecast, sunset, darkness and horizon for where you are | OK |
+| 5.2.1 trademarks | Third-party names? | No Discworld or Pratchett names in the listing; telescope makers are described, not named | OK |
+| 5.2.2 third-party services | Permission for the data? | Open-Meteo (CC BY 4.0), 7Timer, NOAA, AuroraWatch UK, CDS and DSS (non-profit use), NASA SVS, Minor Planet Center, CelesTrak; credited in About and `NOTICE` | OK **while the app stays free with no ads**, which several terms require |
+| **5.2.5 Apple products** | **Does it show the Apple Weather mark and legal link?** | Mark and link in the popover footer, Targets sidebar, widget and Siri cards (code); no recording of it | **Rejected 13 October.** Reply with a recording, add the Notes paragraph above |
+| Export compliance | Encryption? | `ITSAppUsesNonExemptEncryption` is false | OK |
+| Privacy manifest | Required-reason APIs declared? | `PrivacyInfo.xcprivacy` is in the app | OK |
 
 ## Screenshots
 
