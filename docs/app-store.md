@@ -307,7 +307,8 @@ location prompt appearing, and five new screenshots. The reply in App Review's m
 read "Waiting for Review" at about 15:19 BST.*
 
 Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
-whenever an entitlement or a setup step changes.
+whenever an entitlement or a setup step changes. The field takes 4,000 characters; this text is 3,952, as saved for the
+1.6.4 resubmission on 13 October 2026, so any addition means cutting something.
 
 ```
 Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
@@ -320,16 +321,14 @@ Setup: on first launch the Welcome window asks two questions. In step 2 "Where d
 The menu-bar popover then shows tonight's forecast. macOS asks to allow notifications as the Welcome window closes.
 
 Location is requested only when a button is pressed: the Welcome button above, or Settings > Where you observe >
-"This Mac's location". Nothing asks at launch. If no prompt appears, Location Services is switched off on that Mac
-(the app then says so), or that Mac has already answered for Nightwatch: macOS asks once per app, and tccutil does
-not reset it. The attachments show the prompt.
+"This Mac's location". Nothing asks at launch. If no prompt appears, Location Services is off on that Mac (the app
+says so), or that Mac has already answered: macOS asks once per app. The attachments show the prompt.
 
-Info.plist has NSLocationUsageDescription, the macOS key. It also keeps NSLocationWhenInUseUsageDescription with the
-same sentence, because the CoreLocation header for requestWhenInUseAuthorization (macOS 10.15 and later) says the
-request does nothing without that key.
+Info.plist has NSLocationUsageDescription and also NSLocationWhenInUseUsageDescription (same sentence): CoreLocation's
+header says requestWhenInUseAuthorization does nothing without it.
 
 Alerts are local notifications: a heads-up an hour before sunset on a night that passes the go rule, and a nudge
-just before the clear spell. They cannot be forced in daylight; the attached screenshot shows them.
+just before the clear spell (the attached screenshot shows them).
 
 Privacy policy: in the Welcome window (step 2) and at the foot of Settings.
 
@@ -338,37 +337,28 @@ Apple Maps (place search, sent what is typed; maps and place names, sent coordin
 Space Weather Prediction Center (aurora), CDS hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet
 Center and CelesTrak (comets, space station). Nothing identifies the user.
 
-Apple Weather attribution (guideline 5.2.5): wherever the app shows a forecast supplied by Apple Weather, it shows the
-Apple Weather mark, and the mark is itself the link to Apple's legal source page. It is in the footer of the menu-bar
-popover, at the foot of the Targets window's sidebar (every page), on the desktop widget and on Siri and Spotlight
-answer cards. The attached recording shows the mark in each place and the legal page opening from it. If Apple
-Weather does not answer, the forecast comes from Open-Meteo and the footer names Open-Meteo instead; the Apple
-Weather mark is then not shown, because no Apple data is shown.
+Apple Weather attribution (5.2.5): wherever the app shows a forecast from Apple Weather it shows the Apple Weather
+mark, which is itself the link to Apple's legal source page: popover footer (review-1.6.4-location.mp4 at 0:09, and the
+stills sent in the reply), foot of the Targets sidebar, desktop widget, Siri and Spotlight cards. If Apple Weather does not
+answer, the forecast comes from Open-Meteo, which the footer names; the mark is then absent because no Apple data is shown.
 
 Also in the app: Spotlight and Shortcuts actions (Sky Score, Best Targets Tonight, Events Tonight, Clear Window
 Tonight, Refresh Forecast, Show Target, Turn On or Off Clear-Sky Notifications) that read the forecast the app
-already holds; on macOS 27, searching Nightwatch's targets from Siri. An event's page has "Add to Calendar", which
-writes a calendar file and asks for no calendar access. The widget opens targets through nightwatch:// links.
-"Start at login" (Settings > App) is off until the user turns it on.
+already holds; on macOS 27, Siri can search Nightwatch's targets. "Add to Calendar" on an event page writes a calendar
+file and needs no calendar access. "Start at login" (Settings > App) is off until the user turns it on.
 
 Entitlements and where to see each one:
-- App Sandbox: required for the Mac App Store.
-- Location (personal-information.location): the two buttons above. Used to get the forecast for that place and to
-  work out sunset, darkness and what is above the horizon.
+- App Sandbox: Mac App Store requirement.
+- Location (personal-information.location): the two buttons above; used for the forecast, sunset, darkness and horizon
+  for that place.
 - Outgoing network connections (network.client): the services above.
-- WeatherKit: the forecast in the popover and the Targets window; the Apple Weather mark in each links to the
-  legal attribution. If Apple Weather does not answer, the app uses Open-Meteo and names it there; the mark then
-  does not appear, which is expected and not a missing entitlement.
-- iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
-  other Macs". Signed out of iCloud it reads "Not signed in to iCloud: settings stay on this Mac." It syncs only the
-  user's own settings (saved sites, telescope, alert choices) between their Macs, in their own iCloud account; nothing
-  goes to the developer. Syncing needs a second Mac, so a reviewer can confirm only the caption in Settings > App; the
-  signed-out wording shows the code path.
-- App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
-  Edit Widgets; it shows the same sky score as the popover.
-- User-selected files, read only (files.user-selected.read-only): first add a site (Settings > Where you observe >
-  Add a site..., search for any town). On that site's row click Horizon..., then "Measure from a photo...": it
-  opens a photo the user chooses, reads its direction, lens and tilt, and does not keep it.
+- WeatherKit: the forecast in the popover and Targets window, with the Apple Weather mark (see above).
+- iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your other
+  Macs"; signed out it reads "Not signed in to iCloud: settings stay on this Mac." Only the user's own settings sync, in
+  their own iCloud account; nothing goes to the developer. Syncing needs a second Mac, so a reviewer can see only the caption.
+- App Groups: forecast shared with the desktop widget (Edit Widgets > Nightwatch).
+- User-selected files, read only: add a site (Settings > Where you observe > Add a site...), click Horizon..., then
+  "Measure from a photo...": opens a photo the user chooses, reads its direction, lens and tilt, and does not keep it.
 ```
 
 The table behind it, for checking against the build (`codesign -d --entitlements - --xml` on the store app):
