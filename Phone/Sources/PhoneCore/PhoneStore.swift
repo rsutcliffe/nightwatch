@@ -65,12 +65,27 @@ public final class PhoneStore: ObservableObject {
 
     public var site: Site? { config.activeSite(auto: nil) }
 
-    public func saveConfig() {
+    /// Save the settings, and tell the other devices unless this save came from them.
+    public func saveConfig(send: Bool = true) {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        Self.write(config, to: directory.appendingPathComponent("config.json"))
+        Self.write(config, to: configURL)
+        if send { sync?.send() }
     }
 
-    private func loadConfig() -> Config? { Self.read(Config.self, from: directory.appendingPathComponent("config.json")) }
+    private var configURL: URL { directory.appendingPathComponent("config.json") }
+    private var sync: SettingsSyncCoordinator?
+
+    /// Start sharing the settings with the user's other devices through `store` (iCloud key-value storage in the app).
+    public func attachSync(store: KeyValueStoring, defaults: UserDefaults = .standard) {
+        let coordinator = SettingsSyncCoordinator(store: store, defaults: defaults,
+                                                  readConfig: { [unowned self] in self.config },
+                                                  writeConfig: { [unowned self] c in self.config = c; self.saveConfig(send: false) })
+        sync = coordinator
+        let modified = (try? FileManager.default.attributesOfItem(atPath: configURL.path))?[.modificationDate] as? Date
+        coordinator.start(localModified: modified)
+    }
+
+    private func loadConfig() -> Config? { Self.read(Config.self, from: configURL) }
 
     // MARK: Refresh
 

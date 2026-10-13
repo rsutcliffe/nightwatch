@@ -5,7 +5,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rsutcliffe/nightwatch.git",
       "state" : {
-        "revision" : "8a7450e313aa76748f453e1bfafe07a728b7578e"
+        "revision" : "bc78d2c08d1e3807a561d6f808e04f2c3fcac800"
       }
     },
     {
