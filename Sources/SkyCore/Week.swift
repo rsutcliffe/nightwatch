@@ -76,6 +76,12 @@ extension Copy {
         return transp.isEmpty ? nil : (transp.reduce(0, +) / transp.count <= 3 ? "Good" : "Average")
     }
 
+    /// The tile's word for a plan: "Hazy" when smoke or dust will dim the window (#183), whatever 7Timer's band says,
+    /// since 7Timer's transparency does not see aerosols (Niamey, 8 October 2026: "Good" beside the haze line).
+    public static func transparencyText(_ plan: NightPlan) -> String? {
+        plan.hazy ? "Hazy" : transparencyText(plan.darkHours)
+    }
+
     static func hoursText(_ h: Double) -> String { String(format: "%.1f h", h).replacingOccurrences(of: ".0 h", with: " h") }
 
     /// A clear run that missed the rule, to one decimal place: never rounded up to the rule's own figure, nor down to nothing.

@@ -36,6 +36,9 @@ struct PlanChart: View {
     let minAltitude: Double
     let site: Site
     var nightWords = "tonight"
+    /// The clear window when the plan ends before it, at a finish time: the foot then says both, "Clear 20:18–05:29 ·
+    /// finish by 00:30", since the shading stops at the finish.
+    var clear: ClearWindow? = nil
     /// Each target's line style (ChartLayout.styles), shared with the rows' keys.
     let styles: [String: Int]
 
@@ -69,7 +72,8 @@ struct PlanChart: View {
                 .frame(height: 170)
             HStack {
                 Text("Sunset \(Copy.hhmm(night.sunset, site: site))"); Spacer()
-                Text("Clear \(Copy.span(window.start, window.end, site: site))"); Spacer()
+                Text(clear.map { "Clear \(Copy.span($0.start, $0.end, site: site)) · finish by \(Copy.hhmm(window.end, site: site))" }
+                     ?? "Clear \(Copy.span(window.start, window.end, site: site))"); Spacer()
                 Text("Sunrise \(Copy.hhmm(night.sunrise, site: site))")
             }
             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
