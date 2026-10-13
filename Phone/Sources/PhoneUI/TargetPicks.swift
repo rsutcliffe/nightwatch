@@ -50,7 +50,7 @@ final class SurveyLoader: ObservableObject {
 }
 
 /// A heic from the app's bundled artwork folders (the owner's constellation and Milky Way art, copied from the Mac app).
-private func bundledArt(_ name: String, folder: String) -> Data? {
+func bundledArt(_ name: String, folder: String) -> Data? {
     Bundle.main.url(forResource: name, withExtension: "heic", subdirectory: folder).flatMap { try? Data(contentsOf: $0) }
 }
 

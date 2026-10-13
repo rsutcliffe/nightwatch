@@ -23,6 +23,10 @@ public struct TonightScreen: View {
 
     private var snap: WidgetSnapshot { model.snapshot }
     private var clearNight: Bool { snap.window != nil }
+    private var figureArt: (Data, Data)? {
+        guard let id = model.figureID, let f = bundledArt("\(id)-figure", folder: "Constellations"), let p = bundledArt("\(id)-plot", folder: "Constellations") else { return nil }
+        return (f, p)
+    }
 
     // MARK: Sections
 
@@ -51,7 +55,7 @@ public struct TonightScreen: View {
                 }
             }
         }
-        .heroSurface(clear: clearNight, padding: big ? 24 : 16)
+        .heroSurface(clear: clearNight, padding: big ? 24 : 16, figure: clearNight ? nil : figureArt)
     }
 
     private func bars(height: CGFloat) -> some View {

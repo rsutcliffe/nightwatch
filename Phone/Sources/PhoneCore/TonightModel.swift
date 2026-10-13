@@ -77,6 +77,8 @@ public struct TonightModel: Equatable, Sendable {
     public var picksHeading: String
     public var picks: [TargetPick]
     public var picksNote: String?
+    /// The best-placed constellation tonight, for the faint figure behind the verdict on a night with no clear window.
+    public var figureID: String?
 
     public var siteName: String { snapshot.siteName }
 
@@ -98,6 +100,7 @@ public struct TonightModel: Equatable, Sendable {
                             markURL: forecast.attributionMarkURL, legalURL: forecast.attributionLegalURL, fetchedAt: forecast.fetchedAt,
                             overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)",
                             picksHeading: chosen.isEmpty ? "UP TONIGHT" : "BEST TONIGHT",
-                            picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note)
+                            picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note,
+                            figureID: plan.targets.first { $0.group == .constellations }?.id)
     }
 }
