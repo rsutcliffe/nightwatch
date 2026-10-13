@@ -352,7 +352,10 @@ Entitlements and where to see each one:
 - WeatherKit: the forecast in the popover and the Targets window; the Apple Weather mark in each links to the
   legal attribution. If Apple Weather does not answer, the app uses Open-Meteo and names it there.
 - iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
-  other Macs". Signed out of iCloud it reads "Not signed in to iCloud: settings stay on this Mac."
+  other Macs". Signed out of iCloud it reads "Not signed in to iCloud: settings stay on this Mac." It syncs only the
+  user's own settings (saved sites, telescope, alert choices) between their Macs, in their own iCloud account; nothing
+  goes to the developer. Syncing needs a second Mac, so a reviewer can confirm only the caption in Settings > App; the
+  signed-out wording shows the code path.
 - App Groups: the app shares tonight's forecast with its desktop widget. Add the Nightwatch widget from the desktop's
   Edit Widgets; it shows the same sky score as the popover.
 - User-selected files, read only (files.user-selected.read-only): first add a site (Settings > Where you observe >
