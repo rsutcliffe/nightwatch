@@ -350,7 +350,8 @@ Entitlements and where to see each one:
   work out sunset, darkness and what is above the horizon.
 - Outgoing network connections (network.client): the services above.
 - WeatherKit: the forecast in the popover and the Targets window; the Apple Weather mark in each links to the
-  legal attribution. If Apple Weather does not answer, the app uses Open-Meteo and names it there.
+  legal attribution. If Apple Weather does not answer, the app uses Open-Meteo and names it there; the mark then
+  does not appear, which is expected and not a missing entitlement.
 - iCloud key-value storage (ubiquity-kvstore-identifier): Settings > App, "Settings sync through iCloud to your
   other Macs". Signed out of iCloud it reads "Not signed in to iCloud: settings stay on this Mac." It syncs only the
   user's own settings (saved sites, telescope, alert choices) between their Macs, in their own iCloud account; nothing
