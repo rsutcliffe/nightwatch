@@ -175,16 +175,28 @@ struct WindowScreenReader: NSViewRepresentable {
     }
 }
 
+/// What Apple Weather last supplied for its attribution: where its mark is, and its legal source page.
+struct AppleAttribution: Codable, Equatable {
+    var mark: String
+    var legal: String
+}
+
 /// Which service supplied the cloud hours. Apple requires its mark and legal link wherever WeatherKit data is shown: the
 /// mark itself is the link, as on the widgets (owner, 27 September 2026). Shared by the popover and the Targets window,
 /// whose week, plan and dark-site scores come from the same forecast (1.6.2).
 struct SourceBadge: View {
+    @EnvironmentObject var store: Store
     let forecast: Forecast
     var body: some View {
         let name = Text(forecast.cloudSource ?? "Open-Meteo").font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
         let badge = Group {
             if let m = forecast.attributionMarkURL, let url = URL(string: m) {
-                AsyncImage(url: url) { $0.resizable().scaledToFit().frame(height: 10) } placeholder: { name }
+                // The kept copy first, so the mark shows at once and without a connection; the download only if none is kept yet.
+                if let kept = store.appleMark, store.appleAttribution?.mark == m {
+                    Image(nsImage: kept).resizable().scaledToFit().frame(height: 10)
+                } else {
+                    AsyncImage(url: url) { $0.resizable().scaledToFit().frame(height: 10) } placeholder: { name }
+                }
             } else { name }
         }
         if let l = forecast.attributionLegalURL, let url = URL(string: l) {

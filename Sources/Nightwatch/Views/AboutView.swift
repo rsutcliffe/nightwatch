@@ -27,6 +27,16 @@ struct AboutView: View {
                 .frame(minHeight: TextScale.pt(110))   // squeezed to an empty box before: the window opened shorter than its contents
                 .padding(10).background(Theme.card).clipShape(RoundedRectangle(cornerRadius: 8))
             Text("Weather data by Apple Weather where it is available, and Open-Meteo.com. The sky score, clear windows and tiles are worked out by Nightwatch from that data: it has been modified and the figures are not Apple's own. Sky images: Digitized Sky Survey – STScI/NASA, Colored & Healpixed by CDS (ODbL 1.0), via hips2fits.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim).multilineTextAlignment(.center)
+            // Apple Weather's mark and legal link, kept from the last time it supplied the forecast: they stay here whichever
+            // source the forecast on show came from. Absent only on a Mac Apple Weather has never answered.
+            if let a = store.appleAttribution, let legal = URL(string: a.legal) {
+                Link(destination: legal) {
+                    if let mark = store.appleMark { Image(nsImage: mark).resizable().scaledToFit().frame(height: 12) }
+                    else { Text("Apple Weather").font(Font.scaled(.caption2)) }
+                }
+                .help("Apple Weather's legal attribution and data sources")
+                .accessibilityLabel("Apple Weather, legal attribution and data sources")
+            }
             Link("Aurora alert status from AuroraWatch UK, Lancaster University ↗", destination: AuroraSource.auroraWatchUK.link).wrapped().font(Font.scaled(.caption2))
             Link("Aurora forecast outside the UK and Ireland from NOAA's Space Weather Prediction Center ↗", destination: AuroraSource.noaa.link).wrapped().font(Font.scaled(.caption2))
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)

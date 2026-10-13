@@ -18,6 +18,10 @@ final class Store: ObservableObject {
     @Published var homePlan: NightPlan?
     /// A newer release on GitHub, when there is one (v0.6.7).
     @Published var availableUpdate: ReleaseCheck.Latest?
+    /// Apple Weather's mark and legal link as last supplied, and the mark itself from disk: they stay when Apple Weather
+    /// does not answer, so About can still carry them and a failed download never leaves the words where the mark belongs.
+    @Published var appleAttribution: AppleAttribution?
+    @Published var appleMark: NSImage?
     /// Asks Location Services for one fix; set at launch, used by the welcome's "Use this Mac's location".
     var requestLocationFix: (() async -> Site?)?
     /// Whether macOS has yet to ask about location: then "This Mac's location" asks when it is clicked, not before (1.6.2).
@@ -97,6 +101,8 @@ final class Store: ObservableObject {
         StateFiles.migrate(from: Store.cacheDir)
         forecast = Store.read("forecast.json")
         if forecast?.cloudSource == "Apple Weather" { applePause.record(answered: true, now: .distantPast) }
+        appleAttribution = Store.read(Store.appleAttributionName)
+        appleMark = appleAttribution.flatMap(Store.keptAppleMark)
         plan = Store.read("plan.json")             // content in the popover before the first fetch
         alertState = Store.readFile(StateFiles.url(StateFiles.alerts)) ?? Store.read(StateFiles.alerts)   // Caches only if the move failed
         aurora = Store.read("aurora.json")
@@ -357,7 +363,34 @@ final class Store: ObservableObject {
         let ask = !applePause.paused(now: now)
         let fc = try await ForecastService.fetch(site: site, fetcher: fetcher, now: now, primary: ask ? WeatherKitSource.provider : nil, secondOpinion: secondOpinion)
         if ask { applePause.record(answered: fc.cloudSource == "Apple Weather", now: now) }
+        if fc.cloudSource == "Apple Weather", let mark = fc.attributionMarkURL, let legal = fc.attributionLegalURL {
+            await keepAppleAttribution(AppleAttribution(mark: mark, legal: legal))
+        }
         return fc
+    }
+
+    private static let appleAttributionName = "apple-attribution.json"
+    private static let appleMarkFile = cacheDir.appendingPathComponent("apple-weather-mark-kept.png")
+    private static let appleMarkStamp = cacheDir.appendingPathComponent("apple-weather-mark-kept.url")
+
+    /// The kept mark, only when it is the file for `a`'s mark address: never an out-of-date one.
+    private static func keptAppleMark(_ a: AppleAttribution) -> NSImage? {
+        guard (try? String(contentsOf: appleMarkStamp, encoding: .utf8)) == a.mark else { return nil }
+        return NSImage(contentsOf: appleMarkFile)
+    }
+
+    /// Remembers what Apple Weather supplied and fetches the mark once per address. A failed fetch is tried again at the
+    /// next forecast, and until then the view falls back to loading the mark itself.
+    private func keepAppleAttribution(_ a: AppleAttribution) async {
+        let known = appleAttribution == a
+        if !known { appleAttribution = a; appleMark = nil; Store.write(a, Store.appleAttributionName) }
+        if known, appleMark != nil { return }
+        if let kept = Store.keptAppleMark(a) { appleMark = kept; return }
+        try? FileManager.default.createDirectory(at: Store.cacheDir, withIntermediateDirectories: true)
+        guard let url = URL(string: a.mark), let data = try? await fetcher.get(url), NSImage(data: data) != nil,
+              (try? data.write(to: Store.appleMarkFile, options: .atomic)) != nil,
+              (try? a.mark.write(to: Store.appleMarkStamp, atomically: true, encoding: .utf8)) != nil else { return }
+        appleMark = Store.keptAppleMark(a)
     }
 
     /// Fetch when the cache is older than 30 minutes (or forced), then recompute everything.
