@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import BackgroundTasks
 import SkyCore
 import PhoneCore
 import PhoneUI
@@ -15,11 +16,14 @@ final class CloudStore: KeyValueStoring {
     }
 }
 
-/// Provisional: reports no permission, so nothing is posted or queued. Replaced by the real scheduler in M3.
-struct NoAlerts: NotificationScheduling {
-    func isAuthorised() async -> Bool { false }
-    func post(_ notification: AlertNotification) async {}
-    func replaceScheduled(_ alerts: [ScheduledAlert]) async {}
+/// iOS decides when this runs (rarely more than a few times a day, and not at all in Low Power Mode), so alerts also rely on
+/// the app being opened. It refreshes the forecast and requeues the alerts.
+let refreshTaskID = "io.github.rsutcliffe.nightwatch.phone.refresh"
+
+func scheduleBackgroundRefresh() {
+    let r = BGAppRefreshTaskRequest(identifier: refreshTaskID)
+    r.earliestBeginDate = Date(timeIntervalSinceNow: 60 * 60)
+    try? BGTaskScheduler.shared.submit(r)
 }
 
 @main
@@ -35,13 +39,24 @@ struct NightwatchPhoneApp: App {
             if demo { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), site: site) }
             return try await ForecastService.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
-        }, scheduler: NoAlerts())
+        }, scheduler: UserNotificationScheduler())
         if demo { s.addSite(DemoData.site) }
         s.attachSync(store: CloudStore())
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshTaskID, using: nil) { task in
+            scheduleBackgroundRefresh()
+            let work = Task { @MainActor in
+                await s.refresh()
+                task.setTaskCompleted(success: true)
+            }
+            task.expirationHandler = { work.cancel() }
+        }
         _store = StateObject(wrappedValue: s)
     }
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup { RootView(store: store, connectivity: connectivity) }
+            .onChange(of: scenePhase) { _, p in if p == .background { scheduleBackgroundRefresh() } }
     }
 }

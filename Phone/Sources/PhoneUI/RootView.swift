@@ -6,6 +6,7 @@ import PhoneCore
 public struct RootView: View {
     @ObservedObject var store: PhoneStore
     @ObservedObject var connectivity: ConnectivityMonitor
+    @StateObject private var permission = NotificationPermission()
     @AppStorage("redNightMode") private var red = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var showSites = false
@@ -27,7 +28,8 @@ public struct RootView: View {
                 case .ready:
                     if let m = store.tonight {
                         TonightScreen(model: m, markData: store.appleMarkData, offline: store.offline, refreshing: store.refreshing,
-                                      onRefresh: { refresh(force: true) })
+                                      onRefresh: { refresh(force: true) },
+                                      alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }))
                     }
                 }
             }
@@ -47,10 +49,10 @@ public struct RootView: View {
             }
         }
         .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
-        .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red).phoneTheme(theme) }
+        .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
         .phoneTheme(theme)
         .task { refresh() }
-        .onChange(of: scenePhase) { _, p in if p == .active { refresh() } }
+        .onChange(of: scenePhase) { _, p in if p == .active { refresh(); Task { await permission.refresh() } } }
         .onChange(of: connectivity.current.isOnline) { _, on in if on { refresh() } }
     }
 }
@@ -138,6 +140,7 @@ struct SitesSheet: View {
 struct SettingsScreen: View {
     @ObservedObject var store: PhoneStore
     @Binding var red: Bool
+    @ObservedObject var permission: NotificationPermission
     @Environment(\.dismiss) private var dismiss
 
     private func binding<T>(_ kp: WritableKeyPath<AlertSettings, T>) -> Binding<T> {
@@ -147,20 +150,22 @@ struct SettingsScreen: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Alerts") {
+                Section {
+                    if permission.status == .denied {
+                        Text("Alerts are off for Nightwatch in iOS Settings, Notifications.").font(.footnote)
+                    }
                     Toggle("Heads-up before sunset", isOn: binding(\.headsUp))
                     Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
                     Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
                     Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: binding(\.quietStartHour), in: 0...23)
                     Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
+                } header: { Text("Alerts") } footer: {
+                    Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
                 }
                 Section {
                     Toggle("Red night mode", isOn: $red)
                 } header: { Text("Display") } footer: {
                     Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")
-                }
-                Section {} footer: {
-                    Text("iOS decides when this app may refresh in the background, so alerts are best effort. The Mac app is the dependable alerter.")
                 }
             }
             .navigationTitle("Settings")

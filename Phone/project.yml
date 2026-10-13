@@ -33,6 +33,8 @@ targets:
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UIUserInterfaceStyle: Dark
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [io.github.rsutcliffe.nightwatch.phone.refresh]
         NSLocationWhenInUseUsageDescription: Nightwatch uses your location once, when you ask, to read the forecast for where you are observing from.
     settings:
       base:

@@ -9,10 +9,12 @@ public struct TonightScreen: View {
     let offline: Bool
     let refreshing: Bool
     let onRefresh: () -> Void
+    var alertsPrompt: AlertsPrompt? = nil
     @Environment(\.phoneTheme) private var theme
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void) {
+    public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void, alertsPrompt: AlertsPrompt? = nil) {
+        self.alertsPrompt = alertsPrompt
         self.model = model; self.markData = markData; self.offline = offline; self.refreshing = refreshing; self.onRefresh = onRefresh
     }
 
@@ -74,6 +76,7 @@ public struct TonightScreen: View {
                     targets
                 }
                 if let t = snap.tomorrow { Text(t).font(.footnote).secondary() }
+                if let alertsPrompt { alertsPrompt }
                 SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
             }
             .padding(regular ? 28 : 16)
