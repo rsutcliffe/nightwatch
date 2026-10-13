@@ -154,7 +154,7 @@ struct TonightView: View {
             Link(destination: a.source.link) {
                 Text(a.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Color(hex: a.level.hex))
             }
-            .buttonStyle(.plain).help(a.source == .noaa ? "Open NOAA's aurora forecast" : "Open AuroraWatch UK")
+            .buttonStyle(.plain).linkCursor().help(a.source == .noaa ? "Open NOAA's aurora forecast" : "Open AuroraWatch UK")
         } else if let a = store.bestAway, let w = a.primary {
             Button {
                 // The menu-bar label also opens the window on any request; opening a single Window twice is harmless.
@@ -235,7 +235,7 @@ struct TonightView: View {
                 HStack(spacing: 5) {
                     Circle().fill(Tokens.controlOn).frame(width: 6, height: 6).accessibilityHidden(true)
                     Text("Nightwatch \(u.version) is available").foregroundStyle(Tokens.textPrimary)
-                    Link("Download ↗", destination: ReleaseCheck.latestPage)
+                    Link("Download ↗", destination: ReleaseCheck.latestPage).linkCursor()
                 }
                 .font(.system(size: TextScale.pt(10.5)))
             }

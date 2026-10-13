@@ -657,7 +657,7 @@ struct DarkSiteCard: View {
             // Cards in a row share the tallest one's height, with the buttons along the bottom (owner UAT, 29 September 2026).
             Spacer(minLength: 0)
             HStack {
-                if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(Font.scaled(.caption)) }
+                if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).linkCursor().font(Font.scaled(.caption)) }
                 Spacer()
                 Button("Open in Maps") { SiteMaps.open(s) }.buttonStyle(ScaledButtonStyle())
                 // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
