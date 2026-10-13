@@ -26,6 +26,6 @@ the Mac app was rejected on (including 5.2.5, the Apple Weather attribution).
 ## Still to decide or provide
 
 - Store name (must differ from the Mac app's).
-- App icon: none yet in `App/`. Decide whether it reuses the Mac icon.
+- App icon: the Mac app's Icon Composer file, copied to `App/Nightwatch.icon` and set to "shared" so iOS uses it (decided 13 Oct 2026). Check how it looks on the iPad home screen and in the store's 1024 size.
 - Screenshots: iPhone 6.9-inch and iPad 13-inch sets, without the home location.
 - App Store Connect record, App ID with WeatherKit and iCloud (created at first signed build).

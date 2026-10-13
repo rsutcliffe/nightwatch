@@ -18,7 +18,11 @@ targets:
   NightwatchPhone:
     type: application
     platform: iOS
-    sources: [App]
+    sources:
+      - path: App
+        excludes: [Nightwatch.icon, Nightwatch.entitlements]
+      - path: App/Nightwatch.icon   # the Mac app's icon, shared with iOS
+        buildPhase: resources
     dependencies:
       - package: NightwatchPhone
         product: PhoneCore
@@ -40,5 +44,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.rsutcliffe.nightwatch.phone
         PRODUCT_NAME: Nightwatch
+        ASSETCATALOG_COMPILER_APPICON_NAME: Nightwatch
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_ENTITLEMENTS: App/Nightwatch.entitlements
