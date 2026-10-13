@@ -34,6 +34,7 @@ struct AboutView: View {
                     if let mark = store.appleMark { Image(nsImage: mark).resizable().scaledToFit().frame(height: 12) }
                     else { Text("Apple Weather").font(Font.scaled(.caption2)) }
                 }
+                .linkCursor()
                 .help("Apple Weather's legal attribution and data sources")
                 .accessibilityLabel("Apple Weather, legal attribution and data sources")
             }
