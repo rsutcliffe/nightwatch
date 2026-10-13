@@ -201,8 +201,29 @@ struct SourceBadge: View {
         }
         if let l = forecast.attributionLegalURL, let url = URL(string: l) {
             Link(destination: url) { badge }
+                .linkCursor()
                 .help("Apple Weather's legal attribution and data sources")
                 .accessibilityLabel("Apple Weather, legal attribution and data sources")
         } else { badge }
+    }
+}
+
+extension View {
+    /// The pointing-hand cursor while the mouse is over a link that has no arrow or underline to say it is one, such as
+    /// Apple Weather's mark (owner, 13 October 2026: it did not look like a link). `pointerStyle` is macOS 15 and later.
+    func linkCursor() -> some View { modifier(LinkCursor()) }
+}
+
+private struct LinkCursor: ViewModifier {
+    @State private var inside = false
+    func body(content: Content) -> some View {
+        content
+            .onHover { hovering in
+                guard hovering != inside else { return }
+                inside = hovering
+                if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+            // A popover that closes under the mouse never reports the exit, which would leave the hand on screen.
+            .onDisappear { if inside { inside = false; NSCursor.pop() } }
     }
 }
