@@ -148,3 +148,31 @@ struct Failure: Error {}
     await store.refresh(force: true)
     #expect(scheduler.posted.count == 1)   // not sent again on the next refresh
 }
+
+@MainActor @Test func appleMarkIsKeptOnDiskAndNeverRefetched() async {
+    let clock = Clock(utc(2026, 9, 23, 12)), calls = Calls()
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("phonestore-\(UUID().uuidString)")
+    final class Count: @unchecked Sendable { var n = 0 }
+    let count = Count()
+    func make() -> PhoneStore {
+        let s = PhoneStore(directory: dir, provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
+                           scheduler: FakeScheduler(), clock: { clock.now }, fetchData: { _ in count.n += 1; return Data([1, 2, 3]) })
+        s.config.sites = [sheffield]; s.config.activeSiteName = "Sheffield"
+        return s
+    }
+    let first = make()
+    await first.refresh()
+    #expect(first.appleMarkData == Data([1, 2, 3]))
+    clock.now = clock.now.addingTimeInterval(3600)
+    await first.refresh()
+    #expect(count.n == 1)   // already kept for this address
+    let second = make()    // after a restart it is drawn at once, before any network
+    #expect(second.appleMarkData == Data([1, 2, 3]))
+}
+
+@MainActor @Test func noAppleMarkWhenOpenMeteoDrovethForecast() async {
+    let calls = Calls(); calls.source = "Open-Meteo"
+    let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: calls)
+    await store.refresh()
+    #expect(store.appleMarkData == nil)
+}

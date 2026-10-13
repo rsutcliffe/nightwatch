@@ -32,12 +32,16 @@ public final class PhoneStore: ObservableObject {
     /// The last refresh found no connection: the page says how old the forecast it shows is.
     @Published public private(set) var offline = false
     @Published public private(set) var refreshing = false
+    /// Apple's mark as kept on disk, exactly as supplied, for the footer; nil until Apple Weather has answered once.
+    @Published public private(set) var appleMarkData: Data?
     @Published public var config: Config = .default
 
     private let directory: URL
     private let provider: ForecastProvider
     private let scheduler: NotificationScheduling
     private let clock: @Sendable () -> Date
+    private let fetchData: @Sendable (URL) async throws -> Data
+    private let markStore: AppleMarkStore
     private let forecastStore: ForecastStore
     private var pause = PrimaryPause()
     private var ledger = AlertLedger()
@@ -47,11 +51,14 @@ public final class PhoneStore: ObservableObject {
     private let stars: [BrightStar]
 
     public init(directory: URL, provider: @escaping ForecastProvider, scheduler: NotificationScheduling,
-                clock: @escaping @Sendable () -> Date = { Date() }) {
+                clock: @escaping @Sendable () -> Date = { Date() },
+                fetchData: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 }) {
         self.directory = directory
         self.provider = provider
         self.scheduler = scheduler
         self.clock = clock
+        self.fetchData = fetchData
+        markStore = AppleMarkStore(directory: directory)
         forecastStore = ForecastStore(url: directory.appendingPathComponent("forecast.json"))
         catalog = (try? Catalog.bundled()) ?? Catalog(objects: [])
         constellations = (try? Constellations.bundled()) ?? []
@@ -59,6 +66,7 @@ public final class PhoneStore: ObservableObject {
         config = loadConfig() ?? .default
         ledger = Self.read(AlertLedger.self, from: directory.appendingPathComponent("alerts.json")) ?? AlertLedger()
         forecast = forecastStore.load()
+        appleMarkData = forecast?.attributionMarkURL.flatMap { markStore.data(for: $0) }
     }
 
     // MARK: Settings
@@ -87,6 +95,29 @@ public final class PhoneStore: ObservableObject {
 
     private func loadConfig() -> Config? { Self.read(Config.self, from: configURL) }
 
+    // MARK: Sites
+
+    /// Add a site (or replace one of the same name), make it the active one, save, and read its forecast.
+    public func addSite(_ s: Site) {
+        config.sites.removeAll { $0.name == s.name }
+        guard config.sites.count < Config.maxSites else { return }
+        config.sites.append(s)
+        selectSite(s)
+    }
+
+    public func selectSite(_ s: Site) {
+        config.activeSiteName = s.name
+        saveConfig()
+        Task { await refresh(force: true) }
+    }
+
+    public func removeSites(at offsets: IndexSet) {
+        for i in offsets.sorted(by: >) { config.sites.remove(at: i) }
+        if site == nil { config.activeSiteName = config.sites.first?.name }
+        saveConfig()
+        Task { await refresh() }
+    }
+
     // MARK: Refresh
 
     /// Draw from what is saved, fetch if the policy says to, and rebuild tonight's page and the alert queue.
@@ -110,12 +141,22 @@ public final class PhoneStore: ObservableObject {
                 forecast = fc
                 try? forecastStore.save(fc)
                 offline = false
+                await keepAppleMark(for: fc)
             } catch {
                 if forecast == nil { phase = .failed("Couldn't read the forecast for \(site.name). Try again."); return }
                 offline = true   // keep drawing from the saved forecast, and say how old it is
             }
         }
         await recompute(now: clock())
+    }
+
+    /// Keep Apple's mark on disk the first time it is supplied (a failed download is tried again at the next forecast).
+    private func keepAppleMark(for fc: Forecast) async {
+        guard let address = fc.attributionMarkURL, let url = URL(string: address) else { return }
+        if let kept = markStore.data(for: address) { appleMarkData = kept; return }
+        guard let data = try? await fetchData(url), !data.isEmpty else { return }
+        try? markStore.save(data, for: address)
+        appleMarkData = data
     }
 
     /// Tonight's and tomorrow's plans from the saved forecast, the page model, and the alerts queue.
