@@ -407,7 +407,12 @@ struct TargetsView: View {
                                 .accessibilityAction { ui.selected = t }
                                 .accessibilityAction(named: isFavourite(t) ? "Remove from favourites" : "Add to favourites") { toggleFavourite(t) }
                         }
-                        if ui.section == .eyes {
+                    }.padding(.horizontal, 20).padding(.top, 20).padding(.bottom, ui.section == .eyes && !eyeEvents.isEmpty ? 12 : 20)
+                    // Eyes and binoculars: the events get a grid of their own, as on the Events page. Mixed into the targets' grid,
+                    // their taller cards (the viewing timeline) left the last row cut off by the window's edge, out of reach of
+                    // the scroll (owner's screenshot, 13 October 2026).
+                    if ui.section == .eyes, !eyeEvents.isEmpty {
+                        LazyVGrid(columns: gridColumns, spacing: 12) {
                             ForEach(eyeEvents) { e in
                                 eventCard(e)
                                     .opens { ui.selectedEvent = e }
@@ -416,8 +421,8 @@ struct TargetsView: View {
                                     .accessibilityAddTraits(.isButton)
                                     .accessibilityAction { ui.selectedEvent = e }
                             }
-                        }
-                    }.padding(20)
+                        }.padding(.horizontal, 20).padding(.bottom, 20)
+                    }
                     }
                 }
             }
