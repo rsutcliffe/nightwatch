@@ -29,7 +29,7 @@ public struct RootView: View {
                     if let m = store.tonight {
                         TonightScreen(model: m, markData: store.appleMarkData, offline: store.offline, refreshing: store.refreshing,
                                       onRefresh: { refresh(force: true) },
-                                      alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }))
+                                      alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }), now: store.now)
                     }
                 }
             }
@@ -111,6 +111,7 @@ struct FirstRunScreen: View {
 
 struct SitesSheet: View {
     @ObservedObject var store: PhoneStore
+    @Environment(\.phoneTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var message: String?
@@ -125,22 +126,27 @@ struct SitesSheet: View {
                         }
                     }
                     .onDelete { store.removeSites(at: $0) }
-                }
+                }.listRowBackground(theme.card)
                 Section("Add a site") {
                     TextField("A place name", text: $name).submitLabel(.search).onSubmit {
                         Task { if let s = await PlaceSearch.find(name) { store.addSite(s); name = "" } else { message = "Could not find that place." } }
                     }
                     if let message { Text(message).font(.footnote) }
-                }
+                }.listRowBackground(theme.card)
             }
-            .navigationTitle("Sites")
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .scrollContentBackground(.hidden).background(theme.background)
+            .navigationBarTitleDisplayModeInline()
+            .toolbar {
+                ToolbarItem(placement: .principal) { Text("Sites").font(.headline).foregroundStyle(theme.textPrimary) }
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
         }
     }
 }
 
 struct SettingsScreen: View {
     @ObservedObject var store: PhoneStore
+    @Environment(\.phoneTheme) private var theme
     @Binding var red: Bool
     @ObservedObject var permission: NotificationPermission
     @Environment(\.dismiss) private var dismiss
@@ -163,15 +169,20 @@ struct SettingsScreen: View {
                     Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
                 } header: { Text("Alerts") } footer: {
                     Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
-                }
+                }.listRowBackground(theme.card)
                 Section {
                     Toggle("Red night mode", isOn: $red)
                 } header: { Text("Display") } footer: {
                     Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")
-                }
+                }.listRowBackground(theme.card)
             }
-            .navigationTitle("Settings")
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .scrollContentBackground(.hidden).background(theme.background)
+            .toggleStyle(PhoneToggleStyle())
+            .navigationBarTitleDisplayModeInline()
+            .toolbar {
+                ToolbarItem(placement: .principal) { Text("Settings").font(.headline).foregroundStyle(theme.textPrimary) }
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
         }
     }
 }

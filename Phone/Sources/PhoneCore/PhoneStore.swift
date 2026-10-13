@@ -71,6 +71,9 @@ public final class PhoneStore: ObservableObject {
 
     // MARK: Settings
 
+    /// The app's clock (a fixed offset in demos), for screens that say how old something is.
+    public var now: Date { clock() }
+
     public var site: Site? { config.activeSite(auto: nil) }
 
     /// Save the settings, and tell the other devices unless this save came from them.

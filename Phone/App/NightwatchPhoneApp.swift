@@ -55,7 +55,14 @@ struct NightwatchPhoneApp: App {
         let clock: @Sendable () -> Date = { Date(timeIntervalSinceNow: shift) }
         if demo { try? FileManager.default.removeItem(at: FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo")) }   // every demo launch starts clean
         let cloud = value("-demoCloud").flatMap(Int.init) ?? 5
+        let demoDir = FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo")
+        if args.contains("-demoOffline") {   // a forecast from two hours ago, and no way to fetch another
+            try? FileManager.default.createDirectory(at: demoDir, withIntermediateDirectories: true)
+            try? ForecastStore(url: demoDir.appendingPathComponent("forecast.json")).save(
+                DemoData.forecast(fetchedAt: clock().addingTimeInterval(-7200), from: Calendar.current.startOfDay(for: clock())))
+        }
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
+            if args.contains("-demoOffline") { throw URLError(.notConnectedToInternet) }
             if demo { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), cloud: cloud, site: site) }
             return try await ForecastService.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)

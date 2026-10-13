@@ -96,3 +96,25 @@ struct SecondaryButton: View {
         .buttonStyle(PressStyle())
     }
 }
+
+/// A switch drawn in the palette. The system switch has a white knob, which is a glare at the telescope in red mode.
+struct PhoneToggleStyle: ToggleStyle {
+    @Environment(\.phoneTheme) private var theme
+    func makeBody(configuration: Configuration) -> some View {
+        Button { configuration.isOn.toggle() } label: {
+            HStack {
+                configuration.label
+                Spacer()
+                Capsule().fill(configuration.isOn ? theme.accent : theme.track).frame(width: 51, height: 31)
+                    .overlay(alignment: configuration.isOn ? .trailing : .leading) {
+                        Circle().fill(configuration.isOn ? (theme.isRed ? Color.black : Color.white) : theme.textSecondary)
+                            .frame(width: 25, height: 25).padding(3)
+                    }
+                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: configuration.isOn)
+            }
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: configuration.isOn)
+        .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
+    }
+}

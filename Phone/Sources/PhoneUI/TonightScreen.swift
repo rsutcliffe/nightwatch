@@ -10,11 +10,12 @@ public struct TonightScreen: View {
     let refreshing: Bool
     let onRefresh: () -> Void
     var alertsPrompt: AlertsPrompt? = nil
+    var now: Date = .now
     @Environment(\.phoneTheme) private var theme
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void, alertsPrompt: AlertsPrompt? = nil) {
-        self.alertsPrompt = alertsPrompt
+    public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void, alertsPrompt: AlertsPrompt? = nil, now: Date = .now) {
+        self.alertsPrompt = alertsPrompt; self.now = now
         self.model = model; self.markData = markData; self.offline = offline; self.refreshing = refreshing; self.onRefresh = onRefresh
     }
 
@@ -55,7 +56,7 @@ public struct TonightScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if offline {
-                    Card { Text("No connection. Showing the forecast from \(ForecastAge(fetchedAt: model.fetchedAt, now: .now).text).").font(.callout) }
+                    Card { Text("No connection. Showing the forecast from \(ForecastAge(fetchedAt: model.fetchedAt, now: now).text).").font(.callout) }
                         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                 }
                 if regular {
