@@ -1,0 +1,22 @@
+{
+  "pins" : [
+    {
+      "identity" : "nightwatch",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rsutcliffe/nightwatch.git",
+      "state" : {
+        "revision" : "8a7450e313aa76748f453e1bfafe07a728b7578e"
+      }
+    },
+    {
+      "identity" : "satellitekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gavineadie/SatelliteKit.git",
+      "state" : {
+        "revision" : "9a87cdb80344f26e81bc5fc82fdf9a3350478603",
+        "version" : "2.1.2"
+      }
+    }
+  ],
+  "version" : 2
+}
