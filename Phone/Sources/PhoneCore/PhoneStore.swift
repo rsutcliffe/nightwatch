@@ -141,7 +141,7 @@ public final class PhoneStore: ObservableObject {
         comets = Self.read([CometElements].self, from: directory.appendingPathComponent("comets.json")) ?? []
         tle = Self.read(TLE.self, from: directory.appendingPathComponent("iss-tle.json"))
         feedAttempts = Self.read([String: Date].self, from: directory.appendingPathComponent("feed-attempts.json")) ?? [:]
-        spotPlaces = Self.read([String: String].self, from: directory.appendingPathComponent("spot-places.json")) ?? [:]
+        spotPlaces = Self.read([String: String].self, from: directory.appendingPathComponent("spot-places-v2.json")) ?? [:]
         spotPublic = Self.read([String: PublicPlace?].self, from: directory.appendingPathComponent("spot-public.json")) ?? [:]
     }
 
@@ -419,7 +419,7 @@ public final class PhoneStore: ObservableObject {
         for s in sites where s.isComputed && spotPlaces[s.id] == nil && cheap && retry {
             do {
                 spotPlaces[s.id] = try await lookups.placeName(s.coordinate) ?? ""
-                Self.write(spotPlaces, to: directory.appendingPathComponent("spot-places.json"))
+                Self.write(spotPlaces, to: directory.appendingPathComponent("spot-places-v2.json"))
             } catch { darkFailedAt = now }
             guard gen == darkGeneration else { return }
         }

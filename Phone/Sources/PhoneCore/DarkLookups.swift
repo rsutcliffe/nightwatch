@@ -43,12 +43,25 @@ enum AppleMaps {
     static func townNear(_ c: Coordinate, timeout: TimeInterval = 5) async throws -> String? {
         let location = CLLocation(latitude: c.latitude, longitude: c.longitude)
         return try await withCheckedThrowingContinuation { continuation in
-            let once = Once(continuation), geocoder = CLGeocoder()
-            geocoder.reverseGeocodeLocation(location) { places, error in
-                if let error, (error as? CLError)?.code != .geocodeFoundNoResult { once.finish(.failure(error)); return }
-                once.finish(.success(places?.first?.locality))
+            let once = Once(continuation)
+            let cancel: () -> Void
+            // iOS 26's reverse geocoder names the city where the older one often has no locality (the Mac uses it too).
+            if #available(iOS 26, macOS 26, *) {
+                guard let request = MKReverseGeocodingRequest(location: location) else { once.finish(.success(nil)); return }
+                request.getMapItems { items, error in
+                    if let error, (error as? MKError)?.code != .placemarkNotFound { once.finish(.failure(error)); return }
+                    once.finish(.success(items?.first?.addressRepresentations?.cityName))
+                }
+                cancel = request.cancel
+            } else {
+                let geocoder = CLGeocoder()
+                geocoder.reverseGeocodeLocation(location) { places, error in
+                    if let error, (error as? CLError)?.code != .geocodeFoundNoResult { once.finish(.failure(error)); return }
+                    once.finish(.success(places?.first?.locality))   // the town only: a county would mislead
+                }
+                cancel = geocoder.cancelGeocode
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { geocoder.cancelGeocode(); once.finish(.failure(URLError(.timedOut))) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { cancel(); once.finish(.failure(URLError(.timedOut))) }
         }
     }
 
