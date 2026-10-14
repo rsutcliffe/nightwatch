@@ -31,15 +31,27 @@ public final class LocationProvider: NSObject, ObservableObject, CLLocationManag
     }
 }
 
-/// Finds a place by name for "add a site". The result is a plain site; the user can rename it.
+/// One candidate for "add a site": the site plus where it is, so two places with one name can be told apart.
+public struct PlaceMatch: Identifiable {
+    public let site: Site
+    public let detail: String
+    public var id: String { "\(site.name)|\(site.latitude)|\(site.longitude)" }
+}
+
+/// Finds places by name for "add a site". The user picks one; the site can be renamed afterwards.
 public enum PlaceSearch {
-    public static func find(_ text: String) async -> Site? {
+    public static func matches(_ text: String) async -> [PlaceMatch] {
         let req = MKLocalSearch.Request()
         req.naturalLanguageQuery = text
-        guard let item = try? await MKLocalSearch(request: req).start().mapItems.first else { return nil }
-        let loc = item.placemark.location ?? CLLocation(latitude: item.placemark.coordinate.latitude, longitude: item.placemark.coordinate.longitude)
-        return Site(name: item.name ?? text, latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude,
-                    elevationM: max(0, loc.altitude), timeZoneID: item.placemark.timeZone?.identifier ?? TimeZone.current.identifier, bortle: 5)
+        guard let items = try? await MKLocalSearch(request: req).start().mapItems else { return [] }
+        return items.prefix(6).map { item in
+            let pm = item.placemark
+            let loc = pm.location ?? CLLocation(latitude: pm.coordinate.latitude, longitude: pm.coordinate.longitude)
+            let where_ = [pm.locality, pm.administrativeArea, pm.country].compactMap { $0 }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+            return PlaceMatch(site: Site(name: item.name ?? text, latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude,
+                                         elevationM: max(0, loc.altitude), timeZoneID: pm.timeZone?.identifier ?? TimeZone.current.identifier, bortle: 5),
+                              detail: where_.joined(separator: ", "))
+        }
     }
 }
 
