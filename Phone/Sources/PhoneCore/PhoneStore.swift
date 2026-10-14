@@ -1,6 +1,13 @@
 import Foundation
 import SkyCore
 
+/// The plans the Plan, Targets, Favourites and Week screens draw.
+public struct Planning: Equatable, Sendable {
+    public var tonight: NightPlan
+    public var tomorrow: NightPlan
+    public var week: [WeekNight]
+}
+
 /// The phone's notification centre, behind a protocol so the core can be tested without one. The real implementation
 /// (UNUserNotificationCenter) comes with the alerts milestone.
 public protocol NotificationScheduling: Sendable {
@@ -38,6 +45,8 @@ public final class PhoneStore: ObservableObject {
     /// Apple's mark as kept on disk, exactly as supplied, for the footer; nil until Apple Weather has answered once.
     @Published public private(set) var appleMarkData: Data?
     @Published public var config: Config = .default
+    /// Tonight's and tomorrow's full plans and the ten-night week, for the Plan, Targets, Favourites and Week screens.
+    @Published public private(set) var planning: Planning?
 
     private let directory: URL
     private let provider: ForecastProvider
@@ -93,13 +102,49 @@ public final class PhoneStore: ObservableObject {
     public func attachSync(store: KeyValueStoring, defaults: UserDefaults = .standard) {
         let coordinator = SettingsSyncCoordinator(store: store, defaults: defaults,
                                                   readConfig: { [unowned self] in self.config },
-                                                  writeConfig: { [unowned self] c in self.config = c; self.saveConfig(send: false) })
+                                                  writeConfig: { [unowned self] c in self.config = c; self.saveConfig(send: false); self.replan() })
         sync = coordinator
         let modified = (try? FileManager.default.attributesOfItem(atPath: configURL.path))?[.modificationDate] as? Date
         coordinator.start(localModified: modified)
     }
 
     private func loadConfig() -> Config? { Self.read(Config.self, from: configURL) }
+
+    // MARK: Plan and favourites
+
+    /// Rebuild the plans after the settings changed (a heart, a plan choice, or settings arriving from another device).
+    public func replan() { Task { await recompute(now: clock()) } }
+
+    /// Tonight's plan (or tomorrow night's) as the user has arranged it, from the favourites and that night's choices.
+    public func session(tomorrow: Bool = false) -> SessionPlan? {
+        guard let site, let p = planning else { return nil }
+        let night = tomorrow ? p.tomorrow : p.tonight
+        return SessionPlanner.make(plan: night, favourites: config.favourites, choices: config.planChoices[night.night.key] ?? PlanChoices(),
+                                   stopBy: config.stopBy, site: site)
+    }
+
+    public func isFavourite(_ id: String) -> Bool { config.favourites.contains(id) }
+
+    /// Is `id` in the plan for the night: a favourite not taken off, or a target added for it.
+    public func isInPlan(_ id: String, tomorrow: Bool = false) -> Bool { session(tomorrow: tomorrow)?.items.contains { $0.id == id } ?? false }
+
+    public func toggleFavourite(_ id: String) {
+        config.toggleFavourite(id)
+        saveConfig()
+        replan()
+    }
+
+    /// Put a target in the night's plan, or take it off. A favourite is taken off or put back; any other target is added for the night.
+    public func setInPlan(_ id: String, on: Bool, tomorrow: Bool = false) {
+        guard let p = planning else { return }
+        let key = (tomorrow ? p.tomorrow : p.tonight).night.key
+        let choices = SessionPlanner.choose(id, on: on, isFavourite: isFavourite(id), in: config.planChoices[key] ?? PlanChoices())
+        config.planChoices[key] = choices
+        // Earlier nights have no further use; keeping only tonight and later keeps the synced settings small.
+        config.planChoices = SessionPlanner.pruned(config.planChoices, from: p.tonight.night.key)
+        saveConfig()
+        replan()
+    }
 
     // MARK: Sites
 
@@ -184,6 +229,9 @@ public final class PhoneStore: ObservableObject {
         let tomorrow = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site,
                                     fov: config.fov, rule: config.goRule, bright: config.brightNights, favourites: config.favourites)
         tonight = TonightModel.make(plan: plan, tomorrow: tomorrow, forecast: fc, site: site, config: config)
+        planning = Planning(tonight: plan, tomorrow: tomorrow,
+                            week: Planner.week(tonight: plan, tomorrow: tomorrow, forecast: fc, site: site, fov: config.fov,
+                                               rule: config.goRule, bright: config.brightNights))
         phase = .ready
 
         guard config.notifyEnabled, await scheduler.isAuthorised() else { return }

@@ -26,7 +26,7 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
 
 struct Failure: Error {}
 
-@MainActor private func makeStore(clock: Clock, calls: Calls, scheduler: FakeScheduler = FakeScheduler(), withSite: Bool = true,
+@MainActor func makeStore(clock: Clock, calls: Calls, scheduler: FakeScheduler = FakeScheduler(), withSite: Bool = true,
                                   directory: URL = FileManager.default.temporaryDirectory.appendingPathComponent("phonestore-\(UUID().uuidString)")) -> PhoneStore {
     let store = PhoneStore(directory: directory, provider: { site, now, ask in
         calls.fetches += 1
