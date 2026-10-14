@@ -17,7 +17,9 @@ What it does:
   covering a star.
 - **Dark sites** within reach, with tonight's score at each, and observing from one without saving it.
 - **Horizons:** the heights of what is in the way, the hills found from elevation data, or measured from a photo.
-- **Red night mode** and a small and medium home-screen widget.
+- **Red night mode**, and a small, medium and large home-screen widget whose target rows open the target.
+- **Siri, Spotlight and Shortcuts:** sky score, clear window, best targets, events, show a target, refresh and notifications on or off.
+- **Aurora alerts**, telescope and go-rule editing, and "What the numbers mean".
 
 Not yet released.
 

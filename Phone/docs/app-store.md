@@ -22,6 +22,8 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
   (`group.io.github.rsutcliffe.nightwatch.phone`); the widget fetches nothing.
 - **Forecast sources** are tried in order: Apple Weather, Open-Meteo, MET Norway, 7Timer. The footer on Tonight names the one that answered, and the
   Apple Weather mark is shown only when Apple Weather did.
+- **Shortcuts and Spotlight** (App Intents) read the forecast the app already holds; only Refresh fetches. The `nightwatch://` link scheme opens a target or the
+  plan from the widget and from Shortcuts.
 - **Aurora alerts** are off by default. When on, the app reads AuroraWatch UK's status (UK and Ireland) or NOAA's aurora forecast (elsewhere)
   while it is open and when iOS grants a background refresh, and posts a local notification. No server is involved.
 - **Photos:** "Measure from a photo" (in a site's Horizon) uses the system photo picker, so no photo-library permission is
