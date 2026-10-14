@@ -135,7 +135,10 @@ struct AltitudeChart: View {
             .font(.caption2).secondary()
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Altitude tonight. " + lines.map { $0.id }.joined(separator: ", "))
+        .accessibilityLabel("Altitude tonight, from sunset to sunrise. " + lines.map { l in
+            let peak = Int((l.samples.map(\.alt).max() ?? 0).rounded())
+            return "\(l.id) reaches \(peak) degrees, best at \(Copy.hhmm(l.best, site: site))"
+        }.joined(separator: ". "))
     }
 }
 

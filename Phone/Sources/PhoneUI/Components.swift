@@ -141,9 +141,12 @@ struct PhoneSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(label: String, value: Value)]
     @Environment(\.phoneTheme) private var theme
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: 4) {
+        // At the accessibility text sizes the choices stack, so none wraps inside a half-width segment.
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 4))
+        layout {
             ForEach(options.indices, id: \.self) { i in
                 let on = options[i].value == selection
                 Button { selection = options[i].value } label: {

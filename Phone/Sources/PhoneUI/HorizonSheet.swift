@@ -79,6 +79,7 @@ struct HorizonSheet: View {
                                     Spacer()
                                     stepButton("minus", i, -5)
                                     Text("\(Int(heights[i]))°").font(.body).monospacedDigit().frame(minWidth: 48).fixedSize()
+                                        .accessibilityLabel("\(Site.horizonDirections[i]) horizon, \(Int(heights[i])) degrees")
                                     stepButton("plus", i, 5)
                                 }
                                 .frame(minHeight: 48)
