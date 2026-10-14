@@ -23,7 +23,7 @@ The call is `try await WeatherService.shared.weather(for: location, including: .
 The app falls back to another weather source when this fails, so nothing else in the app is affected.
 
 **What I expect**
-The request to succeed, as it does for my other app (below).
+The request to succeed, as it does for my other App ID on the same team (below).
 
 **What I have checked**
 1. The signed app's entitlements and the embedded provisioning profile both contain `com.apple.developer.weatherkit`.
@@ -32,10 +32,12 @@ The request to succeed, as it does for my other app (below).
 4. I untick WeatherKit on the App ID, saved, ticked it again and saved, then deleted the cached provisioning profile so Xcode generated a new one (profile created 09:25 UTC on 14 October, after the change), reinstalled on both devices and retested. Same error.
 5. I restarted both devices and retested. Same error.
 6. The failure is the same on a second device of a different model, so it is not tied to one device.
+7. I pressed Download Manual Profiles in Xcode, did a clean build, deleted the app from both devices and installed it fresh. Same error.
+8. More than 90 minutes have passed since WeatherKit was last enabled on the App ID, so the 30-minute activation delay some tutorials mention has long gone.
+9. A public forum thread with the same details is awaiting moderation: https://developer.apple.com/forums/thread/851146
 
 **For comparison**
-My separate Mac app, with its own App ID (io.github.rsutcliffe.nightwatch) on the same team, uses WeatherKit successfully.
-The two apps share no profile or App ID.
+Another App ID on the same team uses WeatherKit successfully. The two share no profile or App ID.
 
 **Steps to reproduce**
 1. Build the app signed with automatic signing for team 8B44CZ9923 and install it on either device.
