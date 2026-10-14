@@ -44,6 +44,8 @@ public final class PhoneStore: ObservableObject {
     @Published public private(set) var forecast: Forecast?
     /// The last refresh found no connection: the page says how old the forecast it shows is.
     @Published public private(set) var offline = false
+    /// Why the last forecast fetch failed, when iOS said there was a connection but the services did not answer; nil when it was simply offline.
+    @Published public private(set) var refreshFailure: String?
     @Published public private(set) var refreshing = false
     /// Apple's mark as kept on disk, exactly as supplied, for the footer; nil until Apple Weather has answered once.
     @Published public private(set) var appleMarkData: Data?
@@ -106,6 +108,9 @@ public final class PhoneStore: ObservableObject {
     private var spotPublic: [String: PublicPlace?] = [:]          // car park by computed spot id; nil inside: none within reach
     private var darkFailedAt: Date?
     private var darkGeneration = 0
+    private var retryTask: Task<Void, Never>?
+    private var lastFailure: Error?   // for tests and the log
+    private var darkFetchPausedUntil: Date?
     private var darkTask: Task<Void, Never>?
     private let feeds: @Sendable (URL) async throws -> Data
     private let findOccultations: Bool
@@ -119,7 +124,7 @@ public final class PhoneStore: ObservableObject {
                 fetchData: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 },
                 terrain: @escaping TerrainFetcher = { try await Terrain.fetch(site: $0, fetcher: URLSessionFetcher()) },
                 terrainPause: Duration = .seconds(10),
-                feeds: @escaping @Sendable (URL) async throws -> Data = { try await URLSessionFetcher().get($0) },
+                feeds: @escaping @Sendable (URL) async throws -> Data = { try await PhoneFetcher().get($0) },
                 occultations: Bool = true,
                 darkLookups: DarkLookups? = .live,
                 widgetSink: (@Sendable (WidgetSnapshot) -> Void)? = nil) {
@@ -217,6 +222,60 @@ public final class PhoneStore: ObservableObject {
         config.planChoices = SessionPlanner.pruned(config.planChoices, from: p.tonight.night.key)
         saveConfig()
         replan()
+    }
+
+    /// What to say when the forecast could not be read although iOS reported a connection. A refusal from the service (it limits requests
+    /// from one address, which a busy shared Wi-Fi can reach) is not the same as having no signal, and the page must not say so.
+    static func describe(failure error: Error) -> String {
+        if let h = error as? HTTPFailure {
+            return h.isRateLimit ? "the forecast service has refused more requests from this connection today (\(h.reason ?? "request limit reached")). It usually resets overnight"
+                                 : "the forecast service answered with an error (\(h.status))"
+        }
+        guard let e = error as? URLError else { return error.localizedDescription }
+        switch e.code {
+        case .badServerResponse: return "the forecast service refused the request, and may be limiting requests from this connection"
+        case .timedOut: return "the forecast service took too long to answer"
+        case .cancelled: return "the request was cancelled"
+        default: return e.localizedDescription
+        }
+    }
+
+    /// A failed read is tried once more in two minutes (a refusal for being busy usually clears), by whoever is still looking at the page.
+    private func scheduleRetry(after delay: Double = 120) {
+        guard retryTask == nil else { return }
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard let self, !Task.isCancelled else { return }
+            self.retryTask = nil
+            if self.offline { await self.refresh(force: true) }
+        }
+    }
+
+    // MARK: Alerts and bright nights
+
+    /// Change an alert setting (nudge time, quiet hours, switches). The queue of alerts depends on them, so it is worked out again at once.
+    public func setAlerts(_ change: (inout AlertSettings) -> Void) {
+        var a = config.alerts
+        change(&a)
+        guard a != config.alerts else { return }
+        config.alerts = a
+        saveConfig(); replan()
+    }
+
+    /// The master switch for alerts. Off, nothing already queued goes off either.
+    public func setNotifyEnabled(_ on: Bool) {
+        guard on != config.notifyEnabled else { return }
+        config.notifyEnabled = on
+        saveConfig(); replan()
+    }
+
+    /// Moon and planets on nights with no proper darkness, and the shortest clear run that counts.
+    public func setBrightNights(_ change: (inout BrightSettings) -> Void) {
+        var b = config.brightNights
+        change(&b)
+        guard b != config.brightNights else { return }
+        config.brightNights = b
+        saveConfig(); replan()
     }
 
     // MARK: Telescope and Go rule
@@ -348,9 +407,9 @@ public final class PhoneStore: ObservableObject {
         if forecast.map({ !ForecastStore.matches($0, site: site) }) ?? false { forecast = forecastStore.load().flatMap { ForecastStore.matches($0, site: site) ? $0 : nil } }
         switch RefreshPolicy.decision(now: now, forecast: forecast, site: site, pause: pause, force: force, connectivity: connectivity) {
         case .useSaved:
-            offline = false
+            offline = false; refreshFailure = nil
         case .offline:
-            offline = true
+            offline = true; refreshFailure = nil
             if forecast == nil { phase = .failed("No connection, and no forecast saved for \(site.name) yet."); return }
         case .fetch:
             refreshing = true; stage = .reading
@@ -361,11 +420,14 @@ public final class PhoneStore: ObservableObject {
                 if ask { pause.record(answered: fc.cloudSource == "Apple Weather", now: now) }
                 forecast = fc
                 try? forecastStore.save(fc)
-                offline = false
+                offline = false; refreshFailure = nil
                 await keepAppleMark(for: fc)
             } catch {
-                if forecast == nil { phase = .failed("Couldn't read the forecast for \(site.name). Try again."); return }
+                if forecast == nil { phase = .failed("Couldn't read the forecast for \(site.name): \(Self.describe(failure: error)). Try again later."); return }
                 offline = true   // keep drawing from the saved forecast, and say how old it is
+                refreshFailure = Self.describe(failure: error)
+                lastFailure = error
+                scheduleRetry(after: (error as? HTTPFailure)?.isRateLimit == true ? 1800 : 120)   // a daily limit does not clear in two minutes
             }
         }
         stage = .planning
@@ -447,7 +509,10 @@ public final class PhoneStore: ObservableObject {
         let cache = ForecastStore(url: directory.appendingPathComponent("home-forecast.json"))
         var fc = cache.load().flatMap { ForecastStore.matches($0, site: home) ? $0 : nil }
         let stale = fc.map { now.timeIntervalSince($0.fetchedAt) > 30 * 60 } ?? true
-        if stale, cheap, let fresh = try? await provider(home, now, false) { fc = fresh; try? cache.save(fresh) }
+        if stale, cheap, darkFetchPausedUntil.map({ now >= $0 }) ?? true {
+            if let fresh = try? await provider(home, now, false) { fc = fresh; try? cache.save(fresh) }
+            else { darkFetchPausedUntil = now.addingTimeInterval(10 * 60) }
+        }
         guard let f = fc, now.timeIntervalSince(f.fetchedAt) <= 24 * 3600, let night = try? Ephemeris.currentNight(now: now, site: home) else { homePlan = nil; return }
         homePlan = Planner.plan(night: night, forecast: f, catalog: Catalog(objects: []), constellations: [], site: home,
                                 fov: config.fov, rule: config.goRule, bright: config.brightNights)
@@ -528,8 +593,9 @@ public final class PhoneStore: ObservableObject {
             let asSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
             let cache = ForecastStore(url: cacheDir.appendingPathComponent("\(s.id).json"))
             var fc = cache.load()
-            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, cheap {
+            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, cheap, darkFetchPausedUntil.map({ now >= $0 }) ?? true {
                 if let fresh = try? await provider(asSite, now, false) { fc = fresh; try? cache.save(fresh) }
+                else { darkFetchPausedUntil = now.addingTimeInterval(10 * 60) }   // refused or slow: stop asking for ten minutes, for every site
                 guard gen == darkGeneration else { return }
             }
             // A cache over 24 hours old that could not be refreshed no longer describes tonight: no forecast, not a plan.
@@ -633,7 +699,8 @@ public final class PhoneStore: ObservableObject {
         phase = .ready
         if let snap = tonight?.snapshot { widgetSink?(snap) }
 
-        guard config.notifyEnabled, await scheduler.isAuthorised() else { return }
+        guard config.notifyEnabled else { await scheduler.replaceScheduled([]); return }   // switched off: what was queued goes too
+        guard await scheduler.isAuthorised() else { return }
         let r = AlertPlanner.plan(now: now, ledger: ledger, tonight: plan, tomorrow: tomorrow, settings: config.alerts,
                                   forecastFetchedAt: fc.fetchedAt, site: site)
         ledger = r.ledger

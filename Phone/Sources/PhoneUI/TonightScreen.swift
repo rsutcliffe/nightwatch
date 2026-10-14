@@ -8,6 +8,8 @@ public struct TonightScreen: View {
     let model: TonightModel
     let markData: Data?
     let offline: Bool
+    /// When iOS said there was a connection but the forecast services did not answer: the reason, so "No connection" is not claimed untruly.
+    var failure: String? = nil
     let refreshing: Bool
     let onRefresh: () -> Void
     var alertsPrompt: AlertsPrompt? = nil
@@ -17,7 +19,8 @@ public struct TonightScreen: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void,
-                alertsPrompt: AlertsPrompt? = nil, now: Date = .now, visit: AnyView? = nil) {
+                alertsPrompt: AlertsPrompt? = nil, now: Date = .now, visit: AnyView? = nil, failure: String? = nil) {
+        self.failure = failure
         self.alertsPrompt = alertsPrompt; self.now = now; self.visit = visit
         self.model = model; self.markData = markData; self.offline = offline; self.refreshing = refreshing; self.onRefresh = onRefresh
     }
@@ -91,7 +94,11 @@ public struct TonightScreen: View {
     private func targets(height: CGFloat = 78) -> some View { PicksSection(model: model, pictureHeight: height) }
 
     private var offlineNote: some View {
-        Card { Text("No connection. Showing the forecast from \(ForecastAge(fetchedAt: model.fetchedAt, now: now).text).").font(.callout) }
+        Card {
+            let age = ForecastAge(fetchedAt: model.fetchedAt, now: now).text
+            Text(failure.map { "Couldn't read a new forecast: \($0). Showing the one from \(age). Trying again shortly." } ?? "No connection. Showing the forecast from \(age).")
+                .font(.callout)
+        }
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 

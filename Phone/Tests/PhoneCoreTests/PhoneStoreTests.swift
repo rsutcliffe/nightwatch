@@ -193,3 +193,31 @@ struct Failure: Error {}
     #expect(store.phase == .loading)
     #expect(store.tonight == nil)
 }
+
+@MainActor @Test func aRefusedRequestSaysSoRatherThanNoConnection() async {
+    let clock = Clock(utc(2026, 9, 23, 12)), calls = Calls()
+    let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("refused-\(UUID().uuidString)"),
+                           provider: { _, _, _ in throw HTTPFailure(status: 429, reason: "Daily API request limit exceeded. Please try again tomorrow.") },
+                           scheduler: FakeScheduler(), clock: { clock.now }, occultations: false, darkLookups: nil)
+    store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
+    await store.refresh()
+    _ = calls
+    #expect(store.phase == .failed("Couldn't read the forecast for Sheffield: the forecast service has refused more requests from this connection today (Daily API request limit exceeded. Please try again tomorrow.). It usually resets overnight. Try again later."))
+}
+
+@MainActor @Test func withASavedForecastARefusalKeepsItAndGivesTheReason() async {
+    let clock = Clock(utc(2026, 9, 23, 12))
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("refused2-\(UUID().uuidString)")
+    let first = PhoneStore(directory: dir, provider: { site, now, _ in forecast(fetchedAt: now, site: site) }, scheduler: FakeScheduler(), clock: { clock.now },
+                           occultations: false, darkLookups: nil)
+    first.config.sites = [sheffield]; first.config.activeSiteName = "Sheffield"
+    await first.refresh()
+    first.saveConfig()
+    clock.now = clock.now.addingTimeInterval(3 * 3600)
+    let second = PhoneStore(directory: dir, provider: { _, _, _ in throw HTTPFailure(status: 429, reason: nil) }, scheduler: FakeScheduler(),
+                            clock: { clock.now }, occultations: false, darkLookups: nil)
+    await second.refresh()
+    #expect(second.offline)
+    #expect(second.refreshFailure?.contains("refused more requests") == true)
+    #expect(second.tonight != nil)                        // still drawn from the saved forecast
+}
