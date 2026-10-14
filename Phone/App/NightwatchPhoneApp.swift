@@ -46,6 +46,17 @@ struct NightwatchPhoneApp: App {
         //   -demoNow 17:05   the app's clock starts at that time today, then runs
         //   -demoCloud 90    cloud cover for every hour (default 5)
         UNUserNotificationCenter.current().delegate = AlertPresenter.shared
+        if CommandLine.arguments.contains("-probeWeatherKit") {   // says why Apple Weather fell back, in the console
+            Task {
+                NSLog("WeatherKit probe started")
+                let started = Date()
+                let work = Task { try await WeatherKitSource.hours(site: DemoData.site, now: .now) }
+                let watchdog = Task { try await Task.sleep(for: .seconds(40)); NSLog("WeatherKit probe: no answer after 40 s"); work.cancel() }
+                do { let r = try await work.value; NSLog("WeatherKit OK: \(r.hours.count) hours in \(Date().timeIntervalSince(started)) s, mark \(r.markURL ?? "none")") }
+                catch { NSLog("WeatherKit failed after \(Date().timeIntervalSince(started)) s: \(String(reflecting: error))") }
+                watchdog.cancel()
+            }
+        }
         let args = CommandLine.arguments
         func value(_ flag: String) -> String? { args.firstIndex(of: flag).flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil } }
         let demo = args.contains("-demo")
