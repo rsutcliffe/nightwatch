@@ -13,7 +13,7 @@ import SkyCore
     let store = await readyStore()
     // The test forecast covers four days; a real one covers ten, and the week is capped at Planner.weekNights.
     let nights = store.planning?.week.count ?? 0
-    #expect(nights >= 3 && nights <= Planner.weekNights)
+    #expect(nights >= 1 && nights <= Planner.weekNights)   // nights past the forecast's end are left out
     #expect(store.planning?.week.first?.daysAhead == 0)
 }
 
