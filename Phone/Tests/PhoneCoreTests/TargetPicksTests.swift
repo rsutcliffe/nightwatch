@@ -28,3 +28,16 @@ import SkyCore
     #expect(model.picksHeading == (model.picks.isEmpty ? "UP TONIGHT" : "BEST TONIGHT"))
     for p in model.picks { #expect(p.best.hasPrefix("Best ")) }
 }
+
+@Test func theSharpPictureIsTheMacsRequestAtSixteenHundredAndOnlyForDeepSkyTargets() throws {
+    let p = try plans(cloud: 5)
+    let fov = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)
+    let deep = try #require(p.tonight.targets.first { [.nebulae, .galaxies, .clusters].contains($0.group) })
+    let sharp = try #require(TargetPick.sharp(deep, site: sheffield, fov: fov))
+    let q = URLComponents(url: sharp.url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    #expect(q.first { $0.name == "width" }?.value == "1600")
+    #expect(q.first { $0.name == "hips" }?.value == "CDS/P/DSS2/color")
+    #expect(sharp.cacheName.hasPrefix("sharp-"))
+    let constellation = try #require(p.tonight.targets.first { $0.group == .constellations })
+    #expect(TargetPick.sharp(constellation, site: sheffield, fov: fov) == nil)
+}

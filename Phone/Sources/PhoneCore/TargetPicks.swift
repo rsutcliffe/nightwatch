@@ -39,6 +39,19 @@ public struct TargetPick: Equatable, Sendable, Identifiable {
     }
 }
 
+public extension TargetPick {
+    /// The sharp picture for a target's own page: the same cutout at 1600 px, as the Mac's page asks for it (the page's picture area is large). Only a
+    /// deep-sky target has one; the Moon, planets, constellations and the Milky Way use their own art.
+    static func sharp(_ t: RankedTarget, site: Site, fov: FieldOfView) -> (url: URL, cacheName: String)? {
+        guard case .survey = make(t, site: site, fov: fov).picture else { return nil }
+        return (SurveyThumbnail.url(raHours: t.raHours, decDeg: t.decDeg, sizeArcmin: t.sizeArcmin, fov: fov, width: sharpWidth),
+                "sharp-" + ThumbnailFiles.name(id: t.id, fovWidthDeg: fov.widthDeg, fovHeightDeg: fov.heightDeg))
+    }
+    static let sharpWidth = 1600
+    /// hips2fits took 12.5 s for a 1600 px image with extra sky, so this one gets longer than the card photos' 20 s.
+    static let sharpTimeout: TimeInterval = 45
+}
+
 /// DSS2 colour cutouts from CDS hips2fits at the user's field of view (or 1.5 times the object when it is bigger), 480 px
 /// wide: the same request the Mac app makes.
 public enum SurveyThumbnail {

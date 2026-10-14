@@ -19,7 +19,7 @@ struct TargetDetailScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if let pick {
-                    TargetPicture(pick: pick).frame(height: 220).clipShape(RoundedRectangle(cornerRadius: 16))
+                    TargetPicture(pick: pick, sharp: site.flatMap { TargetPick.sharp(target, site: $0, fov: store.config.fov) }).frame(height: 220).clipShape(RoundedRectangle(cornerRadius: 16))
                 }
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {

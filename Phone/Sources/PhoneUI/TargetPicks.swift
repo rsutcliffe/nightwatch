@@ -23,8 +23,8 @@ extension TargetGroup {
 final class SurveyLoader: ObservableObject {
     @Published var data: Data?
 
-    func load(url: URL, cacheName: String, allowDownload: Bool) async {
-        let dir = ImageCache.directory("thumbs")
+    func load(url: URL, cacheName: String, allowDownload: Bool, folder: String = "thumbs", timeout: TimeInterval = 20) async {
+        let dir = ImageCache.directory(folder)
         let file = dir.appendingPathComponent(cacheName)
         if let cached = ImageCache.load(file) {
             data = cached
@@ -34,7 +34,7 @@ final class SurveyLoader: ObservableObject {
             return
         }
         guard allowDownload else { return }
-        guard let bytes = try? await URLSessionFetcher(timeout: 20).get(url), Image(platformData: bytes) != nil else { return }
+        guard let bytes = try? await PhoneFetcher(timeout: timeout).get(url), Image(platformData: bytes) != nil else { return }
         ImageCache.save(bytes, to: file)
         Self.pruneStale(in: dir)
         data = bytes
@@ -58,7 +58,10 @@ func bundledArt(_ name: String, folder: String) -> Data? {
 /// are drawn in one red hue in red mode.
 struct TargetPicture: View {
     let pick: TargetPick
+    /// A target's own page asks for the sharp picture too, laid over the card photo when it arrives (cheap connections only).
+    var sharp: (url: URL, cacheName: String)? = nil
     @StateObject private var survey = SurveyLoader()
+    @StateObject private var sharpLoader = SurveyLoader()
     @StateObject private var moon = MoonLoader()
     @Environment(\.phoneTheme) private var theme
     @Environment(\.allowsOptionalDownloads) private var allowsDownloads
@@ -79,6 +82,12 @@ struct TargetPicture: View {
             case .survey(let url, let name):
                 if let d = survey.data { Color.clear.overlay(photo(d)).transition(.opacity) } else { symbol }
                 Color.clear.task(id: name) { await survey.load(url: url, cacheName: name, allowDownload: allowsDownloads) }
+                if let d = sharpLoader.data { Color.clear.overlay(photo(d)).transition(.opacity) }
+                if let sharp {
+                    Color.clear.task(id: sharp.cacheName) {
+                        await sharpLoader.load(url: sharp.url, cacheName: sharp.cacheName, allowDownload: allowsDownloads, folder: "sharp", timeout: TargetPick.sharpTimeout)
+                    }
+                }
             case .moon(let at):
                 if let d = moon.data { Color.clear.overlay(photo(d)).transition(.opacity) } else { symbol }
                 Color.clear.task(id: MoonImage.hourKey(for: at)) { await moon.load(at: at, allowDownload: allowsDownloads) }
@@ -94,7 +103,7 @@ struct TargetPicture: View {
                 symbol
             }
         }
-        .animation(.easeOut(duration: 0.3), value: survey.data != nil || moon.data != nil)
+        .animation(.easeOut(duration: 0.3), value: survey.data != nil || moon.data != nil || sharpLoader.data != nil)
         .accessibilityHidden(true)
     }
 
