@@ -46,6 +46,21 @@ struct NightwatchPhoneApp: App {
         //   -demoNow 17:05   the app's clock starts at that time today, then runs
         //   -demoCloud 90    cloud cover for every hour (default 5)
         UNUserNotificationCenter.current().delegate = AlertPresenter.shared
+        if CommandLine.arguments.contains("-testAlert") {   // one notification 20 s from launch, to see delivery on a real device
+            UNUserNotificationCenter.current().getNotificationSettings { st in
+                NSLog("Nightwatch notification settings: auth=\(st.authorizationStatus.rawValue) alert=\(st.alertSetting.rawValue) lock=\(st.lockScreenSetting.rawValue) center=\(st.notificationCenterSetting.rawValue) sound=\(st.soundSetting.rawValue) summary=\(st.scheduledDeliverySetting.rawValue) timeSensitive=\(st.timeSensitiveSetting.rawValue) style=\(st.alertStyle.rawValue)")
+            }
+            let c = UNMutableNotificationContent()
+            c.title = "Test alert"; c.body = "If you can read this, Nightwatch alerts reach this device."; c.sound = .default
+            Task {   // 35 s on, say what iOS says it delivered and still has pending
+                try? await Task.sleep(for: .seconds(35))
+                let delivered = await UNUserNotificationCenter.current().deliveredNotifications().map(\.request.identifier)
+                let pending = await UNUserNotificationCenter.current().pendingNotificationRequests().map(\.identifier)
+                NSLog("Nightwatch after 35 s: delivered=\(delivered) pending=\(pending)")
+            }
+            UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "now.test.\(UUID().uuidString)", content: c,
+                trigger: UNTimeIntervalNotificationTrigger(timeInterval: 20, repeats: false))) { NSLog("Nightwatch test alert queued: \($0.map(String.init(describing:)) ?? "ok")") }
+        }
         if CommandLine.arguments.contains("-probeWeatherKit") {   // says why Apple Weather fell back, in the console
             Task {
                 NSLog("WeatherKit probe started")
