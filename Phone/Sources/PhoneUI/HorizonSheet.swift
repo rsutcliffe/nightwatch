@@ -25,7 +25,7 @@ struct HorizonDial: View {
 
     var body: some View {
         Canvas { ctx, size in
-            let c = CGPoint(x: size.width / 2, y: size.height / 2), r = min(size.width, size.height) / 2 - 18
+            let c = CGPoint(x: size.width / 2, y: size.height / 2), r = min(size.width, size.height) / 2 - 28
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(theme.textSecondary.opacity(0.6)), lineWidth: 1)
             if let t = terrain, t.count == 8 {
                 for i in 0..<8 where t[i] > 0 { ctx.fill(sector(i, height: t[i], in: r, centre: c), with: .color(theme.terrain)) }
@@ -40,7 +40,7 @@ struct HorizonDial: View {
                        style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
             for (i, name) in Site.horizonDirections.enumerated() {
                 let a = Angle.degrees(Double(i) * 45 - 90).radians
-                let p = CGPoint(x: c.x + (r + 11) * CGFloat(cos(a)), y: c.y + (r + 11) * CGFloat(sin(a)))
+                let p = CGPoint(x: c.x + (r + 14) * CGFloat(cos(a)), y: c.y + (r + 14) * CGFloat(sin(a)))
                 ctx.draw(Text(name).font(.caption2.weight(.semibold)).foregroundStyle(theme.textSecondary), at: p)
             }
         }
@@ -73,14 +73,15 @@ struct HorizonSheet: View {
                         VStack(spacing: 0) {
                             ForEach(0..<8, id: \.self) { i in
                                 HStack {
-                                    Text(Site.horizonDirections[i]).font(.body.weight(.medium)).frame(width: 36, alignment: .leading)
-                                    if let t = site?.terrain, t.count == 8, t[i] > 0 { Text("hills \(Int(t[i].rounded()))°").font(.caption).secondary() }
+                                    Text(Site.horizonDirections[i]).font(.body.weight(.medium)).frame(minWidth: 36, alignment: .leading).fixedSize()
+                                    if let t = site?.terrain, t.count == 8, t[i] > 0 { Text("hills \(Int(t[i].rounded()))°").font(.caption).secondary().lineLimit(1).minimumScaleFactor(0.7) }
                                     Spacer()
                                     stepButton("minus", i, -5)
-                                    Text("\(Int(heights[i]))°").font(.body).monospacedDigit().frame(width: 48)
+                                    Text("\(Int(heights[i]))°").font(.body).monospacedDigit().frame(minWidth: 48).fixedSize()
                                     stepButton("plus", i, 5)
                                 }
                                 .frame(minHeight: 48)
+                                .dynamicTypeSize(...DynamicTypeSize.accessibility1)   // eight rows with two buttons each cannot grow without bound
                                 if i < 7 { Divider().overlay(theme.hairline) }
                             }
                         }
