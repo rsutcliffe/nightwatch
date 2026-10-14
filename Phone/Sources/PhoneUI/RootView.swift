@@ -216,7 +216,7 @@ struct FirstRunScreen: View {
     @State private var name = ""
     @State private var message: String?
     @State private var busy = false
-    @State private var choices: [PlaceMatch] = []
+    @StateObject private var places = PlaceCompleter()
     @Environment(\.phoneTheme) private var theme
 
     var body: some View {
@@ -226,9 +226,9 @@ struct FirstRunScreen: View {
             Text("Nightwatch reads the sky forecast and tells you, then alerts you. Where do you observe from?")
                 .font(.callout).secondary().multilineTextAlignment(.center)
             TextField("A place name", text: $name).textFieldStyle(.roundedBorder).submitLabel(.search).onSubmit(add)
-                .task(id: name) { choices = await PlaceSearch.matches(typed: name) }
+                .onChange(of: name) { places.update(name, near: store.site) }
             if let message { Text(message).font(.footnote).foregroundStyle(theme.warning) }
-            PlaceChoices(matches: choices) { store.addSite($0.site); choices = [] }
+            PlaceChoices(places: places) { site in store.addSite(site); name = "" }
             Spacer()
             SecondaryButton(title: "Use this device's location", systemImage: "location") { useLocation() }
             PrimaryButton(title: busy ? "Searching" : "Add this place", action: add)
@@ -240,8 +240,8 @@ struct FirstRunScreen: View {
         guard !name.isEmpty, !busy else { return }
         busy = true; message = nil
         Task {
-            choices = await PlaceSearch.matches(name)
-            if choices.isEmpty { message = "Could not find that place." }
+            if let first = places.suggestions.first, let s = await PlaceCompleter.site(for: first) { store.addSite(s); name = ""; places.clear() }
+            else { message = "Could not find that place." }
             busy = false
         }
     }
@@ -263,7 +263,7 @@ struct SitesSheet: View {
     @State private var name = ""
     @State private var message: String?
     @State private var horizonSite: HorizonTarget?
-    @State private var choices: [PlaceMatch] = []
+    @StateObject private var places = PlaceCompleter()
 
     var body: some View {
         NavigationStack {
@@ -292,9 +292,9 @@ struct SitesSheet: View {
                 }.listRowBackground(theme.card)
                 Section("Add a site") {
                     TextField("A place name", text: $name).submitLabel(.search)
-                        .task(id: name) { choices = await PlaceSearch.matches(typed: name) }
+                        .onChange(of: name) { places.update(name, near: store.site) }
                     if let message { Text(message).font(.footnote) }
-                    PlaceChoices(matches: choices) { store.addSite($0.site); name = ""; choices = [] }
+                    PlaceChoices(places: places) { site in store.addSite(site); name = "" }
                 }.listRowBackground(theme.card)
             }
             .sheet(item: $horizonSite) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
@@ -373,16 +373,18 @@ struct SettingsScreen: View {
     }
 }
 
-/// The places a search found, each with where it is; tapping one adds it.
+/// The suggestions for what has been typed, each with where it is; tapping one looks it up and adds it.
 struct PlaceChoices: View {
-    let matches: [PlaceMatch]
-    let pick: (PlaceMatch) -> Void
+    @ObservedObject var places: PlaceCompleter
+    let pick: (Site) -> Void
     var body: some View {
-        ForEach(matches) { m in
-            Button { pick(m) } label: {
+        ForEach(places.suggestions, id: \.self) { m in
+            Button {
+                Task { if let s = await PlaceCompleter.site(for: m) { places.clear(); pick(s) } }
+            } label: {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(m.site.name)
-                    if !m.detail.isEmpty { Text(m.detail).font(.caption).secondary() }
+                    Text(m.title)
+                    if !m.subtitle.isEmpty { Text(m.subtitle).font(.caption).secondary() }
                 }
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             }

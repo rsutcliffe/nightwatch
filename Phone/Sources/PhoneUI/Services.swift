@@ -31,35 +31,45 @@ public final class LocationProvider: NSObject, ObservableObject, CLLocationManag
     }
 }
 
-/// One candidate for "add a site": the site plus where it is, so two places with one name can be told apart.
-public struct PlaceMatch: Identifiable {
-    public let site: Site
-    public let detail: String
-    public var id: String { "\(site.name)|\(site.latitude)|\(site.longitude)" }
-}
+/// Search-as-you-type for "add a site": Apple's completer, biased to the region around `near` so a UK name is not buried by its
+/// namesakes abroad, and showing places and outdoor spots (parks, car parks, camp sites, museums) but not shops or services.
+@MainActor
+public final class PlaceCompleter: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published public private(set) var suggestions: [MKLocalSearchCompletion] = []
+    private let completer = MKLocalSearchCompleter()
 
-/// Finds places by name for "add a site". The user picks one; the site can be renamed afterwards.
-public enum PlaceSearch {
-    /// For a search-as-you-type field: waits for a pause in typing (a newer keystroke cancels this one), ignores short text.
-    public static func matches(typed text: String) async -> [PlaceMatch] {
-        let t = text.trimmingCharacters(in: .whitespaces)
-        guard t.count >= 3 else { return [] }
-        try? await Task.sleep(for: .milliseconds(400))
-        return Task.isCancelled ? [] : await matches(t)
+    public override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = [.address, .pointOfInterest]
+        completer.pointOfInterestFilter = MKPointOfInterestFilter(including: [.park, .nationalPark, .campground, .parking, .beach, .museum, .university, .library, .marina])
     }
 
-    public static func matches(_ text: String) async -> [PlaceMatch] {
-        let req = MKLocalSearch.Request()
-        req.naturalLanguageQuery = text
-        guard let items = try? await MKLocalSearch(request: req).start().mapItems else { return [] }
-        return items.prefix(6).map { item in
-            let pm = item.placemark
-            let loc = pm.location ?? CLLocation(latitude: pm.coordinate.latitude, longitude: pm.coordinate.longitude)
-            let where_ = [pm.locality, pm.administrativeArea, pm.country].compactMap { $0 }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
-            return PlaceMatch(site: Site(name: item.name ?? text, latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude,
-                                         elevationM: max(0, loc.altitude), timeZoneID: pm.timeZone?.identifier ?? TimeZone.current.identifier, bortle: 5),
-                              detail: where_.joined(separator: ", "))
+    public func update(_ text: String, near site: Site?) {
+        let t = text.trimmingCharacters(in: .whitespaces)
+        if let site {
+            completer.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: site.latitude, longitude: site.longitude),
+                                                  span: MKCoordinateSpan(latitudeDelta: 8, longitudeDelta: 8))
         }
+        if t.count < 2 { suggestions = []; completer.queryFragment = ""; return }
+        completer.queryFragment = t
+    }
+
+    public func clear() { suggestions = []; completer.queryFragment = "" }
+
+    public nonisolated func completerDidUpdateResults(_ c: MKLocalSearchCompleter) {
+        let r = c.results
+        Task { @MainActor in self.suggestions = Array(r.prefix(8)) }
+    }
+    public nonisolated func completer(_ c: MKLocalSearchCompleter, didFailWithError e: Error) {}
+
+    /// The chosen suggestion as a site, with its real coordinate.
+    public static func site(for completion: MKLocalSearchCompletion) async -> Site? {
+        guard let item = try? await MKLocalSearch(request: MKLocalSearch.Request(completion: completion)).start().mapItems.first else { return nil }
+        let pm = item.placemark
+        let loc = pm.location ?? CLLocation(latitude: pm.coordinate.latitude, longitude: pm.coordinate.longitude)
+        return Site(name: item.name ?? completion.title, latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude,
+                    elevationM: max(0, loc.altitude), timeZoneID: pm.timeZone?.identifier ?? TimeZone.current.identifier, bortle: 5)
     }
 }
 
