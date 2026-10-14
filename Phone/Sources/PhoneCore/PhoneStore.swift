@@ -81,6 +81,9 @@ public final class PhoneStore: ObservableObject {
     @Published public private(set) var darkSites: [DarkSite] = []
     @Published public private(set) var sitePlans: [SitePlan] = []
     @Published public private(set) var bestAway: SitePlan?
+    /// Tonight's plan at home, for the dark-site cards to compare with: the plan in view when home is where you are, else home's own
+    /// (its forecast is fetched and kept 30 minutes, as a dark site's is).
+    @Published public private(set) var homePlan: NightPlan?
     /// True while the list is being worked out (car parks, town names and forecasts are looked up one at a time).
     @Published public private(set) var darkSitesWorking = false
     /// The last run left out the forecasts and lookups because the connection is costly or constrained.
@@ -358,9 +361,23 @@ public final class PhoneStore: ObservableObject {
     }
 
     public var isAway: Bool { config.isAway(auto: nil) }
+    public var homeSite: Site? { config.homeSite(auto: nil) }
     public var homeLabel: String { config.homeSite(auto: nil)?.name ?? "home" }
     public var visitingSite: Site? { config.visiting }
     public var distanceUnit: DistanceUnit { config.darkSites.unit }
+
+    /// While away, tonight's plan at home: its forecast kept in home-forecast.json (30 minutes fresh, gone after 24 hours) and fetched only on a
+    /// cheap connection, never asking for Apple Weather. At home it is simply the plan in view.
+    private func updateHomePlan(now: Date, cheap: Bool) async {
+        guard isAway, let home = homeSite else { homePlan = planning?.tonight; return }
+        let cache = ForecastStore(url: directory.appendingPathComponent("home-forecast.json"))
+        var fc = cache.load().flatMap { ForecastStore.matches($0, site: home) ? $0 : nil }
+        let stale = fc.map { now.timeIntervalSince($0.fetchedAt) > 30 * 60 } ?? true
+        if stale, cheap, let fresh = try? await provider(home, now, false) { fc = fresh; try? cache.save(fresh) }
+        guard let f = fc, now.timeIntervalSince(f.fetchedAt) <= 24 * 3600, let night = try? Ephemeris.currentNight(now: now, site: home) else { homePlan = nil; return }
+        homePlan = Planner.plan(night: night, forecast: f, catalog: Catalog(objects: []), constellations: [], site: home,
+                                fov: config.fov, rule: config.goRule, bright: config.brightNights)
+    }
 
     /// Waits for the dark-sites run a refresh started (tests, and anything that needs the finished list).
     public func darkSitesFinished() async { await darkTask?.value }
@@ -392,6 +409,8 @@ public final class PhoneStore: ObservableObject {
         let cheap = connectivity.allowsOptionalDownloads
         darkSitesSkipped = !cheap
         let retry = now.timeIntervalSince(darkFailedAt ?? .distantPast) >= 3600
+        await updateHomePlan(now: now, cheap: cheap)
+        guard gen == darkGeneration else { return }
 
         // A computed spot is moved to the nearest dark car park, and is left out until one is known (and when there is none).
         var sites: [DarkSite] = [], seen = Set<String>()
@@ -449,7 +468,7 @@ public final class PhoneStore: ObservableObject {
         guard gen == darkGeneration else { return }
         darkSites = sites   // set with the plans so a page never sees a new list beside old plans
         sitePlans = SiteComparison.sorted(plans)
-        bestAway = isAway ? nil : planning.flatMap { SiteComparison.bestAway(home: $0.tonight, sites: plans) }
+        bestAway = homePlan.flatMap { SiteComparison.bestAway(home: $0, sites: plans) }   // against home, as the cards are
         CachePruning.prune(directory: cacheDir, keepIDs: Set(sites.map(\.id)), now: now)
     }
 

@@ -71,13 +71,15 @@ struct DarkSiteCard: View {
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" +
                  (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? "")).font(.caption).secondary()
-            if let here = store.site, !store.isAway {
+            // Compared with home, not with whichever site is in view: while away, "at home" would be the wrong place.
+            if let home = store.homeSite {
                 let sky = s.bortle.map { "Bortle \($0)" } ?? s.band?.displayName ?? "darkness unknown"
-                if !plan.forecastMissing, let home = store.planning?.tonight {
-                    Text("Score \(plan.score) vs \(home.score) at home · \(sky), home Bortle \(here.bortle)").font(.caption)
-                        .foregroundStyle(plan.score >= home.score + 20 ? theme.accent : theme.textSecondary)
+                let atHome = store.isAway ? "at \(store.homeLabel) (home)" : "at home"
+                if !plan.forecastMissing, let hp = store.homePlan {
+                    Text("Score \(plan.score) vs \(hp.score) \(atHome) · \(sky), home Bortle \(home.bortle)").font(.caption)
+                        .foregroundStyle(plan.score >= hp.score + 20 ? theme.accent : theme.textSecondary)
                 } else {
-                    Text("\(sky), home Bortle \(here.bortle)").font(.caption).secondary()
+                    Text("\(sky), home Bortle \(home.bortle)").font(.caption).secondary()
                 }
             }
             if s.isComputed { Text("Found from light-pollution data: check access and park considerately.").font(.caption).secondary() }
