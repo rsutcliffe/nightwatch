@@ -11,11 +11,13 @@ struct HorizonDial: View {
     let openDeg: Double
     @Environment(\.phoneTheme) private var theme
 
-    private func sector(_ i: Int, height: Double, in r: CGFloat, centre c: CGPoint) -> Path {
+    /// The band of sector `i` from `from` degrees up to `height` degrees, seen from above (the rim is 0, the centre 90).
+    private func sector(_ i: Int, from: Double = 0, height: Double, in r: CGFloat, centre c: CGPoint) -> Path {
+        let outer = r * (1 - CGFloat(min(90, max(0, from)) / 90))
         let inner = r * (1 - CGFloat(min(90, max(0, height)) / 90))
         let start = Angle.degrees(Double(i) * 45 - 22.5 - 90), end = Angle.degrees(Double(i) * 45 + 22.5 - 90)
         var p = Path()
-        p.addArc(center: c, radius: r, startAngle: start, endAngle: end, clockwise: false)
+        p.addArc(center: c, radius: outer, startAngle: start, endAngle: end, clockwise: false)
         p.addArc(center: c, radius: inner, startAngle: end, endAngle: start, clockwise: true)
         p.closeSubpath()
         return p
@@ -28,7 +30,11 @@ struct HorizonDial: View {
             if let t = terrain, t.count == 8 {
                 for i in 0..<8 where t[i] > 0 { ctx.fill(sector(i, height: t[i], in: r, centre: c), with: .color(theme.terrain)) }
             }
-            for i in 0..<8 where heights[i] > 0 { ctx.fill(sector(i, height: heights[i], in: r, centre: c), with: .color(theme.blocked)) }
+            // Below the go rule's height nothing changes whatever stands there: a faint band. Only what rises above it blocks the sky.
+            ctx.fill(Path { p in p.addArc(center: c, radius: r, startAngle: .zero, endAngle: .degrees(360), clockwise: false)
+                             p.addArc(center: c, radius: r * (1 - CGFloat(openDeg / 90)), startAngle: .degrees(360), endAngle: .zero, clockwise: true) },
+                     with: .color(theme.textPrimary.opacity(0.04)), style: FillStyle(eoFill: true))
+            for i in 0..<8 where heights[i] > openDeg { ctx.fill(sector(i, from: openDeg, height: heights[i], in: r, centre: c), with: .color(theme.blocked)) }
             let ring = r * (1 - CGFloat(openDeg / 90))
             ctx.stroke(Path(ellipseIn: CGRect(x: c.x - ring, y: c.y - ring, width: 2 * ring, height: 2 * ring)), with: .color(theme.textPrimary.opacity(0.7)),
                        style: StrokeStyle(lineWidth: 1, dash: [4, 4]))

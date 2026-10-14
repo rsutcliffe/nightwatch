@@ -49,7 +49,7 @@ public struct PhoneTheme: Equatable, Sendable {
         tickCloudy: Color.white.opacity(0.31), tickPartCloud: Color.white.opacity(0.47), tickDaylight: Color.white.opacity(0.12),
         ring: Color.white.opacity(0.09),
         heroClear: [Color(hex: 0x1A2750), Color(hex: 0x1C1F27)], heroDull: [Color(hex: 0x262932), Color(hex: 0x1C1F27)],
-        highlight: Color.white.opacity(0.14), skyTop: Color(hex: 0x0B1030), tile: Color(hex: 0x1A1D26, opacity: 0.92), outline: Color(hex: 0x272A34), bestLine: Color(hex: 0xCDD2DC), blocked: Color.white.opacity(0.28), terrain: Color(hex: 0xB07A45, opacity: 0.55))
+        highlight: Color.white.opacity(0.14), skyTop: Color(hex: 0x0B1030), tile: Color(hex: 0x1A1D26, opacity: 0.92), outline: Color(hex: 0x272A34), bestLine: Color(hex: 0xCDD2DC), blocked: Color.white.opacity(0.28), terrain: Color(hex: 0xB07A45, opacity: 0.30))
 
     /// Red on black and nothing else, so dark adaptation survives. No yellow: a warning is drawn with a dashed outline and a "!".
     public static let red = PhoneTheme(
