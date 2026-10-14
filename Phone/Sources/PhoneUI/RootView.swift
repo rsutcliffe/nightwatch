@@ -168,6 +168,13 @@ public struct RootView: View {
         }
         .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
         .sheet(item: $showHorizon) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
+        // While the app is open and aurora alerts are on: look every 5 minutes (the sources' own gaps still apply).
+        .task(id: store.config.aurora.enabled) {
+            while store.config.aurora.enabled, !Task.isCancelled {
+                await store.pollAurora(connectivity: connectivity.current)
+                try? await Task.sleep(for: .seconds(300))
+            }
+        }
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
         .phoneTheme(theme)
         .environment(\.allowsOptionalDownloads, connectivity.current.allowsOptionalDownloads)
@@ -424,6 +431,18 @@ struct SettingsScreen: View {
                 }
             } header: { Text("Dark sites") } footer: {
                 Text("Darker places within this distance of where you observe, with tonight's forecast for the nearest eight.")
+            }.listRowBackground(theme.card)
+            Section {
+                Toggle("Alert me to aurora when the sky is clear", isOn: Binding(get: { store.config.aurora.enabled },
+                                                                                  set: { store.config.aurora.enabled = $0; store.saveConfig(); Task { await store.pollAurora() } }))
+                if store.config.aurora.enabled {
+                    Picker("Alert from", selection: Binding(get: { store.config.aurora.threshold }, set: { store.config.aurora.threshold = $0; store.saveConfig() })) {
+                        ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).tag($0) }
+                    }
+                    .sensoryFeedback(.selection, trigger: store.config.aurora.threshold)
+                }
+            } header: { Text("Aurora") } footer: {
+                Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University). Elsewhere, NOAA's 30-minute aurora forecast for your site: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit, and quiet hours apply. With no server behind it, the phone checks while Nightwatch is open, and when iOS lets it refresh in the background, so an alert can come late, or not at all, when the app is closed. The Mac app, left running, is the dependable one.")
             }.listRowBackground(theme.card)
             Section {
                 Toggle("Red night mode", isOn: $red)

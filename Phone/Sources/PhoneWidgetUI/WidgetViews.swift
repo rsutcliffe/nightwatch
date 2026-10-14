@@ -67,6 +67,16 @@ public struct NightwatchWidgetView: View {
 
     private func stale(_ s: WidgetSnapshot) -> String? { s.staleText(now: now) }
 
+    /// "Aurora amber" in the level's own colour (one hue in red mode), while the status is under an hour old.
+    @ViewBuilder private func auroraLine(_ s: WidgetSnapshot) -> some View {
+        if let l = s.auroraLine(now: now) {
+            HStack(spacing: 5) {
+                Circle().fill(red ? accent : Color(hex: l.hex)).frame(width: 7, height: 7)
+                Text(l.text).font(.caption.weight(.medium)).foregroundStyle(text).lineLimit(1)
+            }
+        }
+    }
+
     private func small(_ s: WidgetSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center) {
@@ -75,7 +85,8 @@ public struct NightwatchWidgetView: View {
             }
             Text(plain(s.headline)).font(.footnote.weight(.semibold)).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.8)
             if let w = s.windowShort ?? s.window { Text(plain(w)).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7) }
-            Text(plain(stale(s) ?? s.notifyShort ?? s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1)
+            if s.auroraLine(now: now) != nil { auroraLine(s) }
+            else { Text(plain(stale(s) ?? s.notifyShort ?? s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -90,6 +101,7 @@ public struct NightwatchWidgetView: View {
                 Text(plain(s.headline)).font(.subheadline.weight(.semibold)).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.8)
                 if let w = s.window { Text(plain(w)).font(.footnote.weight(.medium)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
                 if !s.bars.isEmpty { bars(s.bars).padding(.vertical, 2) }
+                auroraLine(s)
                 if !s.targets.isEmpty {
                     Text(plain(s.targets.prefix(2).map { "\($0.catalogueID) \($0.best)" }.joined(separator: " · "))).font(.caption).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
                 }
@@ -111,4 +123,8 @@ public struct NightwatchWidgetView: View {
         }
         .accessibilityHidden(true)
     }
+}
+
+private extension Color {
+    init(hex: UInt32) { self.init(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255) }
 }

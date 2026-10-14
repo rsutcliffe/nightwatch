@@ -89,6 +89,15 @@ struct NightwatchPhoneApp: App {
             try? ForecastStore(url: demoDir.appendingPathComponent("forecast.json")).save(
                 DemoData.forecast(fetchedAt: clock().addingTimeInterval(-7200), from: Calendar.current.startOfDay(for: clock())))
         }
+        // `-demoAurora amber` (or yellow, red) makes AuroraWatch UK report that level, and turns aurora alerts on, for screenshots.
+        let demoAurora = demo ? value("-demoAurora") : nil
+        let feeds: @Sendable (URL) async throws -> Data = { url in
+            if let level = demoAurora, url == AuroraWatch.url {
+                let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+                return Data("<current_status><updated><datetime>\(f.string(from: clock()))</datetime></updated><site_status project_id=\"project:AWN\" site_id=\"site:AWN\" status_id=\"\(level)\"/></current_status>".utf8)
+            }
+            return try await URLSessionFetcher().get(url)
+        }
         var sink: (@Sendable (WidgetSnapshot) -> Void)?
         if !demo { sink = { snapshot in WidgetShare.save(snapshot); WidgetCenter.shared.reloadAllTimelines() } }
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
@@ -98,7 +107,8 @@ struct NightwatchPhoneApp: App {
             return try await ForecastService.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
-           widgetSink: sink)
+           feeds: feeds, widgetSink: sink)
+        if demoAurora != nil { s.config.aurora.enabled = true; s.config.aurora.threshold = .yellow }
         if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
         if demo, args.contains("-demoHorizon") {   // a site with trees to the north-east and hills to the west, and the hills already looked up
             if let i = s.config.sites.firstIndex(where: { $0.name == DemoData.site.name }) {

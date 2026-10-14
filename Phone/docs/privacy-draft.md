@@ -29,6 +29,8 @@ To read the forecast, Nightwatch sends **the coordinates of a saved site**:
   for the nearest car park and town to each dark spot found near your site, and draws a small map of each.
 - **Open-Meteo (elevation)**, once per saved site, with its coordinates, to find the hills around it (Horizon).
 - **Sky pictures** (CDS Strasbourg) and **the Moon's picture** (NASA): the position of a target or the time, never you.
+- **AuroraWatch UK** (Lancaster University) or **NOAA's Space Weather Prediction Center**, only if you turn aurora alerts on: the app downloads the
+  current aurora status. Nothing about you is sent; NOAA's file is a worldwide grid, and the app reads your site's cell from it on the device.
 - **CelesTrak** and the **Minor Planet Center**: nothing about you is sent; the app downloads the space station's and
   comets' orbit data, no more than every two hours and daily.
 

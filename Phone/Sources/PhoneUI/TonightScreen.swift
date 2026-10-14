@@ -64,6 +64,26 @@ public struct TonightScreen: View {
         .heroSurface(clear: clearNight, padding: scale == .compact ? 16 : 20, figure: clearNight ? nil : figureArt)
     }
 
+    /// Aurora, when alerts are on and it is at or above your level and under an hour old, naming its source and linking to it (AuroraWatch UK's
+    /// terms ask for that). The level keeps the source's own colour, except in red mode, which has one hue.
+    @ViewBuilder private var auroraRow: some View {
+        if let line = snap.auroraLine(now: now), let a = snap.aurora {
+            Link(destination: a.source.link) {
+                HStack(spacing: 8) {
+                    Circle().fill(theme.isRed ? theme.accent : Color(hex: line.hex)).frame(width: 10, height: 10).accessibilityHidden(true)
+                    Text("\(line.text) · \(a.source.name)").font(.callout.weight(.medium)).foregroundStyle(theme.textPrimary)
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right").font(.footnote).secondary()
+                }
+                .padding(.horizontal, 12).frame(minHeight: 44)
+                .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+            }
+            .buttonStyle(PressStyle())
+            .accessibilityLabel("\(line.text), from \(a.source.name). Opens their page.")
+        }
+    }
+
     private func bars(height: CGFloat) -> some View {
         Card { ClearSkyBarsView(bars: snap.bars, caption: snap.barsLabel, trackHeight: height) }
     }
@@ -118,6 +138,7 @@ public struct TonightScreen: View {
             visit
             verdict(.compact)
             bars(height: 37)
+            auroraRow
             TilesView(tiles: model.tiles)
             targets()
             tomorrowCard
@@ -135,6 +156,7 @@ public struct TonightScreen: View {
                 verdict(.medium).frame(maxWidth: .infinity)
                 bars(height: 70).frame(maxWidth: .infinity)
             }
+            auroraRow
             TilesView(tiles: model.tiles, columns: width >= 760 ? 6 : 3)
             targets(height: width >= 760 ? 230 : 170)
             tomorrowCard
@@ -146,7 +168,7 @@ public struct TonightScreen: View {
         VStack(alignment: .leading, spacing: 20) {
             if offline { offlineNote }
             HStack(alignment: .top, spacing: 24) {
-                VStack(alignment: .leading, spacing: 20) { header; visit; verdict(.large); bars(height: 90); tomorrowCard }.frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 20) { header; visit; verdict(.large); bars(height: 90); auroraRow; tomorrowCard }.frame(maxWidth: .infinity)
                 VStack(alignment: .leading, spacing: 20) { TilesView(tiles: model.tiles, columns: 2); targets(height: 190) }.frame(maxWidth: .infinity)
             }
             footer
