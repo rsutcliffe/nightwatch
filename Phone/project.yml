@@ -29,6 +29,9 @@ targets:
       - path: App/Resources/Events           # Milky Way and no-events art, likewise
         type: folder
         buildPhase: resources
+      - path: App/Resources/LightPollution   # the Mac app's world light-pollution grid (VIIRS data, credited in the README); SkyCore carries only Britain's
+        type: folder
+        buildPhase: resources
       - path: App/Resources/Backdrop         # the Milky Way photograph behind Tonight (Unsplash License; credited in the README)
         type: folder
         buildPhase: resources

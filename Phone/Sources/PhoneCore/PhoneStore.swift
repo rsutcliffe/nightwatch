@@ -90,7 +90,11 @@ public final class PhoneStore: ObservableObject {
     private let widgetSink: (@Sendable (WidgetSnapshot) -> Void)?
     private let certified: [CertifiedSite]
     private var grids: [LPGrid] { Self.lightPollution }
-    private static let lightPollution = LPGrids.bundled()
+    /// Britain's grid from SkyCore, and the world's from the app's own resources, as the Mac does: SkyCore carries only Britain's.
+    private static let lightPollution: [LPGrid] = {
+        let world = Bundle.main.url(forResource: "world", withExtension: "lpgrid", subdirectory: "LightPollution").flatMap(LPGrids.load)
+        return LPGrids.finestFirst(LPGrids.bundled() + (world.map { [$0] } ?? []))
+    }()
     private var spotPlaces: [String: String] = [:]               // town name by computed spot id; "" where Apple Maps has none
     private var spotPublic: [String: PublicPlace?] = [:]          // car park by computed spot id; nil inside: none within reach
     private var darkFailedAt: Date?
@@ -384,6 +388,7 @@ public final class PhoneStore: ObservableObject {
         let radiusKm = config.darkSites.radiusKm, certified = certified, grids = grids
         let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
         guard gen == darkGeneration else { return }
+        NSLog("Nightwatch dark sites: run \(gen) found \(found.count) (\(found.filter { $0.isComputed }.count) computed) within \(Int(radiusKm)) km of \(site.name)")
         let cheap = connectivity.allowsOptionalDownloads
         darkSitesSkipped = !cheap
         let retry = now.timeIntervalSince(darkFailedAt ?? .distantPast) >= 3600
@@ -396,7 +401,7 @@ public final class PhoneStore: ObservableObject {
                 do {
                     spotPublic[s.id] = .some(try await lookups.publicPlace(s.coordinate, s.band, grids))
                     Self.write(spotPublic, to: directory.appendingPathComponent("spot-public.json"))
-                } catch { darkFailedAt = now }
+                } catch { darkFailedAt = now; NSLog("Nightwatch dark sites: car park lookup failed: \(error)") }
                 guard gen == darkGeneration else { return }
             }
             guard let entry = spotPublic[s.id], let p = entry else { continue }
@@ -408,6 +413,7 @@ public final class PhoneStore: ObservableObject {
                                   band: LPGrids.radiance(at: c, in: grids).map(DarknessBand.from) ?? s.band, bortle: nil, source: nil, isComputed: true))
         }
         sites = DarkSites.withoutDuplicates(sites).sorted { $0.distanceKm < $1.distanceKm }
+        NSLog("Nightwatch dark sites: run \(gen) kept \(sites.count) after car parks (retry allowed: \(retry), cheap: \(cheap), known entries: \(spotPublic.count))")
 
         // Every car park carries its town, so two "Car park"s can be told apart: "Car park near Kettlewell".
         for s in sites where s.isComputed && spotPlaces[s.id] == nil && cheap && retry {
