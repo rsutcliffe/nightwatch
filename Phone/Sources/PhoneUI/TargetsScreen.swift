@@ -93,6 +93,7 @@ struct TargetGroupScreen: View {
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
         .toggleStyle(PhoneToggleStyle())
+        .scrollDismissesKeyboard(.interactively)
         .background { StarField(seed: group.rawValue).ignoresSafeArea() }
         .searchable(text: $query, prompt: "M42, Orion, comet")
         .navigationTitle(group.displayName)

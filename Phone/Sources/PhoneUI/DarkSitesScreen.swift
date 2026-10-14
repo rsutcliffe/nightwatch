@@ -88,17 +88,22 @@ struct DarkSiteCard: View {
             } else {
                 Text("No clear window tonight.").font(.caption).secondary()
             }
-            HStack {
-                if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
-                Spacer()
-                Button("Open in Maps") { openMaps(s) }.buttonStyle(PressStyle()).font(.callout.weight(.medium)).frame(minHeight: 44)
-                Button("Observe from here") { Haptic.impact(.medium); store.visit(s) }.buttonStyle(PressStyle()).font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44).padding(.leading, 8)
-            }
+            actions(s)
         }
         .padding(12)
         .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
         .accessibilityElement(children: .contain)
+    }
+
+    private func actions(_ s: DarkSite) -> some View {
+        HStack {
+            if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
+            Spacer()
+            Button("Open in Maps") { openMaps(s) }.buttonStyle(PressStyle()).font(.callout.weight(.medium)).frame(minHeight: 44)
+            Button("Observe from here") { Haptic.impact(.medium); store.visit(s) }.buttonStyle(PressStyle())
+                .font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44).padding(.leading, 8)
+        }
     }
 
     /// Apple Maps at the site, pinned and labelled with its name.

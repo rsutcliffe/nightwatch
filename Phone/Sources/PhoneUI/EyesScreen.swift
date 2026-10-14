@@ -33,6 +33,7 @@ struct EyesScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background { StarField(seed: "eyes").ignoresSafeArea() }
         .searchable(text: $query, prompt: "Orion, Pleiades, Moon")
         .navigationTitle("Eyes and binoculars")

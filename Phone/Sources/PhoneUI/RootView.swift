@@ -225,23 +225,33 @@ struct FirstRunScreen: View {
     @State private var message: String?
     @State private var busy = false
     @StateObject private var places = PlaceCompleter()
+    @FocusState private var typing: Bool
     @Environment(\.phoneTheme) private var theme
 
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Text("Is tonight a night to observe?").font(.title2.weight(.medium)).multilineTextAlignment(.center)
+        // The place field is the whole point of this screen, so it takes focus on arrival; the buttons are a bottom inset, which rides up
+        // with the keyboard, and dragging the page down puts the keyboard away.
+        ScrollView {
+            VStack(spacing: 16) {
+                Text("Is tonight a night to observe?").font(.title2.weight(.medium)).multilineTextAlignment(.center)
             Text("Nightwatch reads the sky forecast and tells you, then alerts you. Where do you observe from?")
                 .font(.callout).secondary().multilineTextAlignment(.center)
-            TextField("A place name", text: $name).textFieldStyle(.roundedBorder).submitLabel(.search).onSubmit(add)
-                .onChange(of: name) { places.update(name, near: store.site) }
-            if let message { Text(message).font(.footnote).foregroundStyle(theme.warning) }
-            PlaceChoices(places: places) { site in store.addSite(site); name = "" }
-            Spacer()
-            SecondaryButton(title: "Use this device's location", systemImage: "location") { useLocation() }
-            PrimaryButton(title: busy ? "Searching" : "Add this place", action: add)
+                TextField("A place name", text: $name).textFieldStyle(.roundedBorder).submitLabel(.search).onSubmit(add).focused($typing)
+                    .onChange(of: name) { places.update(name, near: store.site) }
+                if let message { Text(message).font(.footnote).foregroundStyle(theme.warning) }
+                PlaceChoices(places: places) { site in store.addSite(site); name = "" }
+            }
+            .padding(20).padding(.top, 60).frame(maxWidth: 520).frame(maxWidth: .infinity)
         }
-        .padding(20).frame(maxWidth: 520)
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 12) {
+                SecondaryButton(title: "Use this device's location", systemImage: "location") { useLocation() }
+                PrimaryButton(title: busy ? "Searching" : "Add this place", action: add)
+            }
+            .padding(20).frame(maxWidth: 520).frame(maxWidth: .infinity)
+        }
+        .task { try? await Task.sleep(for: .milliseconds(600)); typing = true }
     }
 
     private func add() {
@@ -306,6 +316,7 @@ struct SitesSheet: View {
                 }.listRowBackground(theme.card)
             }
             .sheet(item: $horizonSite) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
+            .scrollDismissesKeyboard(.interactively)
             .scrollContentBackground(.hidden).background(theme.background)
             .navigationBarTitleDisplayModeInline()
             .toolbar {

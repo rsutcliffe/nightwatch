@@ -126,6 +126,7 @@ struct EventsScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background { StarField(seed: "events").ignoresSafeArea() }
         .searchable(text: $query, prompt: "Perseids, eclipse, Moon")
         .navigationTitle("Events")

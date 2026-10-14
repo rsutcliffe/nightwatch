@@ -18,14 +18,15 @@ public struct PressStyle: ButtonStyle {
 /// Declarative `.sensoryFeedback` stays where a value on screen changes; this is for actions. iOS drops them itself when the device has
 /// haptics turned off.
 enum Haptic {
+    enum Weight { case light, medium }
     #if canImport(UIKit)
     static func selection() { UISelectionFeedbackGenerator().selectionChanged() }
-    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) { UIImpactFeedbackGenerator(style: style).impactOccurred() }
+    static func impact(_ weight: Weight = .light) { UIImpactFeedbackGenerator(style: weight == .light ? .light : .medium).impactOccurred() }
     static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
     #else
     static func selection() {}
-    static func impact(_ style: Int = 0) {}
+    static func impact(_ weight: Weight = .light) {}
     static func success() {}
     static func warning() {}
     #endif
