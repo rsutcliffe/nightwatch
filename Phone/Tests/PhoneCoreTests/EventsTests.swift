@@ -73,3 +73,18 @@ final class FeedCalls: @unchecked Sendable { var urls: [URL] = [] }
     #expect(s.target(withID: id)?.id == id)
     #expect(s.target(withID: "no-such-thing") == nil)
 }
+
+@MainActor @Test func aTargetsNameIsFoundFromTheWholeCatalogueNotOnlyTonightsList() async {
+    let s = store(on: utc(2026, 8, 12, 12), clock: Clock(utc(2026, 8, 12, 12)), feedCalls: FeedCalls())
+    await s.refresh()
+    #expect(s.targetName(id: "moon") == "Moon")
+    #expect(s.targetName(id: "planet-saturn") == "Saturn")
+    #expect(s.targetName(id: "no-such-thing") == nil)
+}
+
+@MainActor @Test func anAnswerWaitsForTheFirstPlanWhenAskedBeforeThePageExists() async {
+    let s = store(on: utc(2026, 8, 12, 12), clock: Clock(utc(2026, 8, 12, 12)), feedCalls: FeedCalls())
+    #expect(s.tonight == nil)                                  // as when an action launches the app in the background
+    let snap = await s.snapshotForAnswer()
+    #expect(snap != nil && snap?.siteName == "Sheffield")
+}

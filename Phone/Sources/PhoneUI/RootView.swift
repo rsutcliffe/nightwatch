@@ -175,9 +175,10 @@ public struct RootView: View {
                 try? await Task.sleep(for: .seconds(300))
             }
         }
-        .onOpenURL { url in
-            guard let link = WidgetLink(url: url) else { return }
-            store.pendingLink = link
+        .onOpenURL { url in if let link = WidgetLink(url: url) { store.pendingLink = link } }
+        // A link from the widget or from a Shortcut: show the page that handles it.
+        .onChange(of: store.pendingLink) { _, link in
+            guard let link else { return }
             let item: SidebarItem = link.phoneRoute == .plan ? .plan : .targets
             tab = item; selection = item
         }

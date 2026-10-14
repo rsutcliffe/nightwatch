@@ -99,7 +99,7 @@ struct NightwatchPhoneApp: App {
             return try await PhoneFetcher().get(url)
         }
         var sink: (@Sendable (WidgetSnapshot) -> Void)?
-        if !demo { sink = { snapshot in WidgetShare.save(snapshot); WidgetCenter.shared.reloadAllTimelines() } }
+        if !demo { sink = { snapshot in WidgetShare.save(snapshot); WidgetCenter.shared.reloadAllTimelines(); TonightIndex.update(snapshot) } }
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
             if demo, let wait = value("-demoSlow").flatMap(Double.init) { try await Task.sleep(for: .seconds(wait)) }   // hold the loading screen
             if args.contains("-demoOffline") { throw URLError(.notConnectedToInternet) }
@@ -133,6 +133,7 @@ struct NightwatchPhoneApp: App {
             }
             task.expirationHandler = { work.cancel() }
         }
+        IntentHost.store = s   // Siri and Shortcuts actions read this store
         _store = StateObject(wrappedValue: s)
     }
 
