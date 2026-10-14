@@ -100,17 +100,19 @@ struct DarkSiteCard: View {
         HStack {
             if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
             Spacer()
-            Button("Open in Maps") { openMaps(s) }.buttonStyle(PressStyle()).font(.callout.weight(.medium)).frame(minHeight: 44)
+            Button { Haptic.selection(); openMaps(s) } label: { Label("Open in Maps", systemImage: "map") }
+                .buttonStyle(PressStyle()).font(.callout.weight(.medium)).foregroundStyle(theme.accent).frame(minHeight: 44)
             Button("Observe from here") { Haptic.impact(.medium); store.visit(s) }.buttonStyle(PressStyle())
                 .font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44).padding(.leading, 8)
         }
     }
 
-    /// Apple Maps at the site, pinned and labelled with its name.
+    /// Apple Maps at the site, pinned and labelled with its name. A plain maps.apple.com link, which iOS and iPadOS both hand to Maps
+    /// (the MKMapItem call did nothing on the iPad).
     private func openMaps(_ s: DarkSite) {
-        let item = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: s.coordinate.latitude, longitude: s.coordinate.longitude)))
-        item.name = s.name
-        item.openInMaps()
+        var c = URLComponents(string: "https://maps.apple.com/")!
+        c.queryItems = [URLQueryItem(name: "ll", value: "\(s.coordinate.latitude),\(s.coordinate.longitude)"), URLQueryItem(name: "q", value: s.name)]
+        if let url = c.url { openURL(url) }
     }
 }
 
