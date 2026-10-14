@@ -349,6 +349,17 @@ struct SettingsScreen: View {
                 Text("A finish time (for sleep, or work the next day) shortens the clear window the plan uses, and keeps targets that are best after it out.")
             }.listRowBackground(theme.card)
             Section {
+                Toggle("Dark sites", isOn: Binding(get: { store.config.darkSites.enabled }, set: { v in store.setDarkSites { $0.enabled = v } }))
+                if store.config.darkSites.enabled {
+                    Stepper("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit))",
+                            value: Binding(get: { store.config.darkSites.radiusKm }, set: { v in store.setDarkSites { $0.radiusKm = v } }), in: 5...300, step: 5)
+                    PhoneSegmented(selection: Binding(get: { store.config.darkSites.unit }, set: { v in store.setDarkSites { $0.unit = v } }),
+                                   options: [("Kilometres", DistanceUnit.km), ("Miles", DistanceUnit.mi)])
+                }
+            } header: { Text("Dark sites") } footer: {
+                Text("Darker places within this distance of where you observe, with tonight's forecast for the nearest eight.")
+            }.listRowBackground(theme.card)
+            Section {
                 Toggle("Red night mode", isOn: $red)
             } header: { Text("Display") } footer: {
                 Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")

@@ -8,6 +8,7 @@ struct TargetsScreen: View {
     @Environment(\.phoneTheme) private var theme
     // `-demoOpen eyes` / `events` opens that page at launch, for screenshots in the Simulator.
     @State private var demoEyes = UserDefaults.standard.string(forKey: "demoOpen") == "eyes"
+    @State private var demoDark = UserDefaults.standard.string(forKey: "demoOpen") == "dark"
     @State private var demoEvents = ["events", "event"].contains(UserDefaults.standard.string(forKey: "demoOpen"))
 
     private var plan: NightPlan? { store.planning?.tonight }
@@ -25,11 +26,13 @@ struct TargetsScreen: View {
                         row(title: g.displayName, symbol: g.phoneSymbol, count: targets(in: g).count) { TargetGroupScreen(store: store, group: g) }.risesIn(i + 2)
                     }
                 }
+                row(title: "Dark sites", symbol: "mappin.and.ellipse", count: store.darkSites.count) { DarkSitesScreen(store: store) }.risesIn(TargetGroup.allCases.count + 2)
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
         .background { StarField(seed: "targets").ignoresSafeArea() }
         .navigationDestination(isPresented: $demoEyes) { EyesScreen(store: store) }
+        .navigationDestination(isPresented: $demoDark) { DarkSitesScreen(store: store) }
         .navigationDestination(isPresented: $demoEvents) { EventsScreen(store: store) }
     }
 

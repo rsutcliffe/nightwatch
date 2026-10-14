@@ -12,12 +12,13 @@ public struct TonightScreen: View {
     let onRefresh: () -> Void
     var alertsPrompt: AlertsPrompt? = nil
     var now: Date = .now
+    var visit: AnyView? = nil
     @Environment(\.phoneTheme) private var theme
     @Environment(\.dynamicTypeSize) private var typeSize
 
     public init(model: TonightModel, markData: Data?, offline: Bool, refreshing: Bool, onRefresh: @escaping () -> Void,
-                alertsPrompt: AlertsPrompt? = nil, now: Date = .now) {
-        self.alertsPrompt = alertsPrompt; self.now = now
+                alertsPrompt: AlertsPrompt? = nil, now: Date = .now, visit: AnyView? = nil) {
+        self.alertsPrompt = alertsPrompt; self.now = now; self.visit = visit
         self.model = model; self.markData = markData; self.offline = offline; self.refreshing = refreshing; self.onRefresh = onRefresh
     }
 
@@ -114,6 +115,7 @@ public struct TonightScreen: View {
         VStack(alignment: .leading, spacing: 14) {
             if offline { offlineNote }
             header
+            visit
             verdict(.compact)
             bars(height: 37)
             TilesView(tiles: model.tiles)
@@ -128,6 +130,7 @@ public struct TonightScreen: View {
         VStack(alignment: .leading, spacing: 20) {
             if offline { offlineNote }
             header
+            visit
             HStack(alignment: .top, spacing: 20) {
                 verdict(.medium).frame(maxWidth: .infinity)
                 bars(height: 70).frame(maxWidth: .infinity)
@@ -143,7 +146,7 @@ public struct TonightScreen: View {
         VStack(alignment: .leading, spacing: 20) {
             if offline { offlineNote }
             HStack(alignment: .top, spacing: 24) {
-                VStack(alignment: .leading, spacing: 20) { header; verdict(.large); bars(height: 90); tomorrowCard }.frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 20) { header; visit; verdict(.large); bars(height: 90); tomorrowCard }.frame(maxWidth: .infinity)
                 VStack(alignment: .leading, spacing: 20) { TilesView(tiles: model.tiles, columns: 2); targets(height: 190) }.frame(maxWidth: .infinity)
             }
             footer
