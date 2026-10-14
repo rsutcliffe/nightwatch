@@ -89,7 +89,7 @@ struct PlanScreen: View {
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(PressStyle())
-            Button { Haptic.selection(); store.setInPlan(t.id, on: false, tomorrow: tomorrow) } label: {
+            Button { Haptic.impact(.medium); store.setInPlan(t.id, on: false, tomorrow: tomorrow) } label: {
                 Text(item.added ? "Remove" : "Not tonight").font(.caption.weight(.medium)).padding(.horizontal, 10).frame(minHeight: 44)
                     .background(theme.track, in: RoundedRectangle(cornerRadius: 8))
             }.buttonStyle(PressStyle())

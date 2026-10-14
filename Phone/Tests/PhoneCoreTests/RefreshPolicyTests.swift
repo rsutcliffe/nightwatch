@@ -55,3 +55,15 @@ private func decide(age: TimeInterval, source: String? = "Apple Weather", force:
     #expect(!Connectivity(isConstrained: true).allowsOptionalDownloads)
     #expect(!Connectivity.offline.allowsOptionalDownloads)
 }
+
+@Test func wifiIsJudgedByTheWifiLinkEvenWhenCellularIsAvailableBesideIt() {
+    let busyDefault = Connectivity.Path(isOnline: true, isExpensive: true, isConstrained: false)   // iOS: expensive because cellular is on offer
+    let cleanWifi = Connectivity.Path(isOnline: true, isExpensive: false, isConstrained: false)
+    #expect(Connectivity.resolve(defaultPath: busyDefault, wifi: cleanWifi).allowsOptionalDownloads)
+    // A hotspot or a Low Data Mode network says so on its own Wi-Fi link.
+    #expect(Connectivity.resolve(defaultPath: busyDefault, wifi: Connectivity.Path(isOnline: true, isExpensive: true, isConstrained: false)).allowsOptionalDownloads == false)
+    #expect(Connectivity.resolve(defaultPath: busyDefault, wifi: Connectivity.Path(isOnline: true, isExpensive: false, isConstrained: true)).allowsOptionalDownloads == false)
+    // No Wi-Fi: cellular is costly.
+    #expect(Connectivity.resolve(defaultPath: busyDefault, wifi: nil).allowsOptionalDownloads == false)
+    #expect(Connectivity.resolve(defaultPath: busyDefault, wifi: Connectivity.Path(isOnline: false, isExpensive: false, isConstrained: false)).allowsOptionalDownloads == false)
+}

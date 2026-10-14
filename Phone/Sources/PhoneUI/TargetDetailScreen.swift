@@ -66,7 +66,7 @@ struct TargetDetailScreen: View {
         let inPlan = store.isInPlan(target.id)
         return PrimaryButton(title: inPlan ? "Take off tonight's plan" : "Add to tonight's plan") {
             store.setInPlan(target.id, on: !inPlan)
-            if inPlan { Haptic.selection() } else { Haptic.success() }
+            if inPlan { Haptic.impact(.medium) } else { Haptic.success() }
         }
     }
 

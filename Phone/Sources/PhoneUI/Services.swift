@@ -73,18 +73,39 @@ public final class PlaceCompleter: NSObject, ObservableObject, MKLocalSearchComp
     }
 }
 
-/// Watches the network path and reports it as PhoneCore's `Connectivity`.
+/// Watches the network paths and reports them as PhoneCore's `Connectivity` (see `Connectivity.resolve`).
 @MainActor
 public final class ConnectivityMonitor: ObservableObject {
     @Published public private(set) var current = Connectivity()
     private let monitor = NWPathMonitor()
+    private let wifiMonitor = NWPathMonitor(requiredInterfaceType: .wifi)
+    private var latestDefault: Connectivity.Path?
+    private var latestWifi: Connectivity.Path?
+
+    private nonisolated static func facts(_ p: NWPath) -> Connectivity.Path {
+        Connectivity.Path(isOnline: p.status == .satisfied, isExpensive: p.isExpensive, isConstrained: p.isConstrained)
+    }
+
+    private func update() {
+        guard let d = latestDefault else { return }
+        current = Connectivity.resolve(defaultPath: d, wifi: latestWifi)
+        NSLog("Nightwatch connection resolved: optional downloads \(current.allowsOptionalDownloads ? "allowed" : "waiting")")
+    }
 
     public init() {
         monitor.pathUpdateHandler = { [weak self] p in
-            let c = Connectivity(isOnline: p.status == .satisfied, isExpensive: p.isExpensive, isConstrained: p.isConstrained)
-            Task { @MainActor in self?.current = c }
+            let kinds = [NWInterface.InterfaceType.wifi, .cellular, .wiredEthernet, .other, .loopback].filter { p.usesInterfaceType($0) }
+            NSLog("Nightwatch connection: status=\(p.status) expensive=\(p.isExpensive) constrained=\(p.isConstrained) interfaces=\(kinds)")
+            let f = Self.facts(p)
+            Task { @MainActor in self?.latestDefault = f; self?.update() }
+        }
+        wifiMonitor.pathUpdateHandler = { [weak self] p in
+            NSLog("Nightwatch Wi-Fi path: status=\(p.status) expensive=\(p.isExpensive) constrained=\(p.isConstrained)")
+            let f = Self.facts(p)
+            Task { @MainActor in self?.latestWifi = f; self?.update() }
         }
         monitor.start(queue: .global(qos: .utility))
+        wifiMonitor.start(queue: .global(qos: .utility))
     }
-    deinit { monitor.cancel() }
+    deinit { monitor.cancel(); wifiMonitor.cancel() }
 }

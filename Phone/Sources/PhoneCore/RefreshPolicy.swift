@@ -16,6 +16,20 @@ public struct Connectivity: Equatable, Sendable {
 
     /// Anything bigger than a forecast (sky-survey thumbnails, a forecast for each dark site) waits for a cheap connection.
     public var allowsOptionalDownloads: Bool { isOnline && !isExpensive && !isConstrained }
+
+    /// What iOS says about one network path.
+    public struct Path: Equatable, Sendable {
+        public var isOnline: Bool, isExpensive: Bool, isConstrained: Bool
+        public init(isOnline: Bool, isExpensive: Bool, isConstrained: Bool) { self.isOnline = isOnline; self.isExpensive = isExpensive; self.isConstrained = isConstrained }
+    }
+
+    /// The default path says "expensive" whenever cellular is merely available beside Wi-Fi (seen on the owner's iPhone: Wi-Fi and cellular
+    /// both listed, expensive true, while on Wi-Fi). So when Wi-Fi is usable, judge by the Wi-Fi link alone: a hotspot or a Low Data Mode
+    /// network still reports itself expensive or constrained there. Without Wi-Fi, the default path decides.
+    public static func resolve(defaultPath: Path, wifi: Path?) -> Connectivity {
+        if let w = wifi, w.isOnline { return Connectivity(isOnline: true, isExpensive: w.isExpensive, isConstrained: w.isConstrained || defaultPath.isConstrained) }
+        return Connectivity(isOnline: defaultPath.isOnline, isExpensive: defaultPath.isExpensive, isConstrained: defaultPath.isConstrained)
+    }
 }
 
 public enum RefreshDecision: Equatable, Sendable {
