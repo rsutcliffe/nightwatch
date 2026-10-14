@@ -27,3 +27,11 @@ import SkyCore
         }
     }
 }
+
+@Test func theNumbersGuideReadsWithPlainHyphensOnly() {
+    #expect(NumbersGuide.entries.count >= 10)
+    for e in NumbersGuide.entries {
+        #expect(e.title.isEmpty == false && e.body.isEmpty == false)
+        #expect(e.title.plainDashes.contains("\u{2013}") == false && e.body.plainDashes.contains("\u{2013}") == false && e.body.plainDashes.contains("\u{2014}") == false)
+    }
+}

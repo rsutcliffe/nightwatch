@@ -475,6 +475,9 @@ struct SettingsScreen: View {
                 Text("The free forecast service allows 10,000 calls a day and 5,000 an hour, and refuses more until it resets (UTC midnight, about 01:00 British Summer Time). If it refuses, Nightwatch says so on Tonight and keeps the forecast it has.")
             }.listRowBackground(theme.card)
             Section {
+                NavigationLink { NumbersScreen() } label: { Label("What the numbers mean", systemImage: "questionmark.circle") }
+            }.listRowBackground(theme.card)
+            Section {
                 Toggle("Red night mode", isOn: $red)
             } header: { Text("Display") } footer: {
                 Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")
