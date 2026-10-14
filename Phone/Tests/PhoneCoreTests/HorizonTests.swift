@@ -104,3 +104,39 @@ final class TerrainCalls: @unchecked Sendable {
     #expect(store.config.sites[0].latitude == 53.4 && store.config.sites[0].longitude == -1.5)
     #expect(store.config.sites[0].terrain == nil)
 }
+
+final class HillCalls: @unchecked Sendable { var sites: [String] = []; var failure: Error? }
+
+@MainActor private func terrainStore(dir: URL, calls: HillCalls, names: [String]) -> PhoneStore {
+    let s = PhoneStore(directory: dir, provider: { site, now, _ in forecast(fetchedAt: now, site: site) }, scheduler: FakeScheduler(),
+                       clock: { utc(2026, 9, 23, 12) },
+                       terrain: { site in calls.sites.append(site.name); if let f = calls.failure { throw f }; return Array(repeating: 10, count: 8) },
+                       terrainPause: .milliseconds(1), occultations: false, darkLookups: nil)
+    s.config.sites = names.map { Site(name: $0, latitude: 53.4 + Double($0.count), longitude: -1.5, elevationM: 0, timeZoneID: "Europe/London", bortle: 4) }
+    return s
+}
+
+@MainActor @Test func hillsAreLookedUpOnceAndAFailureIsNotRetriedByARelaunchWithinADay() async {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("terrain-\(UUID().uuidString)")
+    let calls = HillCalls(); calls.failure = URLError(.timedOut)
+    let first = terrainStore(dir: dir, calls: calls, names: ["A"])
+    first.checkTerrain(); await first.terrainFinished()
+    #expect(calls.sites == ["A"])
+    let relaunch = terrainStore(dir: dir, calls: calls, names: ["A"])             // same folder, so the attempt is remembered
+    relaunch.checkTerrain(); await relaunch.terrainFinished()
+    #expect(calls.sites == ["A"])                                                  // not asked again
+    calls.failure = nil
+    relaunch.retryTerrain(siteNamed: "A"); await relaunch.terrainFinished()        // Try again overrides
+    #expect(calls.sites == ["A", "A"])
+    #expect(relaunch.config.sites[0].terrain != nil)
+    relaunch.checkTerrain(); await relaunch.terrainFinished()
+    #expect(calls.sites == ["A", "A"])                                             // hills found: never again
+}
+
+@MainActor @Test func aRefusalForTheFirstSiteStopsTheRunSoTheSecondIsNotAsked() async {
+    let dir = FileManager.default.temporaryDirectory.appendingPathComponent("terrain2-\(UUID().uuidString)")
+    let calls = HillCalls(); calls.failure = HTTPFailure(status: 429, reason: "Daily API request limit exceeded.")
+    let s = terrainStore(dir: dir, calls: calls, names: ["A", "BB"])
+    s.checkTerrain(); await s.terrainFinished()
+    #expect(calls.sites == ["A"])
+}

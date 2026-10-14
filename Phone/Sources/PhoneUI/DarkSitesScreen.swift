@@ -42,11 +42,13 @@ struct DarkSitesScreen: View {
                 ForEach(Array(SiteComparison.sorted(store.sitePlans, by: sort).enumerated()), id: \.element.id) { i, p in
                     DarkSiteCard(store: store, plan: p, nearestClear: p.id == nearest?.id).risesIn(i)
                 }
-                ForEach(store.darkSites.dropFirst(8)) { DarkSiteCard(store: store, plan: SitePlan.missing($0)) }
+                ForEach(store.darkSites.dropFirst(3)) { DarkSiteCard(store: store, plan: SitePlan.missing($0)) }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
         .background { StarField(seed: "dark-sites").ignoresSafeArea() }
+        .onAppear { store.darkSitesPage(open: true) }
+        .onDisappear { store.darkSitesPage(open: false) }
         .navigationTitle("Dark sites")
         .navigationBarTitleDisplayModeInline()
     }
@@ -86,7 +88,7 @@ struct DarkSiteCard: View {
             if let w = plan.primary, let here = store.site {
                 Text("Clear \(Copy.hhmm(w.start, site: here)) to \(Copy.hhmm(w.end, site: here)) · \(String(format: "%.1f h", w.hours))").font(.caption.weight(.medium)).monospacedDigit()
             } else if plan.forecastMissing {
-                Text("No forecast fetched (beyond the nearest eight, or offline)").font(.caption).secondary()
+                Text("No forecast fetched (beyond the nearest three, or offline)").font(.caption).secondary()
             } else {
                 Text("No clear window tonight.").font(.caption).secondary()
             }

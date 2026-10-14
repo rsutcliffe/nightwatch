@@ -449,7 +449,7 @@ struct SettingsScreen: View {
                                    options: [("Kilometres", DistanceUnit.km), ("Miles", DistanceUnit.mi)])
                 }
             } header: { Text("Dark sites") } footer: {
-                Text("Darker places within this distance of where you observe, with tonight's forecast for the nearest eight.")
+                Text("Darker places within this distance of where you observe. Tonight's forecast is read for the nearest three when you open the page.")
             }.listRowBackground(theme.card)
             Section {
                 Toggle("Alert me to aurora when the sky is clear", isOn: Binding(get: { store.config.aurora.enabled },

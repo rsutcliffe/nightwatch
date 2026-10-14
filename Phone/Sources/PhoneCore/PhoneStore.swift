@@ -67,6 +67,7 @@ public final class PhoneStore: ObservableObject {
     private let terrainFetcher: TerrainFetcher
     private let terrainPause: Duration
     private var terrainTask: Task<Void, Never>?
+    private var terrainAttempts: [String: Date] = [:]
     private var ledger = AlertLedger()
 
     /// Tonight's events (showers, eclipses, conjunctions, bright comets, space station passes, the Moon covering a star), with
@@ -94,6 +95,8 @@ public final class PhoneStore: ObservableObject {
     @Published public private(set) var darkSitesWorking = false
     /// The last run left out the forecasts and lookups because the connection is costly or constrained.
     @Published public private(set) var darkSitesSkipped = false
+    /// The Dark sites page is open: only then are forecasts fetched for the sites (the nearest three), to spare the forecast service.
+    @Published public private(set) var darkSitesOpen = false
     private let darkLookups: DarkLookups?
     /// Told after each plan is built, with what the home-screen widget should draw (the app writes it to the shared App Group).
     private let widgetSink: (@Sendable (WidgetSnapshot) -> Void)?
@@ -109,6 +112,8 @@ public final class PhoneStore: ObservableObject {
     private var darkFailedAt: Date?
     private var darkGeneration = 0
     private var retryTask: Task<Void, Never>?
+    /// What the connection last said, so work started from a page (Dark sites) respects it as a refresh does.
+    private var lastConnectivity = Connectivity()
     private var lastFailure: Error?   // for tests and the log
     private var darkFetchPausedUntil: Date?
     private var darkTask: Task<Void, Never>?
@@ -155,6 +160,7 @@ public final class PhoneStore: ObservableObject {
         feedAttempts = Self.read([String: Date].self, from: directory.appendingPathComponent("feed-attempts.json")) ?? [:]
         aurora = Self.read(AuroraStatus.self, from: directory.appendingPathComponent("aurora.json"))
         auroraState = Self.read(AuroraAlertState.self, from: directory.appendingPathComponent("aurora-state.json"))
+        terrainAttempts = Self.read([String: Date].self, from: directory.appendingPathComponent("terrain-attempts.json")) ?? [:]
         spotPlaces = Self.read([String: String].self, from: directory.appendingPathComponent("spot-places-v2.json")) ?? [:]
         spotPublic = Self.read([String: PublicPlace?].self, from: directory.appendingPathComponent("spot-public.json")) ?? [:]
     }
@@ -328,22 +334,27 @@ public final class PhoneStore: ObservableObject {
         config.sites[i].latitude = c.latitude
         config.sites[i].longitude = c.longitude
         config.sites[i].terrain = nil
+        forgetTerrainAttempt(name)   // a new place is a new lookup
         saveConfig()
         checkTerrain()
         if site?.name == name { Task { await refresh(force: true) } } else { replan() }
     }
 
     /// Look up the hills for every saved site that has none yet, one site at a time with a pause between, as the Mac does (the
-    /// elevation service answers 429 to quick runs). A failure is remembered for the launch; `retryTerrain` clears it.
+    /// elevation service answers 429 to quick runs). Hills do not change, so a site is looked up once, and a site that failed is not tried again
+    /// for a day (kept on disk, so a relaunch does not forget); `retryTerrain` is the person asking. A 429 stops the whole run at once: the
+    /// next site would be refused too.
     public func checkTerrain() {
         guard terrainTask == nil else { return }
         terrainTask = Task { [weak self] in
             guard let self else { return }
             var first = true
-            while let site = self.config.sites.first(where: { $0.terrain == nil && !self.terrainFailed.contains($0.name) }) {
+            while let site = self.config.sites.first(where: { $0.terrain == nil && !self.terrainFailed.contains($0.name) && !self.terrainTriedRecently($0.name) }) {
                 if !first { try? await Task.sleep(for: self.terrainPause) }
                 first = false
                 self.terrainChecking.insert(site.name)
+                self.terrainAttempts[site.name] = self.clock()
+                Self.write(self.terrainAttempts, to: self.directory.appendingPathComponent("terrain-attempts.json"))
                 do {
                     let heights = try await self.terrainFetcher(site)
                     if let i = self.config.sites.firstIndex(where: { $0.name == site.name }), self.config.sites[i].latitude == site.latitude,
@@ -351,17 +362,33 @@ public final class PhoneStore: ObservableObject {
                         self.config.sites[i].terrain = heights
                         self.saveConfig()
                     }
-                } catch { self.terrainFailed.insert(site.name) }
+                } catch {
+                    self.terrainFailed.insert(site.name)
+                    if (error as? HTTPFailure)?.isRateLimit == true { self.terrainChecking.remove(site.name); break }
+                }
                 self.terrainChecking.remove(site.name)
             }
             self.terrainTask = nil
         }
     }
 
+    private func terrainTriedRecently(_ name: String) -> Bool {
+        terrainAttempts[name].map { clock().timeIntervalSince($0) < 24 * 3600 } ?? false
+    }
+
+    private func forgetTerrainAttempt(_ name: String) {
+        guard terrainAttempts.removeValue(forKey: name) != nil else { return }
+        Self.write(terrainAttempts, to: directory.appendingPathComponent("terrain-attempts.json"))
+    }
+
     public func retryTerrain(siteNamed name: String) {
         terrainFailed.remove(name)
+        forgetTerrainAttempt(name)
         checkTerrain()
     }
+
+    /// Waits for the hills lookup a call started (tests, and anything that needs the finished result).
+    public func terrainFinished() async { await terrainTask?.value }
 
     /// Raise the horizon to clear the hills where they stand above it (the Mac's "Raise" button).
     public func raiseToTerrain(siteNamed name: String) {
@@ -376,6 +403,7 @@ public final class PhoneStore: ObservableObject {
     /// Add a site (or replace one of the same name), make it the active one, save, and read its forecast.
     public func addSite(_ s: Site) {
         config.sites.removeAll { $0.name == s.name }
+        forgetTerrainAttempt(s.name)   // a site of the same name added again is a new place
         guard config.sites.count < Config.maxSites else { return }
         config.sites.append(s)
         selectSite(s)
@@ -401,6 +429,7 @@ public final class PhoneStore: ObservableObject {
 
     /// Draw from what is saved, fetch if the policy says to, and rebuild tonight's page and the alert queue.
     public func refresh(force: Bool = false, connectivity: Connectivity = Connectivity()) async {
+        lastConnectivity = connectivity
         guard let site else { phase = .needsSite; tonight = nil; return }
         defer { stage = nil }
         let now = clock()
@@ -509,13 +538,21 @@ public final class PhoneStore: ObservableObject {
         let cache = ForecastStore(url: directory.appendingPathComponent("home-forecast.json"))
         var fc = cache.load().flatMap { ForecastStore.matches($0, site: home) ? $0 : nil }
         let stale = fc.map { now.timeIntervalSince($0.fetchedAt) > 30 * 60 } ?? true
-        if stale, cheap, darkFetchPausedUntil.map({ now >= $0 }) ?? true {
+        if stale, cheap, darkSitesOpen, darkFetchPausedUntil.map({ now >= $0 }) ?? true {
             if let fresh = try? await provider(home, now, false) { fc = fresh; try? cache.save(fresh) }
             else { darkFetchPausedUntil = now.addingTimeInterval(10 * 60) }
         }
         guard let f = fc, now.timeIntervalSince(f.fetchedAt) <= 24 * 3600, let night = try? Ephemeris.currentNight(now: now, site: home) else { homePlan = nil; return }
         homePlan = Planner.plan(night: night, forecast: f, catalog: Catalog(objects: []), constellations: [], site: home,
                                 fov: config.fov, rule: config.goRule, bright: config.brightNights)
+    }
+
+    /// The Dark sites page appeared or went away. Opening it fetches the nearest three sites' forecasts (any under 30 minutes old are reused).
+    public func darkSitesPage(open: Bool) {
+        darkSitesOpen = open
+        guard open, darkLookups != nil else { return }
+        darkTask?.cancel()
+        darkTask = Task { [weak self] in guard let self else { return }; await self.refreshDarkSites(connectivity: self.lastConnectivity) }
     }
 
     /// Waits for the dark-sites run a refresh started (tests, and anything that needs the finished list).
@@ -526,7 +563,7 @@ public final class PhoneStore: ObservableObject {
         change(&config.darkSites)
         saveConfig()
         darkTask?.cancel()
-        darkTask = Task { [weak self] in await self?.refreshDarkSites() }
+        darkTask = Task { [weak self] in guard let self else { return }; await self.refreshDarkSites(connectivity: self.lastConnectivity) }
     }
 
     /// Dark sites within the radius, and a forecast for the nearest eight (30-minute cache under sites/<id>.json) planned with the same
@@ -589,11 +626,11 @@ public final class PhoneStore: ObservableObject {
 
         let cacheDir = directory.appendingPathComponent("sites", isDirectory: true)
         var plans: [SitePlan] = []
-        for s in sites.prefix(8) {
+        for s in sites.prefix(3) {
             let asSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
             let cache = ForecastStore(url: cacheDir.appendingPathComponent("\(s.id).json"))
             var fc = cache.load()
-            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, cheap, darkFetchPausedUntil.map({ now >= $0 }) ?? true {
+            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, cheap, darkSitesOpen, darkFetchPausedUntil.map({ now >= $0 }) ?? true {
                 if let fresh = try? await provider(asSite, now, false) { fc = fresh; try? cache.save(fresh) }
                 else { darkFetchPausedUntil = now.addingTimeInterval(10 * 60) }   // refused or slow: stop asking for ten minutes, for every site
                 guard gen == darkGeneration else { return }
