@@ -122,7 +122,7 @@ public final class PhoneStore: ObservableObject {
     public init(directory: URL, provider: @escaping ForecastProvider, scheduler: NotificationScheduling,
                 clock: @escaping @Sendable () -> Date = { Date() },
                 fetchData: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 },
-                terrain: @escaping TerrainFetcher = { try await Terrain.fetch(site: $0, fetcher: URLSessionFetcher()) },
+                terrain: @escaping TerrainFetcher = { try await Terrain.fetch(site: $0, fetcher: PhoneFetcher()) },
                 terrainPause: Duration = .seconds(10),
                 feeds: @escaping @Sendable (URL) async throws -> Data = { try await PhoneFetcher().get($0) },
                 occultations: Bool = true,

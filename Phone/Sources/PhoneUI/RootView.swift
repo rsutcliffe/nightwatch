@@ -344,7 +344,7 @@ struct SettingsScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     private func binding<T>(_ kp: WritableKeyPath<AlertSettings, T>) -> Binding<T> {
-        Binding(get: { store.config.alerts[keyPath: kp] }, set: { store.config.alerts[keyPath: kp] = $0; store.saveConfig() })
+        Binding(get: { store.config.alerts[keyPath: kp] }, set: { v in store.setAlerts { $0[keyPath: kp] = v } })
     }
 
     /// A setting chosen from a menu of values. A value outside the list, from the Mac or an older version, is kept as a choice.
@@ -400,9 +400,18 @@ struct SettingsScreen: View {
                 if permission.status == .denied {
                     Text("Alerts are off for Nightwatch in iOS Settings, Notifications.").font(.footnote)
                 }
+                Toggle("Alerts", isOn: Binding(get: { store.config.notifyEnabled }, set: { store.setNotifyEnabled($0) }))
                 Toggle("Heads-up before sunset", isOn: binding(\.headsUp))
                 Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
+                choiceRow("Nudge before the window opens", store.config.alerts.preWindowMinutes, Array(stride(from: 0, through: 120, by: 15)),
+                          { v in store.setAlerts { $0.preWindowMinutes = v } }) { $0 == 0 ? "When it opens" : "\($0) min" }
                 Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
+                // A switch that is on can always be turned off; one that is off needs Apple Weather, which supplies the forecast being checked.
+                Toggle("Alert only when Open-Meteo agrees", isOn: binding(\.requireAgreement))
+                    .disabled(store.forecast?.cloudSource != "Apple Weather" && !store.config.alerts.requireAgreement)
+                if store.forecast?.cloudSource != "Apple Weather" && !store.config.alerts.requireAgreement {
+                    Text("Needs Apple Weather, which is not answering at the moment.").font(.footnote).secondary()
+                }
                 Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: binding(\.quietStartHour), in: 0...23)
                     .sensoryFeedback(.selection, trigger: store.config.alerts.quietStartHour)
                 Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
@@ -419,6 +428,16 @@ struct SettingsScreen: View {
                 }
             } header: { Text("Plan") } footer: {
                 Text("A finish time (for sleep, or work the next day) shortens the clear window the plan uses, and keeps targets that are best after it out.")
+            }.listRowBackground(theme.card)
+            Section {
+                Toggle("Moon and planets when there is no proper darkness", isOn: Binding(get: { store.config.brightNights.enabled },
+                                                                                          set: { v in store.setBrightNights { $0.enabled = v } }))
+                if store.config.brightNights.enabled {
+                    choiceRow("Minimum clear run", store.config.brightNights.minHours, Array(stride(from: 1.0, through: 6, by: 0.5)),
+                              { v in store.setBrightNights { $0.minHours = v } }) { String(format: "%.1f h", $0) }
+                }
+            } header: { Text("Bright nights") } footer: {
+                Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes: the Moon or a planet must be up in a clear run at least this long.")
             }.listRowBackground(theme.card)
             Section {
                 Toggle("Dark sites", isOn: Binding(get: { store.config.darkSites.enabled }, set: { v in store.setDarkSites { $0.enabled = v } }))
@@ -443,6 +462,17 @@ struct SettingsScreen: View {
                 }
             } header: { Text("Aurora") } footer: {
                 Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University). Elsewhere, NOAA's 30-minute aurora forecast for your site: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit, and quiet hours apply. With no server behind it, the phone checks while Nightwatch is open, and when iOS lets it refresh in the background, so an alert can come late, or not at all, when the app is closed. The Mac app, left running, is the dependable one.")
+            }.listRowBackground(theme.card)
+            Section {
+                let tally = RequestTally.today()
+                if tally.requests.isEmpty { Text("No requests yet today.").font(.callout).secondary() }
+                ForEach(tally.requests.sorted { $0.key < $1.key }, id: \.key) { k, n in
+                    LabeledContent(k.replacingOccurrences(of: "api.open-meteo.com", with: "open-meteo")) {
+                        Text(tally.points[k].map { "\(n) requests, \($0) points" } ?? "\(n) requests").monospacedDigit()
+                    }.font(.footnote)
+                }
+            } header: { Text("Network use today (this device)") } footer: {
+                Text("The free forecast service allows 10,000 calls a day and 5,000 an hour, and refuses more until it resets (UTC midnight, about 01:00 British Summer Time). If it refuses, Nightwatch says so on Tonight and keeps the forecast it has.")
             }.listRowBackground(theme.card)
             Section {
                 Toggle("Red night mode", isOn: $red)

@@ -18,6 +18,7 @@ public struct PhoneFetcher: Fetcher {
     public func get(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url, timeoutInterval: timeout)
         req.setValue(URLSessionFetcher.userAgent, forHTTPHeaderField: "User-Agent")
+        RequestTally.record(url)
         let (data, response) = try await URLSession.shared.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             let reason = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["reason"] as? String

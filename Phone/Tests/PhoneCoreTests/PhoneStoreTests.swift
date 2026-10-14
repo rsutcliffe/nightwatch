@@ -221,3 +221,15 @@ struct Failure: Error {}
     #expect(second.refreshFailure?.contains("refused more requests") == true)
     #expect(second.tonight != nil)                        // still drawn from the saved forecast
 }
+
+@Test func theRequestTallyCountsByServiceAndElevationPointsAndStartsAgainEachDay() throws {
+    let defaults = UserDefaults(suiteName: "tally-\(UUID().uuidString)")!
+    let day1 = utc(2026, 10, 14, 12), day2 = utc(2026, 10, 15, 12)
+    RequestTally.record(URL(string: "https://api.open-meteo.com/v1/forecast?latitude=1&longitude=2")!, now: day1, defaults: defaults)
+    RequestTally.record(URL(string: "https://api.open-meteo.com/v1/forecast?latitude=3&longitude=4")!, now: day1, defaults: defaults)
+    RequestTally.record(URL(string: "https://api.open-meteo.com/v1/elevation?latitude=1,2,3&longitude=4,5,6")!, now: day1, defaults: defaults)
+    let c = RequestTally.today(now: day1, defaults: defaults)
+    #expect(c.requests["api.open-meteo.com/v1/forecast"] == 2)
+    #expect(c.requests["api.open-meteo.com/v1/elevation"] == 1 && c.points["api.open-meteo.com/v1/elevation"] == 3)
+    #expect(RequestTally.today(now: day2, defaults: defaults).requests.isEmpty)
+}
