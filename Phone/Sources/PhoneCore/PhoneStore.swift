@@ -71,6 +71,10 @@ public final class PhoneStore: ObservableObject {
     /// the Moon-covers-a-star ones for the year ahead kept apart for "Coming up".
     @Published public private(set) var events: [SkyEvent] = []
     @Published public private(set) var occultationsAhead: [SkyEvent] = []
+    /// The last aurora status read (AuroraWatch UK in the UK and Ireland, NOAA's forecast elsewhere), kept so a relaunch still has it.
+    @Published public private(set) var aurora: AuroraStatus?
+    private var auroraState: AuroraAlertState?
+    private var auroraFetched: [String: Date] = [:]
     private var comets: [CometElements] = []
     private var tle: TLE?
     private var feedAttempts: [String: Date] = [:]
@@ -144,6 +148,8 @@ public final class PhoneStore: ObservableObject {
         comets = Self.read([CometElements].self, from: directory.appendingPathComponent("comets.json")) ?? []
         tle = Self.read(TLE.self, from: directory.appendingPathComponent("iss-tle.json"))
         feedAttempts = Self.read([String: Date].self, from: directory.appendingPathComponent("feed-attempts.json")) ?? [:]
+        aurora = Self.read(AuroraStatus.self, from: directory.appendingPathComponent("aurora.json"))
+        auroraState = Self.read(AuroraAlertState.self, from: directory.appendingPathComponent("aurora-state.json"))
         spotPlaces = Self.read([String: String].self, from: directory.appendingPathComponent("spot-places-v2.json")) ?? [:]
         spotPublic = Self.read([String: PublicPlace?].self, from: directory.appendingPathComponent("spot-public.json")) ?? [:]
     }
@@ -365,10 +371,45 @@ public final class PhoneStore: ObservableObject {
         stage = .planning
         if connectivity.allowsOptionalDownloads { await refreshFeeds(now: clock()) }
         await recompute(now: clock())
+        await pollAurora(connectivity: connectivity)
         if darkLookups != nil {
             darkTask?.cancel()
             darkTask = Task { [weak self] in await self?.refreshDarkSites(connectivity: connectivity) }
         }
+    }
+
+    // MARK: Aurora
+
+    /// Check the site's aurora source while aurora alerts are on and the Sun is at least 12 degrees down, then alert through the Mac's rule:
+    /// the level at or above your threshold, this hour's forecast cloud under your limit, not in quiet hours, each rise once a night, the status
+    /// for this site and under an hour old. AuroraWatch UK is asked no more than every 3 minutes, NOAA's file (900 KB) every 15 and only on a
+    /// cheap connection. A failed fetch keeps the last status. With no server, this runs when the app does: iOS decides about a closed app.
+    public func pollAurora(connectivity: Connectivity = Connectivity()) async {
+        let now = clock()
+        guard config.aurora.enabled, let site, Ephemeris.sunAltitude(at: now, site: site) <= AuroraAlert.sunBelowDeg else { return }
+        let source = AuroraSource.for(site), key = source == .noaa ? "\(Ovation.cell(site))" : source.rawValue
+        let gap = now.timeIntervalSince(auroraFetched[key] ?? .distantPast)
+        let allowed = source == .noaa ? connectivity.allowsOptionalDownloads : connectivity.isOnline
+        if allowed, gap >= source.minFetchGap || (auroraHere == nil && gap >= 180) {
+            auroraFetched[key] = now
+            let fetched: AuroraStatus? = source == .noaa
+                ? (try? await feeds(Ovation.url)).flatMap { try? Ovation.parse($0, site: site) }
+                : (try? await feeds(AuroraWatch.url)).flatMap { try? AuroraWatch.parse($0) }
+            if let status = fetched {
+                aurora = status
+                Self.write(status, to: directory.appendingPathComponent("aurora.json"))
+                await recompute(now: clock())   // Tonight's line and the widget follow
+            }
+        }
+        // Checked before the state is read, so reading, deciding and writing it never straddle a suspension.
+        guard config.notifyEnabled, await scheduler.isAuthorised() else { return }
+        guard let status = auroraHere, let fc = forecast, ForecastStore.matches(fc, site: site), now.timeIntervalSince(fc.fetchedAt) <= 6 * 3600,
+              let night = planning?.tonight.night.key else { return }
+        let r = AuroraAlert.decide(status: status, now: now, site: site, nightKey: night, hours: fc.hours, rule: config.goRule,
+                                   settings: config.aurora, alerts: config.alerts, state: auroraState, copy: Copy())
+        auroraState = r.state
+        Self.write(r.state, to: directory.appendingPathComponent("aurora-state.json"))
+        if let n = r.notification { await scheduler.post(n) }
     }
 
     // MARK: Dark sites
@@ -389,6 +430,9 @@ public final class PhoneStore: ObservableObject {
         phase = .loading; tonight = nil; events = []; occultationsAhead = []; occultationsKey = nil
         Task { await refresh(force: true) }
     }
+
+    /// The status for where you are: AuroraWatch UK's only in the UK and Ireland, NOAA's figure only for its own grid point.
+    public var auroraHere: AuroraStatus? { aurora.flatMap { a in site.map(a.applies(to:)) == true ? a : nil } }
 
     public var isAway: Bool { config.isAway(auto: nil) }
     public var homeSite: Site? { config.homeSite(auto: nil) }
@@ -581,7 +625,7 @@ public final class PhoneStore: ObservableObject {
                                 fov: config.fov, rule: config.goRule, bright: config.brightNights, favourites: config.favourites)
         let tomorrow = Planner.plan(night: next, forecast: fc, catalog: catalog, constellations: constellations, stars: stars, site: site,
                                     fov: config.fov, rule: config.goRule, bright: config.brightNights, favourites: config.favourites)
-        tonight = TonightModel.make(plan: plan, tomorrow: tomorrow, forecast: fc, site: site, config: config)
+        tonight = TonightModel.make(plan: plan, tomorrow: tomorrow, forecast: fc, site: site, config: config, aurora: auroraHere)
         planning = Planning(tonight: plan, tomorrow: tomorrow,
                             week: Planner.week(tonight: plan, tomorrow: tomorrow, forecast: fc, site: site, fov: config.fov,
                                                rule: config.goRule, bright: config.brightNights))

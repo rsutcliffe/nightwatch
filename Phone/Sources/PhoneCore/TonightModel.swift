@@ -91,10 +91,11 @@ public struct TonightModel: Equatable, Sendable {
     public var siteName: String { snapshot.siteName }
 
     public static func make(plan: NightPlan, tomorrow: NightPlan?, forecast: Forecast, site: Site, config: Config,
-                            copy: Copy = Copy()) -> TonightModel {
+                            aurora: AuroraStatus? = nil, copy: Copy = Copy()) -> TonightModel {
         let source = forecast.cloudSource ?? "Open-Meteo"
         var snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: forecast.fetchedAt, site: site, rule: config.goRule,
-                                       bright: config.brightNights, alerts: config.alerts, copy: copy, source: source)
+                                       bright: config.brightNights, alerts: config.alerts, copy: copy, source: source,
+                                       aurora: aurora, auroraSettings: config.aurora)
         snap.weatherLegalURL = forecast.attributionLegalURL
         snap.headline = snap.headline.plainDashes; snap.window = snap.window?.plainDashes; snap.windowShort = snap.windowShort?.plainDashes
         snap.reason = snap.reason?.plainDashes; snap.agreement = snap.agreement?.plainDashes; snap.bezelLabel = snap.bezelLabel.plainDashes
