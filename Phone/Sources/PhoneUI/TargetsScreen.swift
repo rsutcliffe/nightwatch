@@ -87,7 +87,7 @@ struct TargetGroupScreen: View {
                 ForEach(Array(shown.enumerated()), id: \.element.id) { i, t in
                     NavigationLink { TargetDetailScreen(store: store, target: t) } label: {
                         TargetCardView(store: store, target: t, dimmed: t.hiddenByFit(fitsOnly: fitsOnly) || t.hiddenByMoon(includeMoonWashed: includeMoonWashed))
-                    }.buttonStyle(.plain).risesIn(i)
+                    }.buttonStyle(PressStyle()).risesIn(i)
                 }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
@@ -114,12 +114,12 @@ struct FavouritesScreen: View {
                     EmptyState(title: "No favourites yet", message: "Tap the heart on any target to keep it here, and in every night's plan when it is up.")
                 }
                 ForEach(Array(usable.enumerated()), id: \.element.id) { i, f in
-                    NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: { TargetCardView(store: store, target: f.target) }.buttonStyle(.plain).risesIn(i)
+                    NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: { TargetCardView(store: store, target: f.target) }.buttonStyle(PressStyle()).risesIn(i)
                 }
                 ForEach(rest) { f in
                     NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: {
                         TargetCardView(store: store, target: f.target, dimmed: true, note: f.notTonight)
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(PressStyle())
                 }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)

@@ -18,7 +18,7 @@ struct DarkSitesScreen: View {
             LazyVStack(alignment: .leading, spacing: 10) {
                 Text("Within \(radius) of \(store.site?.name ?? "here") · \(sort == .score ? "sorted by tonight's score" : "nearest clear sky first")")
                     .font(.footnote).secondary()
-                if store.isAway { Button("Back to \(store.homeLabel)") { store.goHome() }.font(.callout.weight(.medium)).foregroundStyle(theme.accent) }
+                if store.isAway { Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(PressStyle()).font(.callout.weight(.medium)).foregroundStyle(theme.accent) }
                 if nearest != nil {
                     PhoneSegmented(selection: Binding(get: { sort }, set: { sortRaw = $0.rawValue }),
                                    options: SiteSort.allCases.map { ($0.rawValue, $0) })
@@ -91,8 +91,8 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
                 Spacer()
-                Button("Open in Maps") { openMaps(s) }.font(.callout.weight(.medium)).frame(minHeight: 44)
-                Button("Observe from here") { store.visit(s) }.font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44).padding(.leading, 8)
+                Button("Open in Maps") { openMaps(s) }.buttonStyle(PressStyle()).font(.callout.weight(.medium)).frame(minHeight: 44)
+                Button("Observe from here") { store.visit(s) }.buttonStyle(PressStyle()).font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44).padding(.leading, 8)
             }
         }
         .padding(12)
@@ -169,8 +169,8 @@ struct VisitBar: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Observing from \(v.name.plainDashes)").font(.callout.weight(.medium))
                         HStack(spacing: 18) {
-                            if store.config.canAddSite { Button("Keep this site") { store.keepVisiting() } }
-                            Button("Back to \(store.homeLabel)") { store.goHome() }
+                            if store.config.canAddSite { Button("Keep this site") { store.keepVisiting() }.buttonStyle(PressStyle()) }
+                            Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(PressStyle())
                         }
                         .font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44, alignment: .leading)
                     }
@@ -184,6 +184,7 @@ struct VisitBar: View {
                         .font(.footnote.weight(.medium)).foregroundStyle(theme.textPrimary).multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
+                .buttonStyle(PressStyle())
             }
         }
     }

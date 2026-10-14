@@ -14,6 +14,23 @@ public struct PressStyle: ButtonStyle {
     }
 }
 
+/// The phone's taps, in one place. `selection` is a step or a choice, `impact` a press, `success` and `warning` how something turned out.
+/// Declarative `.sensoryFeedback` stays where a value on screen changes; this is for actions. iOS drops them itself when the device has
+/// haptics turned off.
+enum Haptic {
+    #if canImport(UIKit)
+    static func selection() { UISelectionFeedbackGenerator().selectionChanged() }
+    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) { UIImpactFeedbackGenerator(style: style).impactOccurred() }
+    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+    #else
+    static func selection() {}
+    static func impact(_ style: Int = 0) {}
+    static func success() {}
+    static func warning() {}
+    #endif
+}
+
 /// A card: the surface the tiles, bars and lists sit on.
 struct Card<Content: View>: View {
     @Environment(\.phoneTheme) private var theme
@@ -69,13 +86,12 @@ struct PrimaryButton: View {
     let action: () -> Void
     @Environment(\.phoneTheme) private var theme
     var body: some View {
-        Button(action: action) {
+        Button { Haptic.impact(); action() } label: {
             Text(title).font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 15)
                 .background(theme.accent, in: RoundedRectangle(cornerRadius: 14))
                 .foregroundStyle(theme.isRed ? Color.black : Color.white)
         }
         .buttonStyle(PressStyle())
-        .sensoryFeedback(.selection, trigger: title)
     }
 }
 
@@ -85,7 +101,7 @@ struct SecondaryButton: View {
     let action: () -> Void
     @Environment(\.phoneTheme) private var theme
     var body: some View {
-        Button(action: action) {
+        Button { Haptic.impact(); action() } label: {
             HStack(spacing: 8) {
                 if let systemImage { Image(systemName: systemImage) }
                 Text(title)

@@ -21,13 +21,13 @@ struct EyesScreen: View {
                 ForEach(Array(targets.enumerated()), id: \.element.id) { i, t in
                     if let eye = store.eyeView(t) {
                         NavigationLink { TargetDetailScreen(store: store, target: t, eye: eye) } label: { TargetCardView(store: store, target: t, eye: eye) }
-                            .buttonStyle(.plain).risesIn(i)
+                            .buttonStyle(PressStyle()).risesIn(i)
                     }
                 }
                 if let site = store.site, !events.isEmpty {
                     Text("EVENTS").font(.caption.weight(.medium)).tracking(0.8).secondary().padding(.top, 10)
                     ForEach(events) { e in
-                        NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(.plain)
+                        NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(PressStyle())
                     }
                 }
             }

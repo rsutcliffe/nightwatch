@@ -114,12 +114,12 @@ struct EventsScreen: View {
                             .font(.callout).secondary().padding(.vertical, 12)
                     }
                     ForEach(Array(tonight.enumerated()), id: \.element.id) { i, e in
-                        NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(.plain).risesIn(i)
+                        NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(PressStyle()).risesIn(i)
                     }
                     if !ahead.isEmpty {
                         Text("COMING UP").font(.caption.weight(.medium)).tracking(0.8).secondary().padding(.top, 12)
                         ForEach(Array(ahead), id: \.id) { e in
-                            NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site, withDate: true) }.buttonStyle(.plain)
+                            NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site, withDate: true) }.buttonStyle(PressStyle())
                         }
                     }
                 }
