@@ -40,6 +40,14 @@ public struct PlaceMatch: Identifiable {
 
 /// Finds places by name for "add a site". The user picks one; the site can be renamed afterwards.
 public enum PlaceSearch {
+    /// For a search-as-you-type field: waits for a pause in typing (a newer keystroke cancels this one), ignores short text.
+    public static func matches(typed text: String) async -> [PlaceMatch] {
+        let t = text.trimmingCharacters(in: .whitespaces)
+        guard t.count >= 3 else { return [] }
+        try? await Task.sleep(for: .milliseconds(400))
+        return Task.isCancelled ? [] : await matches(t)
+    }
+
     public static func matches(_ text: String) async -> [PlaceMatch] {
         let req = MKLocalSearch.Request()
         req.naturalLanguageQuery = text

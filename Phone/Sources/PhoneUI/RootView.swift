@@ -226,6 +226,7 @@ struct FirstRunScreen: View {
             Text("Nightwatch reads the sky forecast and tells you, then alerts you. Where do you observe from?")
                 .font(.callout).secondary().multilineTextAlignment(.center)
             TextField("A place name", text: $name).textFieldStyle(.roundedBorder).submitLabel(.search).onSubmit(add)
+                .task(id: name) { choices = await PlaceSearch.matches(typed: name) }
             if let message { Text(message).font(.footnote).foregroundStyle(theme.warning) }
             PlaceChoices(matches: choices) { store.addSite($0.site); choices = [] }
             Spacer()
@@ -290,9 +291,8 @@ struct SitesSheet: View {
                     .onDelete { store.removeSites(at: $0) }
                 }.listRowBackground(theme.card)
                 Section("Add a site") {
-                    TextField("A place name", text: $name).submitLabel(.search).onSubmit {
-                        Task { message = nil; choices = await PlaceSearch.matches(name); if choices.isEmpty { message = "Could not find that place." } }
-                    }
+                    TextField("A place name", text: $name).submitLabel(.search)
+                        .task(id: name) { choices = await PlaceSearch.matches(typed: name) }
                     if let message { Text(message).font(.footnote) }
                     PlaceChoices(matches: choices) { store.addSite($0.site); name = ""; choices = [] }
                 }.listRowBackground(theme.card)
