@@ -342,6 +342,9 @@ public final class PhoneStore: ObservableObject {
     public var visitingSite: Site? { config.visiting }
     public var distanceUnit: DistanceUnit { config.darkSites.unit }
 
+    /// Waits for the dark-sites run a refresh started (tests, and anything that needs the finished list).
+    public func darkSitesFinished() async { await darkTask?.value }
+
     /// Settings changed (on, radius, unit): work the list out again.
     public func setDarkSites(_ change: (inout DarkSiteSettings) -> Void) {
         change(&config.darkSites)
