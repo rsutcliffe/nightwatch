@@ -67,6 +67,18 @@ public final class PhoneStore: ObservableObject {
     private var terrainTask: Task<Void, Never>?
     private var ledger = AlertLedger()
 
+    /// Tonight's events (showers, eclipses, conjunctions, bright comets, space station passes, the Moon covering a star), with
+    /// the Moon-covers-a-star ones for the year ahead kept apart for "Coming up".
+    @Published public private(set) var events: [SkyEvent] = []
+    @Published public private(set) var occultationsAhead: [SkyEvent] = []
+    private var comets: [CometElements] = []
+    private var tle: TLE?
+    private var feedAttempts: [String: Date] = [:]
+    private var occultationsKey: String?
+    private let showers: [MeteorShower]
+    private let feeds: @Sendable (URL) async throws -> Data
+    private let findOccultations: Bool
+
     private let catalog: Catalog
     private let constellations: [Constellation]
     private let stars: [BrightStar]
@@ -75,7 +87,12 @@ public final class PhoneStore: ObservableObject {
                 clock: @escaping @Sendable () -> Date = { Date() },
                 fetchData: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 },
                 terrain: @escaping TerrainFetcher = { try await Terrain.fetch(site: $0, fetcher: URLSessionFetcher()) },
-                terrainPause: Duration = .seconds(10)) {
+                terrainPause: Duration = .seconds(10),
+                feeds: @escaping @Sendable (URL) async throws -> Data = { try await URLSessionFetcher().get($0) },
+                occultations: Bool = true) {
+        self.feeds = feeds
+        self.findOccultations = occultations
+        showers = (try? MeteorShowers.bundled()) ?? []
         self.terrainFetcher = terrain
         self.terrainPause = terrainPause
         self.directory = directory
@@ -92,6 +109,9 @@ public final class PhoneStore: ObservableObject {
         ledger = Self.read(AlertLedger.self, from: directory.appendingPathComponent("alerts.json")) ?? AlertLedger()
         forecast = forecastStore.load()
         appleMarkData = forecast?.attributionMarkURL.flatMap { markStore.data(for: $0) }
+        comets = Self.read([CometElements].self, from: directory.appendingPathComponent("comets.json")) ?? []
+        tle = Self.read(TLE.self, from: directory.appendingPathComponent("iss-tle.json"))
+        feedAttempts = Self.read([String: Date].self, from: directory.appendingPathComponent("feed-attempts.json")) ?? [:]
     }
 
     // MARK: Settings
@@ -223,7 +243,7 @@ public final class PhoneStore: ObservableObject {
 
     public func selectSite(_ s: Site) {
         // The page must not go on showing the last site's night under the new site's name.
-        if s.name != site?.name { phase = .loading; tonight = nil }
+        if s.name != site?.name { phase = .loading; tonight = nil; events = []; occultationsAhead = []; occultationsKey = nil }
         config.activeSiteName = s.name
         saveConfig()
         Task { await refresh(force: true) }
@@ -267,7 +287,64 @@ public final class PhoneStore: ObservableObject {
             }
         }
         stage = .planning
+        if connectivity.allowsOptionalDownloads { await refreshFeeds(now: clock()) }
         await recompute(now: clock())
+    }
+
+    /// Comet elements daily and the space station's elements every 2 hours (CelesTrak asks for no more), as the Mac does. Gated on the
+    /// last attempt, not the last success, so a failing server is not hammered. They are small, but skipped on a costly connection.
+    func refreshFeeds(now: Date) async {
+        if feedDue("comets", every: 86_400, now: now), let data = try? await feeds(Comets.url) {
+            let unzipped = await Task.detached { Gzip.decompress(data) ?? data }.value
+            if let c = try? Comets.decode(unzipped) { comets = c; Self.write(c, to: directory.appendingPathComponent("comets.json")) }
+        }
+        if feedDue("iss", every: 2 * 3600, now: now), let data = try? await feeds(Satellites.issURL),
+           let t = try? Satellites.parseTLE(String(decoding: data, as: UTF8.self)) {
+            tle = t; Self.write(t, to: directory.appendingPathComponent("iss-tle.json"))
+        }
+    }
+
+    private func feedDue(_ key: String, every interval: TimeInterval, now: Date) -> Bool {
+        guard now.timeIntervalSince(feedAttempts[key] ?? .distantPast) >= interval else { return false }
+        feedAttempts[key] = now
+        Self.write(feedAttempts, to: directory.appendingPathComponent("feed-attempts.json"))
+        return true
+    }
+
+    private func buildEvents(night: Night, site: Site, now: Date) -> [SkyEvent] {
+        var ev = Events.showers(night: night, site: site, showers: showers)
+        ev += Events.eclipses(after: now, site: site, withinDays: 60)
+        let mid = night.darkStart.map { $0.addingTimeInterval((night.darkEnd ?? $0).timeIntervalSince($0) / 2) } ?? night.sunset
+        ev += Events.conjunctions(at: mid, site: site, maxSeparationDeg: 3, night: night, fov: config.fov)
+        for (c, pos) in Comets.bright(comets, at: mid, limit: 12) {
+            let later = Comets.position(c, at: mid.addingTimeInterval(7 * 86_400))
+            if let e = Events.comet(designation: c.designation, pos: pos, later: later, night: night, site: site) { ev.append(e) }
+        }
+        if let tle, let passes = try? Satellites.visiblePasses(tle: tle, site: site, from: night.sunset, to: night.sunrise, minPeakElevation: 30) {
+            ev += passes.map { Events.issPass($0, site: site) }
+        }
+        updateOccultations(site: site, now: now)
+        ev += occultationsAhead.filter { $0.time >= night.sunset && $0.time < night.sunrise }
+        return ev.sorted { $0.when < $1.when }
+    }
+
+    /// The Moon covering a planet or bright star over the coming year, worked out once a day per site off the main thread (about a
+    /// second), after which the plan is rebuilt so tonight's join the events.
+    private func updateOccultations(site: Site, now: Date) {
+        guard findOccultations else { return }
+        let day = site.calendar.startOfDay(for: now)
+        let key = "\(site.latitude),\(site.longitude),\(site.horizon ?? []),\(day.timeIntervalSince1970)"
+        guard key != occultationsKey else { return }
+        occultationsKey = key
+        let stars = self.stars
+        Task.detached(priority: .utility) { [weak self] in
+            let found = Occultations.find(from: day, days: 365, site: site, stars: stars).map { Events.occultation($0, site: site) }
+            await MainActor.run {
+                guard let self, self.occultationsKey == key else { return }
+                self.occultationsAhead = found
+                Task { await self.recompute(now: self.clock()) }
+            }
+        }
     }
 
     /// Keep Apple's mark on disk the first time it is supplied (a failed download is tried again at the next forecast).
@@ -297,6 +374,7 @@ public final class PhoneStore: ObservableObject {
         planning = Planning(tonight: plan, tomorrow: tomorrow,
                             week: Planner.week(tonight: plan, tomorrow: tomorrow, forecast: fc, site: site, fov: config.fov,
                                                rule: config.goRule, bright: config.brightNights))
+        events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: config.goRule.maxCloudPct)
         phase = .ready
 
         guard config.notifyEnabled, await scheduler.isAuthorised() else { return }
