@@ -22,6 +22,14 @@ public struct RootView: View {
 
     private func refresh(force: Bool = false) { Task { await store.refresh(force: force, connectivity: connectivity.current) } }
 
+    /// A refresh the person asked for (the Refresh button, pull down, Try again): it ends with a tap that says how it went.
+    private func refreshByHand() {
+        Task {
+            await store.refresh(force: true, connectivity: connectivity.current)
+            if store.offline || store.phase != .ready { Haptic.warning() } else { Haptic.success() }
+        }
+    }
+
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: SidebarItem?
@@ -40,11 +48,11 @@ public struct RootView: View {
         case .needsSite: FirstRunScreen(store: store)
         case .loading: LoadingScreen(siteName: store.site?.name ?? "your site", stage: store.stage).transition(.opacity)
         case .failed(let why):
-            EmptyState(title: "No forecast yet", message: why, action: ("Try again", { refresh(force: true) }))
+            EmptyState(title: "No forecast yet", message: why, action: ("Try again", { refreshByHand() }))
         case .ready:
             if let m = store.tonight {
                 TonightScreen(model: m, markData: store.appleMarkData, offline: store.offline, refreshing: store.refreshing,
-                              onRefresh: { refresh(force: true) },
+                              onRefresh: { refreshByHand() },
                               alertsPrompt: AlertsPrompt(permission: permission, onGranted: { refresh(force: true) }), now: store.now)
                     .transition(.opacity)
             }
@@ -240,7 +248,7 @@ struct FirstRunScreen: View {
         guard !name.isEmpty, !busy else { return }
         busy = true; message = nil
         Task {
-            if let first = places.suggestions.first, let s = await PlaceCompleter.site(for: first) { store.addSite(s); name = ""; places.clear() }
+            if let first = places.suggestions.first, let s = await PlaceCompleter.site(for: first) { Haptic.success(); store.addSite(s); name = ""; places.clear() }
             else { message = "Could not find that place." }
             busy = false
         }
@@ -271,7 +279,7 @@ struct SitesSheet: View {
                 Section("Your sites") {
                     ForEach(store.config.sites, id: \.name) { s in
                         HStack {
-                            Button { store.selectSite(s); dismiss() } label: {
+                            Button { Haptic.selection(); store.selectSite(s); dismiss() } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(s.name)
@@ -335,7 +343,9 @@ struct SettingsScreen: View {
                 Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
                 Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
                 Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: binding(\.quietStartHour), in: 0...23)
+                    .sensoryFeedback(.selection, trigger: store.config.alerts.quietStartHour)
                 Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
+                    .sensoryFeedback(.selection, trigger: store.config.alerts.quietEndHour)
             } header: { Text("Alerts") } footer: {
                 Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
             }.listRowBackground(theme.card)
@@ -344,6 +354,7 @@ struct SettingsScreen: View {
                 if store.config.stopBy.enabled {
                     Stepper(String(format: "Stop at %02d:%02d", store.config.stopBy.minutes / 60, store.config.stopBy.minutes % 60),
                             onIncrement: { step(30) }, onDecrement: { step(-30) })
+                        .sensoryFeedback(.selection, trigger: store.config.stopBy.minutes)
                 }
             } header: { Text("Plan") } footer: {
                 Text("A finish time (for sleep, or work the next day) shortens the clear window the plan uses, and keeps targets that are best after it out.")
@@ -353,6 +364,7 @@ struct SettingsScreen: View {
                 if store.config.darkSites.enabled {
                     Stepper("Within \(Geo.format(km: store.config.darkSites.radiusKm, unit: store.distanceUnit))",
                             value: Binding(get: { store.config.darkSites.radiusKm }, set: { v in store.setDarkSites { $0.radiusKm = v } }), in: 5...300, step: 5)
+                        .sensoryFeedback(.selection, trigger: store.config.darkSites.radiusKm)
                     PhoneSegmented(selection: Binding(get: { store.config.darkSites.unit }, set: { v in store.setDarkSites { $0.unit = v } }),
                                    options: [("Kilometres", DistanceUnit.km), ("Miles", DistanceUnit.mi)])
                 }
@@ -391,7 +403,7 @@ struct PlaceChoices: View {
     var body: some View {
         ForEach(places.suggestions, id: \.self) { m in
             Button {
-                Task { if let s = await PlaceCompleter.site(for: m) { places.clear(); pick(s) } }
+                Task { if let s = await PlaceCompleter.site(for: m) { places.clear(); Haptic.success(); pick(s) } }
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(m.title)

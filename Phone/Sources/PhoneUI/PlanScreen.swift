@@ -48,7 +48,7 @@ struct PlanScreen: View {
                     HStack {
                         Text("\(t.catalogueID) · \(t.commonName ?? t.typeName)").font(.callout).lineLimit(1)
                         Spacer()
-                        Button("Put back") { store.setInPlan(t.id, on: true, tomorrow: tomorrow) }.buttonStyle(PressStyle()).foregroundStyle(theme.accent).frame(minHeight: 44)
+                        Button("Put back") { Haptic.success(); store.setInPlan(t.id, on: true, tomorrow: tomorrow) }.buttonStyle(PressStyle()).foregroundStyle(theme.accent).frame(minHeight: 44)
                     }
                     .padding(.horizontal, 12).background(theme.card, in: RoundedRectangle(cornerRadius: 12))
                 }
@@ -89,7 +89,7 @@ struct PlanScreen: View {
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(PressStyle())
-            Button { store.setInPlan(t.id, on: false, tomorrow: tomorrow) } label: {
+            Button { Haptic.selection(); store.setInPlan(t.id, on: false, tomorrow: tomorrow) } label: {
                 Text(item.added ? "Remove" : "Not tonight").font(.caption.weight(.medium)).padding(.horizontal, 10).frame(minHeight: 44)
                     .background(theme.track, in: RoundedRectangle(cornerRadius: 8))
             }.buttonStyle(PressStyle())

@@ -115,7 +115,7 @@ struct HorizonSheet: View {
     }
 
     private func stepButton(_ symbol: String, _ i: Int, _ step: Double) -> some View {
-        Button { heights[i] = min(80, max(0, heights[i] + step)); save() } label: {
+        Button { Haptic.selection(); heights[i] = min(80, max(0, heights[i] + step)); save() } label: {
             Image(systemName: symbol).frame(width: 44, height: 44).background(theme.track, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(PressStyle())
@@ -138,6 +138,7 @@ struct HorizonSheet: View {
                     let raises = Terrain.raises(terrain: t, site: site, openDeg: open)
                     if !raises.isEmpty {
                         SecondaryButton(title: "Raise the horizon to clear them", systemImage: "mountain.2") {
+                            Haptic.success()
                             store.raiseToTerrain(siteNamed: siteName)
                             heights = store.config.sites.first { $0.name == siteName }?.horizon ?? Array(repeating: open, count: 8)
                         }

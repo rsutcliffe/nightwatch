@@ -71,7 +71,10 @@ public struct AlertsPrompt: View {
                     Text("An alert an hour before dark, another before the clear window opens, and a note if the forecast turns. Nothing else, and never during your quiet hours.")
                         .font(.footnote).secondary().fixedSize(horizontal: false, vertical: true)
                     PrimaryButton(title: "Turn on alerts") {
-                        Task { await permission.request(); if permission.status == .authorized { onGranted() } }
+                        Task {
+                            await permission.request()
+                            if permission.status == .authorized { Haptic.success(); onGranted() } else { Haptic.warning() }
+                        }
                     }
                 }
             }

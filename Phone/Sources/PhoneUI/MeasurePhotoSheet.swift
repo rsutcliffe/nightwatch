@@ -52,11 +52,12 @@ struct MeasurePhotoSheet: View {
                 ToolbarItem(placement: .principal) { Text("Measure from a photo").font(.headline).foregroundStyle(theme.textPrimary) }
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(useTitle) { if let d = direction, let v = value { onUse(d, v); dismiss() } }.disabled(direction == nil || value == nil)
+                    Button(useTitle) { if let d = direction, let v = value { Haptic.success(); onUse(d, v); dismiss() } }.disabled(direction == nil || value == nil)
                 }
             }
         }
         .onChange(of: picked) { _, item in Task { await load(item) } }
+        .onChange(of: Int((measured ?? 0).rounded())) { _, _ in if photo != nil { Haptic.selection() } }   // a tick for each degree the line passes
     }
 
     private var useTitle: String {
@@ -129,7 +130,7 @@ struct MeasurePhotoSheet: View {
             if case .near = photo.place(relativeTo: site), let t = photo.taken, !moved {
                 Text("If this is where the telescope stands, \(site.name) can move here. Forecasts and darkness hardly change over this distance; dark sites are measured from the new spot.")
                     .font(.footnote).secondary()
-                SecondaryButton(title: "Move \(site.name) here", systemImage: "location") { onMove(t); moved = true }
+                SecondaryButton(title: "Move \(site.name) here", systemImage: "location") { Haptic.success(); onMove(t); moved = true }
             }
             if case .far = photo.place(relativeTo: site) {
                 Text("A horizon belongs to where it was measured. Use a photo taken where the telescope stands at \(site.name), or add the place it was taken as a site of its own.")
@@ -139,7 +140,7 @@ struct MeasurePhotoSheet: View {
                 problem("No compass direction in this photo", "It was taken with location off, or on another camera. Which way were you facing?")
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                     ForEach(0..<8, id: \.self) { i in
-                        Button { pickedDirection = i } label: {
+                        Button { Haptic.selection(); pickedDirection = i } label: {
                             Text(Site.horizonDirections[i]).font(.callout.weight(pickedDirection == i ? .semibold : .regular)).frame(maxWidth: .infinity, minHeight: 44)
                                 .foregroundStyle(pickedDirection == i ? (theme.isRed ? Color.black : Color.white) : theme.textPrimary)
                                 .background(pickedDirection == i ? theme.accent : theme.track, in: RoundedRectangle(cornerRadius: 10))
