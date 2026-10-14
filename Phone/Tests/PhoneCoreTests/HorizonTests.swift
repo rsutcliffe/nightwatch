@@ -82,3 +82,16 @@ final class TerrainCalls: @unchecked Sendable {
     store.raiseToTerrain(siteNamed: "Sheffield")
     #expect(store.config.sites[0].horizon == nil)
 }
+
+@MainActor @Test func aHighHorizonTakesAHeartedTargetOutOfThePlanWithTheReason() async throws {
+    let store = horizonStore(TerrainCalls())
+    await store.refresh()
+    let id = try #require(store.planning?.tonight.best.first?.id)
+    store.toggleFavourite(id)
+    await store.recompute(now: utc(2026, 9, 23, 12))
+    #expect(store.isInPlan(id))
+    store.setHorizon(siteNamed: "Sheffield", heights: Array(repeating: 80, count: 8))
+    await store.recompute(now: utc(2026, 9, 23, 12))
+    #expect(store.isInPlan(id) == false)
+    #expect(store.session()?.omitted.contains { $0.target.id == id && $0.reason.contains("horizon") } == true)
+}
