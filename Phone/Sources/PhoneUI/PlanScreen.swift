@@ -39,7 +39,7 @@ struct PlanScreen: View {
                                   night: night.night, window: session.window, floor: store.config.goRule.minAltitudeDeg, site: site)
                 }
                 ForEach(Array(session.items.enumerated()), id: \.element.id) { i, item in
-                    planRow(item, index: i, count: session.items.count, site: site)
+                    planRow(item, index: i, count: session.items.count, site: site).risesIn(i + 1)
                 }
             }
             if !session.takenOff.isEmpty {

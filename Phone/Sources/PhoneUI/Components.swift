@@ -142,3 +142,23 @@ struct PhoneSegmented<Value: Hashable>: View {
         .sensoryFeedback(.selection, trigger: selection)
     }
 }
+
+/// The entry motion the clear-sky bars have, for rows and cards: each rises into place and fades in, one after another, the first time
+/// it appears. A short stagger (capped, so a long list never makes anyone wait) and still under Reduce Motion.
+struct RisesIn: ViewModifier {
+    let index: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var arrived = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(arrived || reduceMotion ? 1 : 0)
+            .offset(y: arrived || reduceMotion ? 0 : 14)
+            .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.82).delay(Double(min(index, 8)) * 0.05), value: arrived)
+            .onAppear { arrived = true }
+    }
+}
+
+extension View {
+    func risesIn(_ index: Int = 0) -> some View { modifier(RisesIn(index: index)) }
+}

@@ -74,6 +74,8 @@ struct AltitudeChart: View {
     let site: Site
     var height: CGFloat = 170
     @Environment(\.phoneTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealed = false
 
     private func x(_ d: Date, _ w: CGFloat) -> CGFloat {
         let span = night.sunrise.timeIntervalSince(night.sunset)
@@ -115,6 +117,10 @@ struct AltitudeChart: View {
                 }
             }
             .frame(height: height)
+            // The lines are drawn in from sunset to sunrise, as the bars rise on Tonight.
+            .mask(alignment: .leading) { GeometryReader { g in Rectangle().frame(width: revealed || reduceMotion ? g.size.width : 0) } }
+            .animation(reduceMotion ? nil : .easeOut(duration: 1.1), value: revealed)
+            .onAppear { revealed = true }
             HStack {
                 Text("Sunset \(Copy.hhmm(night.sunset, site: site))"); Spacer()
                 if let w = window { Text("Clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))") }

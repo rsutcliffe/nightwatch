@@ -15,7 +15,7 @@ struct WeekScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 if let run = moonless { Text(run).font(.callout).secondary() }
-                ForEach(week, id: \.daysAhead) { n in row(n) }
+                ForEach(week, id: \.daysAhead) { n in row(n).risesIn(n.daysAhead) }
                 if week.isEmpty { EmptyState(title: "No week yet", message: "The forecast has not reached beyond tonight.") }
             }
             .padding(16).frame(maxWidth: 800).frame(maxWidth: .infinity)

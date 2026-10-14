@@ -13,9 +13,9 @@ struct TargetsScreen: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
-                row(title: "Favourites", symbol: "heart.fill", count: store.config.favourites.count) { FavouritesScreen(store: store) }
-                ForEach(TargetGroup.allCases.filter { $0 != .events }, id: \.self) { g in
-                    row(title: g.displayName, symbol: g.phoneSymbol, count: targets(in: g).count) { TargetGroupScreen(store: store, group: g) }
+                row(title: "Favourites", symbol: "heart.fill", count: store.config.favourites.count) { FavouritesScreen(store: store) }.risesIn(0)
+                ForEach(Array(TargetGroup.allCases.filter { $0 != .events }.enumerated()), id: \.element) { i, g in
+                    row(title: g.displayName, symbol: g.phoneSymbol, count: targets(in: g).count) { TargetGroupScreen(store: store, group: g) }.risesIn(i + 1)
                 }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
@@ -71,10 +71,10 @@ struct TargetGroupScreen: View {
                 if shown.isEmpty {
                     Text(query.isEmpty ? "Nothing in this group is up tonight." : "No match.").font(.callout).secondary().padding(.top, 20)
                 }
-                ForEach(shown) { t in
+                ForEach(Array(shown.enumerated()), id: \.element.id) { i, t in
                     NavigationLink { TargetDetailScreen(store: store, target: t) } label: {
                         TargetCardView(store: store, target: t, dimmed: t.hiddenByFit(fitsOnly: fitsOnly) || t.hiddenByMoon(includeMoonWashed: includeMoonWashed))
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).risesIn(i)
                 }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
@@ -100,8 +100,8 @@ struct FavouritesScreen: View {
                 if favs.isEmpty {
                     EmptyState(title: "No favourites yet", message: "Tap the heart on any target to keep it here, and in every night's plan when it is up.")
                 }
-                ForEach(usable) { f in
-                    NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: { TargetCardView(store: store, target: f.target) }.buttonStyle(.plain)
+                ForEach(Array(usable.enumerated()), id: \.element.id) { i, f in
+                    NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: { TargetCardView(store: store, target: f.target) }.buttonStyle(.plain).risesIn(i)
                 }
                 ForEach(rest) { f in
                     NavigationLink { TargetDetailScreen(store: store, target: f.target) } label: {
