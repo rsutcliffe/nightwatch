@@ -6,7 +6,11 @@ import PhoneCore
 struct TargetDetailScreen: View {
     @ObservedObject var store: PhoneStore
     let target: RankedTarget
+    /// Opened from Eyes and binoculars: how to see it, in place of the telescope settings.
+    var eye: EyeView? = nil
     @Environment(\.phoneTheme) private var theme
+    private static let constellations = (try? Constellations.bundled()) ?? []
+    private var isCatalogue: Bool { !MilkyWay.isMilkyWay(target.id) }
 
     var body: some View {
         let plan = store.planning?.tonight
@@ -24,7 +28,7 @@ struct TargetDetailScreen: View {
                         Text(target.subtitle.plainDashes).font(.footnote).secondary()
                     }
                     Spacer()
-                    HeartButton(store: store, id: target.id)
+                    if isCatalogue { HeartButton(store: store, id: target.id) }
                 }
                 HStack(spacing: 10) {
                     if let site {
@@ -39,20 +43,15 @@ struct TargetDetailScreen: View {
                                                                     floor: store.config.goRule.minAltitudeDeg),
                                          night: plan.night, window: win, floor: store.config.goRule.minAltitudeDeg, site: site, height: 140) }
                 }
-                if let plan, plan.primary != nil { planButton }
+                if isCatalogue, let plan, plan.primary != nil { planButton }
                 if let site {
-                    let tip = ShootingTips.tip(for: target, presetID: store.config.fovPresetID, presetName: nil, stackMinutes: nil, site: site)
-                    Card {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label(tip.title.plainDashes, systemImage: tip.symbol).font(.callout.weight(.medium))
-                            ForEach(Array(tip.rows.enumerated()), id: \.offset) { _, r in
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(r.label.plainDashes).font(.caption).secondary()
-                                    Text(r.text.plainDashes).font(.footnote).fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            if let s = tip.source { Text(s.plainDashes).font(.caption2).secondary() }
-                        }
+                    if let eye {
+                        let abbr = target.subtitle.components(separatedBy: " in ").last ?? ""
+                        let moonUp = plan.flatMap(Planner.moonTonight).map { $0 != .down } ?? false
+                        ShootingTipCard(tip: ShootingTips.eyeTip(for: target, eye: eye, constellation: Self.constellations.first { $0.id == abbr }?.name,
+                                                                moonIllumination: plan?.moonIllumination ?? 0, moonUp: moonUp, site: site))
+                    } else {
+                        ShootingTipCard(tip: ShootingTips.tip(for: target, presetID: store.config.fovPresetID, presetName: nil, stackMinutes: nil, site: site))
                     }
                 }
             }

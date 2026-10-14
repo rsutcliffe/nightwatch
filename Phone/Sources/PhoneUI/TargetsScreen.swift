@@ -6,6 +6,9 @@ import PhoneCore
 struct TargetsScreen: View {
     @ObservedObject var store: PhoneStore
     @Environment(\.phoneTheme) private var theme
+    // `-demoOpen eyes` / `events` opens that page at launch, for screenshots in the Simulator.
+    @State private var demoEyes = UserDefaults.standard.string(forKey: "demoOpen") == "eyes"
+    @State private var demoEvents = ["events", "event"].contains(UserDefaults.standard.string(forKey: "demoOpen"))
 
     private var plan: NightPlan? { store.planning?.tonight }
     private func targets(in g: TargetGroup) -> [RankedTarget] { (plan?.mode == .bright ? plan?.brightTargets : plan?.targets)?.filter { $0.group == g } ?? [] }
@@ -14,13 +17,20 @@ struct TargetsScreen: View {
         ScrollView {
             VStack(spacing: 10) {
                 row(title: "Favourites", symbol: "heart.fill", count: store.config.favourites.count) { FavouritesScreen(store: store) }.risesIn(0)
-                ForEach(Array(TargetGroup.allCases.filter { $0 != .events }.enumerated()), id: \.element) { i, g in
-                    row(title: g.displayName, symbol: g.phoneSymbol, count: targets(in: g).count) { TargetGroupScreen(store: store, group: g) }.risesIn(i + 1)
+                row(title: "Eyes and binoculars", symbol: "binoculars", count: store.eyeTargets.count + store.eyeEvents.count) { EyesScreen(store: store) }.risesIn(1)
+                ForEach(Array(TargetGroup.allCases.enumerated()), id: \.element) { i, g in
+                    if g == .events {
+                        row(title: g.displayName, symbol: g.phoneSymbol, count: store.events.count) { EventsScreen(store: store) }.risesIn(i + 2)
+                    } else {
+                        row(title: g.displayName, symbol: g.phoneSymbol, count: targets(in: g).count) { TargetGroupScreen(store: store, group: g) }.risesIn(i + 2)
+                    }
                 }
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
         .background { StarField(seed: "targets").ignoresSafeArea() }
+        .navigationDestination(isPresented: $demoEyes) { EyesScreen(store: store) }
+        .navigationDestination(isPresented: $demoEvents) { EventsScreen(store: store) }
     }
 
     private func row<D: View>(title: String, symbol: String, count: Int, @ViewBuilder dest: @escaping () -> D) -> some View {

@@ -47,3 +47,12 @@ final class FeedCalls: @unchecked Sendable { var urls: [URL] = [] }
     await s.refresh(force: true, connectivity: Connectivity(isOnline: true, isExpensive: true, isConstrained: false))
     #expect(calls.urls.isEmpty)
 }
+
+@MainActor @Test func theEyeListHoldsOnlyWhatNeedsNoTelescopeAndEveryoneIsLabelled() async {
+    let s = store(on: utc(2026, 8, 12, 12), clock: Clock(utc(2026, 8, 12, 12)), feedCalls: FeedCalls())
+    await s.refresh()
+    for t in s.eyeTargets { #expect(s.eyeView(t) != nil) }
+    #expect(s.eyeEvents.allSatisfy(EyeViews.includes))
+    // A faint galaxy needs a telescope at Bortle 8, so it is never listed.
+    #expect(s.eyeTargets.contains { $0.id == "m33" } == false)
+}

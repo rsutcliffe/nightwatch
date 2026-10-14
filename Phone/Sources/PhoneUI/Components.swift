@@ -162,3 +162,37 @@ struct RisesIn: ViewModifier {
 extension View {
     func risesIn(_ index: Int = 0) -> some View { modifier(RisesIn(index: index)) }
 }
+
+/// A small label with a symbol. A warning keeps its colour, a dashed outline and a "!", so it never relies on colour alone.
+struct Chip: View {
+    let text: String
+    let symbol: String
+    var warning = false
+    @Environment(\.phoneTheme) private var theme
+    var body: some View {
+        Label((warning ? "! " : "") + text, systemImage: symbol).font(.caption.weight(warning ? .semibold : .medium)).lineLimit(2)
+            .foregroundStyle(warning ? theme.warning : theme.textSecondary)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(theme.tile, in: Capsule())
+            .overlay { if warning { Capsule().strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])) } }
+    }
+}
+
+/// "How to shoot this" (or "How to see this"): the settings or advice, a row at a time, and where the numbers come from.
+struct ShootingTipCard: View {
+    let tip: ShootingTip
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(tip.title.plainDashes, systemImage: tip.symbol).font(.callout.weight(.medium))
+                ForEach(Array(tip.rows.enumerated()), id: \.offset) { _, r in
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(r.label.plainDashes).font(.caption).secondary()
+                        Text(r.text.plainDashes).font(.footnote).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                if let s = tip.source { Text(s.plainDashes).font(.caption2).secondary() }
+            }
+        }
+    }
+}

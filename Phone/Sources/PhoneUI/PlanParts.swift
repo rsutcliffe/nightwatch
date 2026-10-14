@@ -26,6 +26,8 @@ struct TargetCardView: View {
     let target: RankedTarget
     var dimmed = false
     var note: String? = nil
+    /// In Eyes and binoculars: how to look, and what it looks like, in place of when it is highest.
+    var eye: EyeView? = nil
     @Environment(\.phoneTheme) private var theme
 
     var body: some View {
@@ -42,10 +44,14 @@ struct TargetCardView: View {
                 }
                 Text(target.commonName ?? target.typeName).font(.footnote).secondary().lineLimit(1)
                 if let note { Text(note.plainDashes).font(.caption).foregroundStyle(theme.warning).lineLimit(2) }
+                else if let eye {
+                    Chip(text: eye.rawValue, symbol: eye == .nakedEye ? "eye" : "binoculars")
+                    Text(Copy.eyeLook(target, eye).plainDashes).font(.caption).secondary().lineLimit(2)
+                }
                 else if let pick { Text(pick.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.bestLine).lineLimit(1) }
             }
             Spacer(minLength: 4)
-            HeartButton(store: store, id: target.id)
+            if !MilkyWay.isMilkyWay(target.id) { HeartButton(store: store, id: target.id) }   // not a catalogue target: no place in Favourites or the plan
         }
         .padding(10)
         .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
