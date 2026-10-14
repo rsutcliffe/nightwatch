@@ -175,6 +175,7 @@ public struct RootView: View {
             refresh()
             // `-demoOpen horizon` opens the active site's horizon sheet at launch, for screenshots in the Simulator.
             if UserDefaults.standard.string(forKey: "demoOpen") == "horizon", let n = store.site?.name { try? await Task.sleep(for: .seconds(2)); showHorizon = HorizonTarget(name: n) }
+            if UserDefaults.standard.string(forKey: "demoOpen") == "settings" { try? await Task.sleep(for: .seconds(2)); showSettings = true }
         }
         .onChange(of: scenePhase) { _, p in if p == .active { refresh(); Task { await permission.refresh() } } }
         .onChange(of: connectivity.current.isOnline) { _, on in if on { refresh() } }
@@ -339,6 +340,27 @@ struct SettingsScreen: View {
         Binding(get: { store.config.alerts[keyPath: kp] }, set: { store.config.alerts[keyPath: kp] = $0; store.saveConfig() })
     }
 
+    /// A setting chosen from a menu of values. A value outside the list, from the Mac or an older version, is kept as a choice.
+    private func choiceRow<V: Hashable & Comparable>(_ label: String, _ value: V, _ options: [V], _ set: @escaping (V) -> Void, _ text: @escaping (V) -> String) -> some View {
+        Picker(label, selection: Binding(get: { value }, set: set)) {
+            ForEach(Array(Set(options + [value])).sorted(), id: \.self) { Text(text($0)).tag($0) }
+        }
+        .sensoryFeedback(.selection, trigger: value)
+    }
+
+    private func fieldOfView(width: Bool) -> some View {
+        HStack(spacing: 4) {
+            TextField("0", value: Binding(get: { width ? store.config.fov.widthDeg : store.config.fov.heightDeg },
+                                          set: { width ? store.setFieldOfView(width: $0) : store.setFieldOfView(height: $0) }),
+                      format: .number.precision(.fractionLength(0...2)))
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+                .multilineTextAlignment(.trailing).frame(maxWidth: 90)
+            Text("°").secondary()
+        }
+    }
+
     private func step(_ delta: Int) {
         store.config.stopBy.minutes = ((store.config.stopBy.minutes + delta) % 1440 + 1440) % 1440
         store.saveConfig(); store.replan()
@@ -346,6 +368,27 @@ struct SettingsScreen: View {
 
     private var form: some View {
         Form {
+            Section {
+                Picker("Telescope", selection: Binding(get: { store.config.fovPresetID ?? "custom" },
+                                                       set: { store.setTelescope(presetID: $0 == "custom" ? nil : $0) })) {
+                    ForEach(TelescopePresets.byMaker(TelescopePresets.shared)) { group in
+                        Section(group.maker) { ForEach(group.presets) { Text($0.model).tag($0.id) } }
+                    }
+                    Text("Custom").tag("custom")
+                }
+                .sensoryFeedback(.selection, trigger: store.config.fovPresetID)
+                LabeledContent("Width") { fieldOfView(width: true) }
+                LabeledContent("Height") { fieldOfView(width: false) }
+            } header: { Text("Telescope") } footer: {
+                Text("The size of the sky your telescope or camera frames, in degrees. It decides which targets fit, and the shooting tips.")
+            }.listRowBackground(theme.card)
+            Section {
+                choiceRow("Clear for at least", store.config.goRule.minHours, [1, 2, 3, 4, 5, 6, 7, 8], { v in store.setGoRule { $0.minHours = v } }) { String(format: "%.0f h", $0) }
+                choiceRow("Cloud cover at most", store.config.goRule.maxCloudPct, Array(stride(from: 5, through: 60, by: 5)), { v in store.setGoRule { $0.maxCloudPct = v } }) { "\($0) %" }
+                choiceRow("Targets must reach", store.config.goRule.minAltitudeDeg, Array(stride(from: 10.0, through: 60, by: 5)), { v in store.setGoRule { $0.minAltitudeDeg = v } }) { "\(Int($0))° altitude" }
+            } header: { Text("Go rule") } footer: {
+                Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")
+            }.listRowBackground(theme.card)
             Section {
                 if permission.status == .denied {
                     Text("Alerts are off for Nightwatch in iOS Settings, Notifications.").font(.footnote)
@@ -389,6 +432,7 @@ struct SettingsScreen: View {
             }.listRowBackground(theme.card)
         }
         .scrollContentBackground(.hidden).background(theme.background)
+        .scrollDismissesKeyboard(.interactively)
         .toggleStyle(PhoneToggleStyle())
         .navigationBarTitleDisplayModeInline()
     }
