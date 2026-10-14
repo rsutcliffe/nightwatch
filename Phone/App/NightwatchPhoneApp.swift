@@ -95,7 +95,15 @@ struct NightwatchPhoneApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
-        WindowGroup { RootView(store: store, connectivity: connectivity) }
+        WindowGroup {
+            RootView(store: store, connectivity: connectivity)
+                .task {
+                    // `-demoLandscape` turns the screen sideways for layout checks in the Simulator.
+                    guard CommandLine.arguments.contains("-demoLandscape"),
+                          let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+                    scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape))
+                }
+        }
             .onChange(of: scenePhase) { _, p in if p == .background { scheduleBackgroundRefresh() } }
     }
 }

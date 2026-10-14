@@ -56,8 +56,10 @@ public struct RootView: View {
                 .navigationBarTitleDisplayModeInline()
                 .toolbar {
                     // A drawn title, not .navigationTitle: the system title ignores the red palette.
-                    ToolbarItem(placement: .principal) {
-                        Text(store.site?.name ?? "Nightwatch").font(.headline).foregroundStyle(theme.textPrimary)
+                    if store.phase != .ready {
+                        ToolbarItem(placement: .principal) {
+                            Text(store.site?.name ?? "Nightwatch").font(.headline).foregroundStyle(theme.textPrimary)
+                        }
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
                         nightModeButton

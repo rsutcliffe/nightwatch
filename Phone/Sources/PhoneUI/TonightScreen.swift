@@ -78,7 +78,7 @@ public struct TonightScreen: View {
             Card {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("TOMORROW NIGHT").font(.caption.weight(.medium)).tracking(0.8).secondary()
-                    Text(t).font(.callout).fixedSize(horizontal: false, vertical: true)
+                    Text(t.hasPrefix("Tomorrow ") ? String(t.dropFirst(9)) : t).font(.callout).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

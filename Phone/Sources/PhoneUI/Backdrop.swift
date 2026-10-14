@@ -105,11 +105,11 @@ struct HeroSurface: ViewModifier {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(alignment: .trailing) {
+            .background(alignment: .bottomTrailing) {
                 if let figure, let f = Image(platformData: figure.0), let p = Image(platformData: figure.1) {
                     ZStack { f.resizable().scaledToFit(); p.resizable().scaledToFit() }
                         .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
-                        .opacity(0.20).padding(10).accessibilityHidden(true)
+                        .opacity(0.13).padding(10).offset(x: 14, y: 14).accessibilityHidden(true)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
             }

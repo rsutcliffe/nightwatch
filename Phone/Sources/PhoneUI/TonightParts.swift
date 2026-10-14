@@ -109,7 +109,7 @@ struct TileView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption).secondary()
             Text((warns ? "! " : "") + (value ?? "–")).font(.callout.weight(warns ? .semibold : .medium)).monospacedDigit()
-                .foregroundStyle(warns ? theme.warning : theme.textPrimary).lineLimit(1).minimumScaleFactor(0.8)
+                .foregroundStyle(warns ? theme.warning : theme.textPrimary).lineLimit(1).minimumScaleFactor(0.6)
             if let hint { Text(hint).font(.caption2).secondary().lineLimit(2) }
         }
         .padding(.horizontal, 11).padding(.vertical, 10)
@@ -145,7 +145,7 @@ struct MoonTileView: View {
             .overlay(Circle().stroke(Color.black.opacity(0.6), lineWidth: 1.5))
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(value).font(.callout.weight(.medium)).monospacedDigit().lineLimit(1)
+                Text(value).font(.callout.weight(.medium)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
                 if let line { Text(line).font(.caption2).secondary().lineLimit(2) }
             }
             Spacer(minLength: 0)
@@ -165,7 +165,7 @@ struct TilesView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
         // As the text grows the tiles drop to two columns, then one, so no value is cut off.
-        let count = typeSize.isAccessibilitySize ? 1 : typeSize >= .xxxLarge ? min(2, columns) : columns
+        let count = typeSize.isAccessibilitySize ? 1 : typeSize >= .xLarge ? min(2, columns) : columns
         let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: count)
         LazyVGrid(columns: cols, spacing: 8) {
             TileView(label: "Dark", value: tiles.dark)
