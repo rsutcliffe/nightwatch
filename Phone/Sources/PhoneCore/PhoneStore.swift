@@ -213,6 +213,36 @@ public final class PhoneStore: ObservableObject {
         replan()
     }
 
+    // MARK: Telescope and Go rule
+
+    /// Choose a telescope or camera from the presets (its field of view comes with it), or nil for Custom, which keeps the numbers. The fit
+    /// chips, suggestions and the verdict follow, so the plans are rebuilt.
+    public func setTelescope(presetID: String?) {
+        if let id = presetID, let p = TelescopePresets.shared.first(where: { $0.id == id }) { config.fov = p.fov; config.fovPresetID = id }
+        else { config.fovPresetID = nil }
+        saveConfig(); replan()
+    }
+
+    /// A typed field of view. It becomes Custom only when a number really changes: a field that writes back unchanged on losing focus must not
+    /// silently turn a preset into Custom (the Mac's 0.7.0 bug).
+    public func setFieldOfView(width: Double? = nil, height: Double? = nil) {
+        var f = config.fov
+        if let width { f.widthDeg = max(0.05, width) }
+        if let height { f.heightDeg = max(0.05, height) }
+        guard f != config.fov else { return }
+        config.fov = f; config.fovPresetID = nil
+        saveConfig(); replan()
+    }
+
+    /// Change the go rule (clear hours, cloud limit, the height targets must reach). Alerts and every plan follow.
+    public func setGoRule(_ change: (inout GoRule) -> Void) {
+        var r = config.goRule
+        change(&r)
+        guard r != config.goRule else { return }
+        config.goRule = r
+        saveConfig(); replan()
+    }
+
     // MARK: Horizons
 
     /// The height the horizon must clear to matter: the go rule's "Targets must reach". Heights at or below it change nothing.
