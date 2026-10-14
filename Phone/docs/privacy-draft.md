@@ -24,11 +24,27 @@ To read the forecast, Nightwatch sends **the coordinates of a saved site**:
   does for every app using Apple Weather. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
 - **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency.
-- **Apple Maps**, when you type a place name in "Add a site": the text is sent to Apple Maps to find the place. Your own
-  location is not sent.
+- **Apple Maps**, when you type a place name in "Add a site": the text is sent to Apple Maps to find the place (with the
+  area around your current site, so nearer places rank first). Your own location is not sent. Dark sites also asks Apple Maps
+  for the nearest car park and town to each dark spot found near your site, and draws a small map of each.
+- **Open-Meteo (elevation)**, once per saved site, with its coordinates, to find the hills around it (Horizon).
+- **Sky pictures** (CDS Strasbourg) and **the Moon's picture** (NASA): the position of a target or the time, never you.
+- **CelesTrak** and the **Minor Planet Center**: nothing about you is sent; the app downloads the space station's and
+  comets' orbit data, no more than every two hours and daily.
 
 None of these receives your name, an account or any identifier from Nightwatch. They receive your IP address as part of
 any internet request, and their own privacy policies apply.
+
+## Photos
+
+"Measure from a photo" reads one photo you choose, on the device, for the direction, lens and tilt it recorded. The photo
+is not kept or sent anywhere; only the height you set is saved. Nightwatch does not ask for access to your photo library:
+you pick the photo with the system's own picker.
+
+## The home-screen widget
+
+The widget shows the same answer as the app. The app hands it tonight's answer through an App Group shared only with the
+widget on the same device. The widget fetches nothing.
 
 ## Permissions
 

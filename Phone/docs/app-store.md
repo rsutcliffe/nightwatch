@@ -16,6 +16,12 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
 - **Background refresh** is used to read a fresh forecast and re-queue the alerts. iOS decides when it runs.
 - **iCloud key-value storage** shares saved sites and alert settings with the developer's Mac app (the same identifier).
 - **Red night mode** is a display palette for use at a telescope.
+- **Maps and Apple Maps search** find a place when one is typed, suggest car parks and towns for the dark sites list, and draw a
+  small map of each dark site.
+- **Home-screen widget** (small and medium) shows tonight's answer. The app and the widget share it through an App Group
+  (`group.io.github.rsutcliffe.nightwatch.phone`); the widget fetches nothing.
+- **Photos:** "Measure from a photo" (in a site's Horizon) uses the system photo picker, so no photo-library permission is
+  requested. The chosen photo is read on the device and not kept.
 - **To see the app working:** open it, choose any place on the welcome screen, and Tonight's answer appears.
 
 ## Guideline pre-flight

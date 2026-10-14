@@ -9,6 +9,16 @@ pinned by revision in `Package.swift`.
 - Requirements and design: [docs/PRD.md](docs/PRD.md), [docs/brand.md](docs/brand.md)
 - Tests: `scripts/test.sh`
 
+What it does:
+
+- **Tonight:** the score, the clear window, the clear-sky hours, the Moon, and the best targets, with alerts before sunset.
+- **Plan, Targets, Favourites and the week ahead,** with the Mac app's rules, so hearts and plan choices travel between devices.
+- **Eyes and binoculars and Events:** what can be seen without a telescope, showers, comets, space station passes and the Moon
+  covering a star.
+- **Dark sites** within reach, with tonight's score at each, and observing from one without saving it.
+- **Horizons:** the heights of what is in the way, the hills found from elevation data, or measured from a photo.
+- **Red night mode** and a small and medium home-screen widget.
+
 Not yet released.
 
 ## Credits
