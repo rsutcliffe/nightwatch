@@ -20,6 +20,8 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
   small map of each dark site.
 - **Home-screen widget** (small and medium) shows tonight's answer. The app and the widget share it through an App Group
   (`group.io.github.rsutcliffe.nightwatch.phone`); the widget fetches nothing.
+- **Forecast sources** are tried in order: Apple Weather, Open-Meteo, MET Norway, 7Timer. The footer on Tonight names the one that answered, and the
+  Apple Weather mark is shown only when Apple Weather did.
 - **Aurora alerts** are off by default. When on, the app reads AuroraWatch UK's status (UK and Ireland) or NOAA's aurora forecast (elsewhere)
   while it is open and when iOS grants a background refresh, and posts a local notification. No server is involved.
 - **Photos:** "Measure from a photo" (in a site's Horizon) uses the system photo picker, so no photo-library permission is

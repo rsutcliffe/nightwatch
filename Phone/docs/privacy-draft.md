@@ -23,7 +23,9 @@ To read the forecast, Nightwatch sends **the coordinates of a saved site**:
 - **Apple Weather (WeatherKit).** iOS makes these requests on Nightwatch's behalf and identifies the app to Apple, as it
   does for every app using Apple Weather. See [Apple's privacy policy](https://www.apple.com/legal/privacy/).
 - **[Open-Meteo](https://open-meteo.com/en/terms)**, for cloud cover and a second opinion.
-- **[7Timer!](https://www.7timer.info)**, for seeing and transparency.
+- **[MET Norway](https://api.met.no/)** (Norwegian Meteorological Institute), only when Apple Weather and Open-Meteo cannot be read: the coordinates of
+  the site, to read its forecast.
+- **[7Timer!](https://www.7timer.info)**, for seeing and transparency, and for the forecast itself when every other source has failed.
 - **Apple Maps**, when you type a place name in "Add a site": the text is sent to Apple Maps to find the place (with the
   area around your current site, so nearer places rank first). Your own location is not sent. Dark sites also asks Apple Maps
   for the nearest car park and town to each dark spot found near your site, and draws a small map of each.

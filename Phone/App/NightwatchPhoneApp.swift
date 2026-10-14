@@ -103,8 +103,9 @@ struct NightwatchPhoneApp: App {
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
             if demo, let wait = value("-demoSlow").flatMap(Double.init) { try await Task.sleep(for: .seconds(wait)) }   // hold the loading screen
             if args.contains("-demoOffline") { throw URLError(.notConnectedToInternet) }
-            if demo { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), cloud: cloud, site: site) }
-            return try await ForecastService.fetch(site: site, fetcher: PhoneFetcher(), now: now,
+            // `-demoLive` keeps the demo site but reads real forecasts, to see the fallback sources answer.
+            if demo, !args.contains("-demoLive") { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), cloud: cloud, site: site) }
+            return try await ForecastChain.fetch(site: site, fetcher: PhoneFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
            feeds: feeds, widgetSink: sink)
