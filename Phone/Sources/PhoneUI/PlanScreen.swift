@@ -15,8 +15,7 @@ struct PlanScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Picker("Night", selection: $tomorrow) { Text("Tonight").tag(false); Text("Tomorrow night").tag(true) }
-                    .pickerStyle(.segmented)
+                PhoneSegmented(selection: $tomorrow, options: [("Tonight", false), ("Tomorrow night", true)])
                 if let night, let site = store.site {
                     content(night: night, site: site)
                 }

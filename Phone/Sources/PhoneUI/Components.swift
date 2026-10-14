@@ -118,3 +118,27 @@ struct PhoneToggleStyle: ToggleStyle {
         .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
     }
 }
+
+/// A two-or-more way switch drawn in the palette (the system segmented control stays grey in red mode).
+struct PhoneSegmented<Value: Hashable>: View {
+    @Binding var selection: Value
+    let options: [(label: String, value: Value)]
+    @Environment(\.phoneTheme) private var theme
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options.indices, id: \.self) { i in
+                let on = options[i].value == selection
+                Button { selection = options[i].value } label: {
+                    Text(options[i].label).font(.callout.weight(on ? .semibold : .regular)).frame(maxWidth: .infinity, minHeight: 40)
+                        .foregroundStyle(on ? (theme.isRed ? Color.black : Color.white) : theme.textPrimary)
+                        .background(on ? theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+                }
+                .buttonStyle(PressStyle())
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .padding(3).background(theme.track, in: RoundedRectangle(cornerRadius: 12))
+        .sensoryFeedback(.selection, trigger: selection)
+    }
+}
