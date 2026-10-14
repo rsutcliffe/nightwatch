@@ -55,6 +55,7 @@ struct HorizonSheet: View {
     @ObservedObject var store: PhoneStore
     let siteName: String
     @State private var heights: [Double] = Array(repeating: 0, count: 8)
+    @State private var measuring = false
     @Environment(\.phoneTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
@@ -87,6 +88,7 @@ struct HorizonSheet: View {
                         }
                     }
                     SecondaryButton(title: "Open sky", systemImage: "sun.max") { heights = Array(repeating: open, count: 8); save() }
+                    SecondaryButton(title: "Measure from a photo", systemImage: "camera.viewfinder") { measuring = true }
                     terrainBox
                     Text("Heights below \(Int(open))° change nothing: the planner already keeps targets above that. The hills come from elevation data and see land only, never trees or buildings.")
                         .font(.footnote).secondary()
@@ -98,6 +100,12 @@ struct HorizonSheet: View {
             .toolbar {
                 ToolbarItem(placement: .principal) { Text("Horizon: \(siteName)").font(.headline).foregroundStyle(theme.textPrimary) }
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+        }
+        .sheet(isPresented: $measuring) {
+            if let site {
+                MeasurePhotoSheet(site: site, unit: store.distanceUnit, onUse: { d, v in heights[d] = v; save() },
+                                  onMove: { store.moveSite(named: siteName, to: $0) }).phoneTheme(theme)
             }
         }
         .onAppear {

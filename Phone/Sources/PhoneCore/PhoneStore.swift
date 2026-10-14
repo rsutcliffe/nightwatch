@@ -215,6 +215,18 @@ public final class PhoneStore: ObservableObject {
         replan()
     }
 
+    /// Move a saved site to where a photo was taken (the Mac's "Move here"): its hills are looked up again, and if it is the one in view the
+    /// forecast is read again for the new place.
+    public func moveSite(named name: String, to c: Coordinate) {
+        guard let i = config.sites.firstIndex(where: { $0.name == name }) else { return }
+        config.sites[i].latitude = c.latitude
+        config.sites[i].longitude = c.longitude
+        config.sites[i].terrain = nil
+        saveConfig()
+        checkTerrain()
+        if site?.name == name { Task { await refresh(force: true) } } else { replan() }
+    }
+
     /// Look up the hills for every saved site that has none yet, one site at a time with a pause between, as the Mac does (the
     /// elevation service answers 429 to quick runs). A failure is remembered for the launch; `retryTerrain` clears it.
     public func checkTerrain() {

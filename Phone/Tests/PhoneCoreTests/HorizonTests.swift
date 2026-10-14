@@ -95,3 +95,12 @@ final class TerrainCalls: @unchecked Sendable {
     #expect(store.isInPlan(id) == false)
     #expect(store.session()?.omitted.contains { $0.target.id == id && $0.reason.contains("horizon") } == true)
 }
+
+@MainActor @Test func movingASiteClearsItsHillsAndKeepsItsName() async {
+    let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: Calls())
+    store.config.sites[0].terrain = [10, 10, 10, 10, 10, 10, 10, 10]
+    store.moveSite(named: "Sheffield", to: Coordinate(latitude: 53.4, longitude: -1.5))
+    #expect(store.config.sites[0].name == "Sheffield")
+    #expect(store.config.sites[0].latitude == 53.4 && store.config.sites[0].longitude == -1.5)
+    #expect(store.config.sites[0].terrain == nil)
+}
