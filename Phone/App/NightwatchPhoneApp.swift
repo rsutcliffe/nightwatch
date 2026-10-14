@@ -95,6 +95,13 @@ struct NightwatchPhoneApp: App {
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock)
         if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
+        if demo, args.contains("-demoHorizon") {   // a site with trees to the north-east and hills to the west, and the hills already looked up
+            if let i = s.config.sites.firstIndex(where: { $0.name == DemoData.site.name }) {
+                s.config.sites[i].horizon = [30, 45, 30, 30, 30, 30, 60, 35]
+                s.config.sites[i].terrain = [12, 20, 8, 5, 10, 22, 52, 28]
+                s.saveConfig(send: false)
+            }
+        }
         if demo, args.contains("-demoHearts") {   // heart tonight's best three, so the Plan and Favourites have something in them
             Task { @MainActor in
                 await s.refresh(force: true)

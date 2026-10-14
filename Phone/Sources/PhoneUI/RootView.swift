@@ -11,6 +11,7 @@ public struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var showSites = false
     @State private var showSettings = false
+    @State private var showHorizon: HorizonTarget?
 
     public init(store: PhoneStore, connectivity: ConnectivityMonitor) {
         self.store = store; self.connectivity = connectivity
@@ -133,6 +134,7 @@ public struct RootView: View {
                             HStack { Text(s.name); Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark").foregroundStyle(theme.accent) } }
                         }
                     }
+                    if let active = store.site { Button { showHorizon = HorizonTarget(name: active.name) } label: { Label("Horizon for \(active.name)", systemImage: "mountain.2") } }
                     Button { showSites = true } label: { Label("Add or remove sites", systemImage: "plus") }
                 }
             }
@@ -159,10 +161,15 @@ public struct RootView: View {
             } else { stack(theme) }
         }
         .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
+        .sheet(item: $showHorizon) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
         .phoneTheme(theme)
         .environment(\.allowsOptionalDownloads, connectivity.current.allowsOptionalDownloads)
-        .task { refresh() }
+        .task {
+            refresh()
+            // `-demoOpen horizon` opens the active site's horizon sheet at launch, for screenshots in the Simulator.
+            if UserDefaults.standard.string(forKey: "demoOpen") == "horizon", let n = store.site?.name { try? await Task.sleep(for: .seconds(2)); showHorizon = HorizonTarget(name: n) }
+        }
         .onChange(of: scenePhase) { _, p in if p == .active { refresh(); Task { await permission.refresh() } } }
         .onChange(of: connectivity.current.isOnline) { _, on in if on { refresh() } }
     }
@@ -244,20 +251,32 @@ struct FirstRunScreen: View {
     }
 }
 
+/// A site named for the horizon sheet to open.
+struct HorizonTarget: Identifiable { let name: String; var id: String { name } }
+
 struct SitesSheet: View {
     @ObservedObject var store: PhoneStore
     @Environment(\.phoneTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var message: String?
+    @State private var horizonSite: HorizonTarget?
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Your sites") {
                     ForEach(store.config.sites, id: \.name) { s in
-                        Button { store.selectSite(s); dismiss() } label: {
-                            HStack { Text(s.name); Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark") } }
+                        HStack {
+                            Button { store.selectSite(s); dismiss() } label: {
+                                HStack { Text(s.name); Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark") } }
+                            }
+                            .buttonStyle(.borderless)
+                            Button { horizonSite = HorizonTarget(name: s.name) } label: {
+                                Image(systemName: "mountain.2").frame(width: 44, height: 44).contentShape(Rectangle())
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Horizon for \(s.name)")
                         }
                     }
                     .onDelete { store.removeSites(at: $0) }
@@ -269,6 +288,7 @@ struct SitesSheet: View {
                     if let message { Text(message).font(.footnote) }
                 }.listRowBackground(theme.card)
             }
+            .sheet(item: $horizonSite) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
             .scrollContentBackground(.hidden).background(theme.background)
             .navigationBarTitleDisplayModeInline()
             .toolbar {
@@ -291,6 +311,11 @@ struct SettingsScreen: View {
         Binding(get: { store.config.alerts[keyPath: kp] }, set: { store.config.alerts[keyPath: kp] = $0; store.saveConfig() })
     }
 
+    private func step(_ delta: Int) {
+        store.config.stopBy.minutes = ((store.config.stopBy.minutes + delta) % 1440 + 1440) % 1440
+        store.saveConfig(); store.replan()
+    }
+
     private var form: some View {
         Form {
             Section {
@@ -304,6 +329,15 @@ struct SettingsScreen: View {
                 Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
             } header: { Text("Alerts") } footer: {
                 Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
+            }.listRowBackground(theme.card)
+            Section {
+                Toggle("Finish by", isOn: Binding(get: { store.config.stopBy.enabled }, set: { store.config.stopBy.enabled = $0; store.saveConfig(); store.replan() }))
+                if store.config.stopBy.enabled {
+                    Stepper(String(format: "Stop at %02d:%02d", store.config.stopBy.minutes / 60, store.config.stopBy.minutes % 60),
+                            onIncrement: { step(30) }, onDecrement: { step(-30) })
+                }
+            } header: { Text("Plan") } footer: {
+                Text("A finish time (for sleep, or work the next day) shortens the clear window the plan uses, and keeps targets that are best after it out.")
             }.listRowBackground(theme.card)
             Section {
                 Toggle("Red night mode", isOn: $red)
