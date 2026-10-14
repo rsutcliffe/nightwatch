@@ -28,7 +28,9 @@ struct NightwatchWidgetEntryView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
     var body: some View {
-        NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemMedium ? .medium : .small, red: entry.red, now: entry.date)
+        NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemLarge ? .large : family == .systemMedium ? .medium : .small,
+                             red: entry.red, now: entry.date)
+            .widgetURL(family == .systemMedium ? WidgetLink.plan.url : nil)   // small opens the app on Tonight, medium on Plan; large's rows are their own links
             .containerBackground(NightwatchWidgetView.background(red: entry.red), for: .widget)
     }
 }
@@ -38,7 +40,7 @@ struct NightwatchWidget: Widget {
         StaticConfiguration(kind: "NightwatchWidget", provider: NightProvider()) { NightwatchWidgetEntryView(entry: $0) }
             .configurationDisplayName("Tonight")
             .description("Whether tonight is worth setting up for, and when the sky is clear.")
-            .supportedFamilies([.systemSmall, .systemMedium])
+            .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 

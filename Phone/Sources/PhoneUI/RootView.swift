@@ -175,6 +175,12 @@ public struct RootView: View {
                 try? await Task.sleep(for: .seconds(300))
             }
         }
+        .onOpenURL { url in
+            guard let link = WidgetLink(url: url) else { return }
+            store.pendingLink = link
+            let item: SidebarItem = link.phoneRoute == .plan ? .plan : .targets
+            tab = item; selection = item
+        }
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
         .phoneTheme(theme)
         .environment(\.allowsOptionalDownloads, connectivity.current.allowsOptionalDownloads)

@@ -7,6 +7,8 @@ struct TargetsScreen: View {
     @ObservedObject var store: PhoneStore
     @Environment(\.phoneTheme) private var theme
     // `-demoOpen eyes` / `events` opens that page at launch, for screenshots in the Simulator.
+    @State private var linkedTarget: RankedTarget?
+    @State private var showLinked = false
     @State private var demoEyes = UserDefaults.standard.string(forKey: "demoOpen") == "eyes"
     @State private var demoDark = UserDefaults.standard.string(forKey: "demoOpen") == "dark"
     @State private var demoEvents = ["events", "event"].contains(UserDefaults.standard.string(forKey: "demoOpen"))
@@ -32,8 +34,18 @@ struct TargetsScreen: View {
         }
         .background { StarField(seed: "targets").ignoresSafeArea() }
         .navigationDestination(isPresented: $demoEyes) { EyesScreen(store: store) }
+        .navigationDestination(isPresented: $showLinked) { if let t = linkedTarget { TargetDetailScreen(store: store, target: t) } }
+        .onAppear(perform: consumeLink)
+        .onChange(of: store.pendingLink) { _, _ in consumeLink() }
         .navigationDestination(isPresented: $demoDark) { DarkSitesScreen(store: store) }
         .navigationDestination(isPresented: $demoEvents) { EventsScreen(store: store) }
+    }
+
+    /// A widget or Shortcut link: a target's page opens on top of this list; any other link has done its work by landing here.
+    private func consumeLink() {
+        guard let link = store.pendingLink else { return }
+        store.pendingLink = nil
+        if case .target(let id) = link, let t = store.target(withID: id) { linkedTarget = t; showLinked = true }
     }
 
     private func row<D: View>(title: String, symbol: String, count: Int, @ViewBuilder dest: @escaping () -> D) -> some View {

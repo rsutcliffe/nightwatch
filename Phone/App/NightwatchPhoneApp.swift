@@ -148,6 +148,8 @@ struct NightwatchPhoneApp: App {
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                     NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .medium, red: red).padding(16).frame(width: 364, height: 170)
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
+                    NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .large, red: red).padding(16).frame(width: 364, height: 382)
+                        .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.gray.opacity(0.4))
             } else {
             RootView(store: store, connectivity: connectivity)

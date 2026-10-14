@@ -94,6 +94,8 @@ public final class PhoneStore: ObservableObject {
     /// True while the list is being worked out (car parks, town names and forecasts are looked up one at a time).
     @Published public private(set) var darkSitesWorking = false
     /// The last run left out the forecasts and lookups because the connection is costly or constrained.
+    /// A `nightwatch://` link waiting for the page that handles it (a target's page opens from Targets once that page is on screen).
+    @Published public var pendingLink: WidgetLink?
     @Published public private(set) var darkSitesSkipped = false
     /// The Dark sites page is open: only then are forecasts fetched for the sites (the nearest three), to spare the forecast service.
     @Published public private(set) var darkSitesOpen = false

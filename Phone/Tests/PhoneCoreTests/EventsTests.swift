@@ -56,3 +56,20 @@ final class FeedCalls: @unchecked Sendable { var urls: [URL] = [] }
     // A faint galaxy needs a telescope at Bortle 8, so it is never listed.
     #expect(s.eyeTargets.contains { $0.id == "m33" } == false)
 }
+
+@Test func everyWidgetLinkRoutesToAPageAndATargetIdSurvivesItsTrip() throws {
+    #expect(WidgetLink(url: URL(string: "nightwatch://plan")!)?.phoneRoute == .plan)
+    #expect(WidgetLink(url: URL(string: "nightwatch://targets")!)?.phoneRoute == .targets)
+    #expect(WidgetLink(url: URL(string: "nightwatch://search?q=andromeda")!)?.phoneRoute == .targets)
+    let link = WidgetLink.target("m 31/x")                       // an id with a space and a slash
+    #expect(WidgetLink(url: link.url) == link)
+    #expect(link.phoneRoute == .targets)
+}
+
+@MainActor @Test func aTargetIsFoundByIdFromTonightsLists() async throws {
+    let s = store(on: utc(2026, 8, 12, 12), clock: Clock(utc(2026, 8, 12, 12)), feedCalls: FeedCalls())
+    await s.refresh()
+    let id = try #require(s.planning?.tonight.best.first?.id)
+    #expect(s.target(withID: id)?.id == id)
+    #expect(s.target(withID: "no-such-thing") == nil)
+}

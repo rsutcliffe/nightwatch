@@ -53,6 +53,9 @@ targets:
         UIUserInterfaceStyle: Dark
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes: [fetch]
+        CFBundleURLTypes:
+          - CFBundleURLName: io.github.rsutcliffe.nightwatch.phone
+            CFBundleURLSchemes: [nightwatch]
         BGTaskSchedulerPermittedIdentifiers: [io.github.rsutcliffe.nightwatch.phone.refresh]
         NSLocationWhenInUseUsageDescription: Nightwatch uses your location once, when you ask, to read the forecast for where you are observing from.
     settings:
