@@ -99,13 +99,15 @@ struct DarkSiteCard: View {
     }
 
     private func actions(_ s: DarkSite) -> some View {
-        HStack {
-            if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) }
-            Spacer()
-            Button { Haptic.selection(); openMaps(s) } label: { Label("Open in Maps", systemImage: "map") }
-                .buttonStyle(PressStyle()).font(.callout.weight(.medium)).foregroundStyle(theme.accent).frame(minHeight: 44)
-            Button("Observe from here") { Haptic.impact(.medium); store.visit(s) }.buttonStyle(PressStyle())
-                .font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44).padding(.leading, 8)
+        let maps = Button { Haptic.selection(); openMaps(s) } label: { Label("Open in Maps", systemImage: "map").lineLimit(1) }
+            .buttonStyle(PressStyle()).font(.callout.weight(.medium)).foregroundStyle(theme.accent).frame(minHeight: 44)
+        let observe = Button { Haptic.impact(.medium); store.visit(s) } label: { Text("Observe from here").lineLimit(1) }
+            .buttonStyle(PressStyle()).font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44)
+        let source = Group { if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) } }
+        // Side by side when they fit; one above the other, flush right, when the width or the text size says they do not.
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 18) { source; Spacer(minLength: 0); maps; observe }
+            VStack(alignment: .trailing, spacing: 0) { observe; maps; source }.frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
