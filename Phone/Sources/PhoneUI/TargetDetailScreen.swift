@@ -1,0 +1,78 @@
+import SwiftUI
+import SkyCore
+import PhoneCore
+
+/// A target's page: its picture, the figures, tonight's altitude, how to shoot it, and the heart and plan buttons.
+struct TargetDetailScreen: View {
+    @ObservedObject var store: PhoneStore
+    let target: RankedTarget
+    @Environment(\.phoneTheme) private var theme
+
+    var body: some View {
+        let plan = store.planning?.tonight
+        let site = store.site
+        let pick = site.map { TargetPick.make(target, site: $0, fov: store.config.fov) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if let pick {
+                    TargetPicture(pick: pick).frame(height: 220).clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(target.catalogueID).font(.title2.weight(.semibold))
+                        Text(target.commonName ?? target.typeName).font(.callout).secondary()
+                        Text(target.subtitle).font(.footnote).secondary()
+                    }
+                    Spacer()
+                    HeartButton(store: store, id: target.id)
+                }
+                HStack(spacing: 10) {
+                    if let site {
+                        stat("Best", "\(Copy.hhmm(target.peakTime, site: site))")
+                        stat("Up to", "\(Int(target.peakAltDeg.rounded()))°")
+                    }
+                    if let m = target.magnitude { stat("Magnitude", String(format: "%.1f", m)) }
+                    stat("Moon", "\(Int(target.moonSepDeg.rounded()))° away")
+                }
+                if let plan, let site, let win = plan.primary {
+                    Card { AltitudeChart(lines: AltitudeChart.lines(for: [target], night: plan.night, window: win, site: site,
+                                                                    floor: store.config.goRule.minAltitudeDeg),
+                                         night: plan.night, window: win, floor: store.config.goRule.minAltitudeDeg, site: site, height: 140) }
+                }
+                if let plan, plan.primary != nil { planButton }
+                if let site {
+                    let tip = ShootingTips.tip(for: target, presetID: store.config.fovPresetID, presetName: nil, stackMinutes: nil, site: site)
+                    Card {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(tip.title, systemImage: tip.symbol).font(.callout.weight(.medium))
+                            ForEach(Array(tip.rows.enumerated()), id: \.offset) { _, r in
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(r.label).font(.caption).secondary()
+                                    Text(r.text).font(.footnote).fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            if let s = tip.source { Text(s).font(.caption2).secondary() }
+                        }
+                    }
+                }
+            }
+            .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
+        }
+        .background { StarField(seed: target.id).ignoresSafeArea() }
+        .navigationTitle(target.catalogueID)
+        .navigationBarTitleDisplayModeInline()
+    }
+
+    private var planButton: some View {
+        let inPlan = store.isInPlan(target.id)
+        return PrimaryButton(title: inPlan ? "Take off tonight's plan" : "Add to tonight's plan") { store.setInPlan(target.id, on: !inPlan) }
+    }
+
+    private func stat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.caption).secondary()
+            Text(value).font(.callout.weight(.medium)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .padding(10).frame(maxWidth: .infinity, alignment: .leading).background(theme.tile, in: RoundedRectangle(cornerRadius: 10))
+    }
+}

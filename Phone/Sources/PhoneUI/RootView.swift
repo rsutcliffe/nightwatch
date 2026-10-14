@@ -12,16 +12,23 @@ public struct RootView: View {
     @State private var showSites = false
     @State private var showSettings = false
 
-    public init(store: PhoneStore, connectivity: ConnectivityMonitor) { self.store = store; self.connectivity = connectivity }
+    public init(store: PhoneStore, connectivity: ConnectivityMonitor) {
+        self.store = store; self.connectivity = connectivity
+        // `-demoTab plan` (or targets, week) opens that section first, for screenshots in the Simulator.
+        let first = UserDefaults.standard.string(forKey: "demoTab").flatMap { ["tonight": SidebarItem.tonight, "plan": .plan, "targets": .targets, "week": .week][$0] } ?? .tonight
+        _tab = State(initialValue: first); _selection = State(initialValue: first)
+    }
 
     private func refresh(force: Bool = false) { Task { await store.refresh(force: force, connectivity: connectivity.current) } }
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var selection: SidebarItem? = .tonight
+    @State private var selection: SidebarItem?
     /// The sidebar starts closed in portrait, so the page has the full width; landscape has room for both.
     @State private var columns: NavigationSplitViewVisibility = .automatic
-    enum SidebarItem: Hashable { case tonight, settings }
+    enum SidebarItem: Hashable { case tonight, plan, targets, week, settings }
+    @State private var tab: SidebarItem
+    @State private var planTomorrow = false
 
     @ViewBuilder private var phaseContent: some View {
         phaseSwitch.animation(reduceMotion ? nil : .easeOut(duration: 0.4), value: store.phase)
@@ -43,36 +50,67 @@ public struct RootView: View {
         }
     }
 
+    /// The page for a section. Until the forecast is ready every section shows the same waiting, failed or first-run page.
+    @ViewBuilder private func page(_ item: SidebarItem) -> some View {
+        if store.phase != .ready || store.planning == nil || item == .tonight {
+            phaseContent
+        } else {
+            switch item {
+            case .plan: PlanScreen(store: store, onBrowse: { tab = .targets; selection = .targets })
+            case .targets: TargetsScreen(store: store)
+            case .week: WeekScreen(store: store, onOpenPlan: { _ in tab = .plan; selection = .plan })
+            default: phaseContent
+            }
+        }
+    }
+
+    private func title(_ item: SidebarItem) -> String {
+        switch item {
+        case .tonight: store.site?.name ?? "Nightwatch"
+        case .plan: "Plan"
+        case .targets: "Targets"
+        case .week: "The week ahead"
+        case .settings: "Settings"
+        }
+    }
+
     private var nightModeButton: some View {
         Button { red.toggle() } label: { Image(systemName: red ? "moon.fill" : "moon") }
             .accessibilityLabel("Red night mode")
             .sensoryFeedback(.selection, trigger: red)
     }
 
-    /// iPhone and Slide Over: one stack, with sites and settings as sheets.
+    /// iPhone and Slide Over: four tabs, each in its own stack, with sites and settings as sheets.
     private func stack(_ theme: PhoneTheme) -> some View {
-        NavigationStack {
-            phaseContent
-                .navigationBarTitleDisplayModeInline()
-                .toolbar {
-                    // A drawn title, not .navigationTitle: the system title ignores the red palette.
-                    if store.phase != .ready {
-                        ToolbarItem(placement: .principal) {
-                            Text(store.site?.name ?? "Nightwatch").font(.headline).foregroundStyle(theme.textPrimary)
+        TabView(selection: $tab) {
+            ForEach([SidebarItem.tonight, .plan, .targets, .week], id: \.self) { item in
+                NavigationStack {
+                    page(item)
+                        .navigationBarTitleDisplayModeInline()
+                        .toolbar {
+                            // A drawn title, not .navigationTitle: the system title ignores the red palette.
+                            if store.phase != .ready || item != .tonight {
+                                ToolbarItem(placement: .principal) { Text(title(item)).font(.headline).foregroundStyle(theme.textPrimary) }
+                            }
+                            ToolbarItemGroup(placement: .primaryAction) {
+                                nightModeButton
+                                if store.phase != .needsSite {
+                                    Button { showSites = true } label: { Image(systemName: "mappin.and.ellipse") }.accessibilityLabel("Sites")
+                                }
+                                Button { showSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings")
+                            }
+                            .plainBackground()
                         }
-                    }
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        nightModeButton
-                        if store.phase != .needsSite {
-                            Button { showSites = true } label: { Image(systemName: "mappin.and.ellipse") }.accessibilityLabel("Sites")
-                        }
-                        Button { showSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings")
-                    }
-                    .plainBackground()
+                        .clearNavigationBar()
                 }
-                .clearNavigationBar()
+                .tabItem { Label(tabName(item), systemImage: tabSymbol(item)) }
+                .tag(item)
+            }
         }
     }
+
+    private func tabName(_ i: SidebarItem) -> String { i == .tonight ? "Tonight" : i == .plan ? "Plan" : i == .targets ? "Targets" : "Week" }
+    private func tabSymbol(_ i: SidebarItem) -> String { i == .tonight ? "moon.stars" : i == .plan ? "list.bullet.rectangle" : i == .targets ? "sparkles" : "calendar" }
 
     /// iPad: a sidebar with Tonight, the sites and Settings, and the page beside it.
     private func split(_ theme: PhoneTheme) -> some View {
@@ -80,6 +118,9 @@ public struct RootView: View {
             List(selection: $selection) {
                 Section {
                     Label("Tonight", systemImage: "moon.stars").tag(SidebarItem.tonight)
+                    Label("Plan", systemImage: "list.bullet.rectangle").tag(SidebarItem.plan)
+                    Label("Targets", systemImage: "sparkles").tag(SidebarItem.targets)
+                    Label("The week ahead", systemImage: "calendar").tag(SidebarItem.week)
                     Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
                 }
                 Section {
@@ -100,7 +141,7 @@ public struct RootView: View {
         } detail: {
             NavigationStack {
                 Group {
-                    if selection == .settings { SettingsScreen(store: store, red: $red, permission: permission, embedded: true) } else { phaseContent }
+                    if selection == .settings { SettingsScreen(store: store, red: $red, permission: permission, embedded: true) } else { page(selection ?? .tonight) }
                 }
                 .navigationBarTitleDisplayModeInline()
                 .clearNavigationBar()

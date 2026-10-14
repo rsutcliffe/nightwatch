@@ -94,7 +94,13 @@ struct NightwatchPhoneApp: App {
             return try await ForecastService.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock)
-        if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }   // -demoEmpty shows the first-run screen
+        if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
+        if demo, args.contains("-demoHearts") {   // heart tonight's best three, so the Plan and Favourites have something in them
+            Task { @MainActor in
+                await s.refresh(force: true)
+                for t in (s.planning?.tonight.best ?? []).prefix(3) where !s.isFavourite(t.id) { s.toggleFavourite(t.id) }
+            }
+        }   // -demoEmpty shows the first-run screen
         s.attachSync(store: CloudStore())
         BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshTaskID, using: nil) { task in
             scheduleBackgroundRefresh()
