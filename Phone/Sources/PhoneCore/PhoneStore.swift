@@ -19,6 +19,9 @@ public protocol NotificationScheduling: Sendable {
 }
 
 /// Fetches a forecast for a site. `askPrimary` is false while Apple Weather is being left alone after a refusal.
+/// Looks up the hills around a site: the eight heights, N to NW, in degrees.
+public typealias TerrainFetcher = @Sendable (Site) async throws -> [Double]
+
 public typealias ForecastProvider = @Sendable (_ site: Site, _ now: Date, _ askPrimary: Bool) async throws -> Forecast
 
 /// The phone app's one source of truth: the settings, the saved forecast, tonight's plan as the page draws it, and the
@@ -47,6 +50,9 @@ public final class PhoneStore: ObservableObject {
     @Published public var config: Config = .default
     /// Tonight's and tomorrow's full plans and the ten-night week, for the Plan, Targets, Favourites and Week screens.
     @Published public private(set) var planning: Planning?
+    /// Sites whose hills are being looked up now, and sites whose lookup failed this launch (Retry clears one).
+    @Published public private(set) var terrainChecking: Set<String> = []
+    @Published public private(set) var terrainFailed: Set<String> = []
 
     private let directory: URL
     private let provider: ForecastProvider
@@ -56,6 +62,9 @@ public final class PhoneStore: ObservableObject {
     private let markStore: AppleMarkStore
     private let forecastStore: ForecastStore
     private var pause = PrimaryPause()
+    private let terrainFetcher: TerrainFetcher
+    private let terrainPause: Duration
+    private var terrainTask: Task<Void, Never>?
     private var ledger = AlertLedger()
 
     private let catalog: Catalog
@@ -64,7 +73,11 @@ public final class PhoneStore: ObservableObject {
 
     public init(directory: URL, provider: @escaping ForecastProvider, scheduler: NotificationScheduling,
                 clock: @escaping @Sendable () -> Date = { Date() },
-                fetchData: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 }) {
+                fetchData: @escaping @Sendable (URL) async throws -> Data = { try await URLSession.shared.data(from: $0).0 },
+                terrain: @escaping TerrainFetcher = { try await Terrain.fetch(site: $0, fetcher: URLSessionFetcher()) },
+                terrainPause: Duration = .seconds(10)) {
+        self.terrainFetcher = terrain
+        self.terrainPause = terrainPause
         self.directory = directory
         self.provider = provider
         self.scheduler = scheduler
@@ -146,6 +159,57 @@ public final class PhoneStore: ObservableObject {
         replan()
     }
 
+    // MARK: Horizons
+
+    /// The height the horizon must clear to matter: the go rule's "Targets must reach". Heights at or below it change nothing.
+    public var openDeg: Double { config.goRule.minAltitudeDeg }
+
+    /// Save the eight horizon heights for a site (nil, open sky, when every one is at the open height, as the Mac does), then plan again.
+    public func setHorizon(siteNamed name: String, heights: [Double]) {
+        guard let i = config.sites.firstIndex(where: { $0.name == name }), heights.count == 8 else { return }
+        config.sites[i].horizon = heights.allSatisfy({ $0 <= openDeg }) ? nil : heights
+        saveConfig()
+        replan()
+    }
+
+    /// Look up the hills for every saved site that has none yet, one site at a time with a pause between, as the Mac does (the
+    /// elevation service answers 429 to quick runs). A failure is remembered for the launch; `retryTerrain` clears it.
+    public func checkTerrain() {
+        guard terrainTask == nil else { return }
+        terrainTask = Task { [weak self] in
+            guard let self else { return }
+            var first = true
+            while let site = self.config.sites.first(where: { $0.terrain == nil && !self.terrainFailed.contains($0.name) }) {
+                if !first { try? await Task.sleep(for: self.terrainPause) }
+                first = false
+                self.terrainChecking.insert(site.name)
+                do {
+                    let heights = try await self.terrainFetcher(site)
+                    if let i = self.config.sites.firstIndex(where: { $0.name == site.name }), self.config.sites[i].latitude == site.latitude,
+                       self.config.sites[i].longitude == site.longitude {
+                        self.config.sites[i].terrain = heights
+                        self.saveConfig()
+                    }
+                } catch { self.terrainFailed.insert(site.name) }
+                self.terrainChecking.remove(site.name)
+            }
+            self.terrainTask = nil
+        }
+    }
+
+    public func retryTerrain(siteNamed name: String) {
+        terrainFailed.remove(name)
+        checkTerrain()
+    }
+
+    /// Raise the horizon to clear the hills where they stand above it (the Mac's "Raise" button).
+    public func raiseToTerrain(siteNamed name: String) {
+        guard let site = config.sites.first(where: { $0.name == name }), let t = site.terrain else { return }
+        var h = site.horizon ?? Array(repeating: openDeg, count: 8)
+        for (i, v) in Terrain.raises(terrain: t, site: site, openDeg: openDeg) { h[i] = v }
+        setHorizon(siteNamed: name, heights: h)
+    }
+
     // MARK: Sites
 
     /// Add a site (or replace one of the same name), make it the active one, save, and read its forecast.
@@ -154,6 +218,7 @@ public final class PhoneStore: ObservableObject {
         guard config.sites.count < Config.maxSites else { return }
         config.sites.append(s)
         selectSite(s)
+        checkTerrain()
     }
 
     public func selectSite(_ s: Site) {

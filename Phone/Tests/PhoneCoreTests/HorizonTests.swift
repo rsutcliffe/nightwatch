@@ -1,0 +1,84 @@
+import Testing
+import Foundation
+import SkyCore
+@testable import PhoneCore
+
+final class TerrainCalls: @unchecked Sendable {
+    var sites: [String] = []
+    var failing = false
+    var heights: [Double] = [0, 35, 0, 0, 0, 0, 52, 0]
+}
+
+@MainActor private func horizonStore(_ calls: TerrainCalls) -> PhoneStore {
+    let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("hz-\(UUID().uuidString)"),
+                           provider: { site, now, _ in forecast(fetchedAt: now, source: nil, site: site) }, scheduler: FakeScheduler(),
+                           clock: { utc(2026, 9, 23, 12) },
+                           terrain: { site in calls.sites.append(site.name); if calls.failing { throw Failure() }; return calls.heights },
+                           terrainPause: .milliseconds(1))
+    store.config.sites = [sheffield]
+    store.config.activeSiteName = "Sheffield"
+    return store
+}
+
+/// Wait for the store's lookup to finish (it runs on the main actor, one site at a time).
+@MainActor private func settle(_ store: PhoneStore) async {
+    for _ in 0..<400 {
+        let busy = !store.terrainChecking.isEmpty
+        let waiting = store.config.sites.contains { $0.terrain == nil && !store.terrainFailed.contains($0.name) }
+        if !busy && !waiting { break }
+        try? await Task.sleep(for: .milliseconds(5))
+    }
+    try? await Task.sleep(for: .milliseconds(20))   // let the task clear itself
+}
+
+@MainActor @Test func aHorizonAtTheOpenHeightIsStoredAsOpenSky() {
+    let store = horizonStore(TerrainCalls())
+    store.setHorizon(siteNamed: "Sheffield", heights: Array(repeating: 10, count: 8))
+    #expect(store.config.sites[0].horizon == nil)
+}
+
+@MainActor @Test func aRaisedHorizonIsKeptAndTheOpenOnesWithIt() {
+    let store = horizonStore(TerrainCalls())
+    let h: [Double] = [30, 30, 30, 30, 30, 30, 45, 30]
+    store.setHorizon(siteNamed: "Sheffield", heights: h)
+    #expect(store.config.sites[0].horizon == h)
+}
+
+@MainActor @Test func theHillsAreLookedUpOnceForASiteThatHasNone() async {
+    let calls = TerrainCalls(); let store = horizonStore(calls)
+    store.checkTerrain(); await settle(store)
+    #expect(calls.sites == ["Sheffield"])
+    #expect(store.config.sites[0].terrain == calls.heights)
+    store.checkTerrain(); await settle(store)
+    #expect(calls.sites.count == 1)
+}
+
+@MainActor @Test func aFailedLookupIsRememberedAndRetryTriesAgain() async {
+    let calls = TerrainCalls(); calls.failing = true; let store = horizonStore(calls)
+    store.checkTerrain(); await settle(store)
+    #expect(store.terrainFailed.contains("Sheffield"))
+    #expect(store.config.sites[0].terrain == nil)
+    store.checkTerrain(); await settle(store)
+    #expect(calls.sites.count == 1)          // not tried again by itself
+    calls.failing = false
+    store.retryTerrain(siteNamed: "Sheffield"); await settle(store)
+    #expect(store.config.sites[0].terrain == calls.heights)
+    #expect(store.terrainFailed.isEmpty)
+}
+
+@MainActor @Test func raisingToTheHillsLiftsOnlyTheDirectionsTheyStandAbove() async throws {
+    let calls = TerrainCalls(); let store = horizonStore(calls)
+    store.checkTerrain(); await settle(store)
+    store.raiseToTerrain(siteNamed: "Sheffield")
+    let h = try #require(store.config.sites[0].horizon)
+    #expect(h[1] == 40)        // north-east: hills reach 35, raised to the next 5 degrees above them
+    #expect(h[6] == 55)        // west: hills reach 52
+    #expect(h[0] == store.openDeg && h[4] == store.openDeg)   // elsewhere the open height stands
+}
+
+@MainActor @Test func hillsLowerThanTheOpenHeightChangeNothing() async {
+    let calls = TerrainCalls(); calls.heights = [0, 3, 0, 0, 0, 0, 7, 0]; let store = horizonStore(calls)
+    store.checkTerrain(); await settle(store)
+    store.raiseToTerrain(siteNamed: "Sheffield")
+    #expect(store.config.sites[0].horizon == nil)
+}
