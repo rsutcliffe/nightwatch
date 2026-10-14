@@ -119,7 +119,7 @@ struct AltitudeChart: View {
             .frame(height: height)
             // The lines are drawn in from sunset to sunrise, as the bars rise on Tonight.
             .mask(alignment: .leading) { GeometryReader { g in Rectangle().frame(width: revealed || reduceMotion ? g.size.width : 0) } }
-            .animation(reduceMotion ? nil : .easeOut(duration: 1.1), value: revealed)
+            .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.85), value: revealed)   // the same spring the rows rise with
             .onAppear { revealed = true }
             HStack {
                 Text("Sunset \(Copy.hhmm(night.sunset, site: site))"); Spacer()
