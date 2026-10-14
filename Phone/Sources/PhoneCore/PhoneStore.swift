@@ -86,6 +86,8 @@ public final class PhoneStore: ObservableObject {
     /// The last run left out the forecasts and lookups because the connection is costly or constrained.
     @Published public private(set) var darkSitesSkipped = false
     private let darkLookups: DarkLookups?
+    /// Told after each plan is built, with what the home-screen widget should draw (the app writes it to the shared App Group).
+    private let widgetSink: (@Sendable (WidgetSnapshot) -> Void)?
     private let certified: [CertifiedSite]
     private var grids: [LPGrid] { Self.lightPollution }
     private static let lightPollution = LPGrids.bundled()
@@ -108,7 +110,9 @@ public final class PhoneStore: ObservableObject {
                 terrainPause: Duration = .seconds(10),
                 feeds: @escaping @Sendable (URL) async throws -> Data = { try await URLSessionFetcher().get($0) },
                 occultations: Bool = true,
-                darkLookups: DarkLookups? = .live) {
+                darkLookups: DarkLookups? = .live,
+                widgetSink: (@Sendable (WidgetSnapshot) -> Void)? = nil) {
+        self.widgetSink = widgetSink
         self.darkLookups = darkLookups
         certified = (try? DarkSites.bundledCertified()) ?? []
         self.feeds = feeds
@@ -528,6 +532,7 @@ public final class PhoneStore: ObservableObject {
                                                rule: config.goRule, bright: config.brightNights))
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: config.goRule.maxCloudPct)
         phase = .ready
+        if let snap = tonight?.snapshot { widgetSink?(snap) }
 
         guard config.notifyEnabled, await scheduler.isAuthorised() else { return }
         let r = AlertPlanner.plan(now: now, ledger: ledger, tonight: plan, tomorrow: tomorrow, settings: config.alerts,

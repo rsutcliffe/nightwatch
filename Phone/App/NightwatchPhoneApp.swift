@@ -4,6 +4,8 @@ import BackgroundTasks
 import SkyCore
 import PhoneCore
 import PhoneUI
+import PhoneWidgetUI
+import WidgetKit
 
 /// The real iCloud key-value store, behind PhoneCore's protocol.
 final class CloudStore: KeyValueStoring {
@@ -87,13 +89,16 @@ struct NightwatchPhoneApp: App {
             try? ForecastStore(url: demoDir.appendingPathComponent("forecast.json")).save(
                 DemoData.forecast(fetchedAt: clock().addingTimeInterval(-7200), from: Calendar.current.startOfDay(for: clock())))
         }
+        var sink: (@Sendable (WidgetSnapshot) -> Void)?
+        if !demo { sink = { snapshot in WidgetShare.save(snapshot); WidgetCenter.shared.reloadAllTimelines() } }
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
             if demo, let wait = value("-demoSlow").flatMap(Double.init) { try await Task.sleep(for: .seconds(wait)) }   // hold the loading screen
             if args.contains("-demoOffline") { throw URLError(.notConnectedToInternet) }
             if demo { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), cloud: cloud, site: site) }
             return try await ForecastService.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
-        }, scheduler: UserNotificationScheduler(now: clock), clock: clock)
+        }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
+           widgetSink: sink)
         if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
         if demo, args.contains("-demoHorizon") {   // a site with trees to the north-east and hills to the west, and the hills already looked up
             if let i = s.config.sites.firstIndex(where: { $0.name == DemoData.site.name }) {
@@ -121,9 +126,19 @@ struct NightwatchPhoneApp: App {
     }
 
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("redNightMode") private var red = false
 
     var body: some Scene {
         WindowGroup {
+            if CommandLine.arguments.contains("-demoWidget") {   // the two widget sizes on the home-screen background, for screenshots
+                let red = CommandLine.arguments.contains("-redNightMode") && UserDefaults.standard.bool(forKey: "redNightMode")
+                VStack(spacing: 16) {
+                    NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .small, red: red).padding(16).frame(width: 170, height: 170)
+                        .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
+                    NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .medium, red: red).padding(16).frame(width: 364, height: 170)
+                        .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
+                }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.gray.opacity(0.4))
+            } else {
             RootView(store: store, connectivity: connectivity)
                 .task {
                     // `-demoLandscape` turns the screen sideways for layout checks in the Simulator.
@@ -131,7 +146,9 @@ struct NightwatchPhoneApp: App {
                           let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
                     scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape))
                 }
+            }
         }
             .onChange(of: scenePhase) { _, p in if p == .background { scheduleBackgroundRefresh() } }
+            .onChange(of: red) { _, on in WidgetShare.red = on; WidgetCenter.shared.reloadAllTimelines() }
     }
 }

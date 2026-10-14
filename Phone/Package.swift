@@ -8,7 +8,8 @@ let package = Package(
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "PhoneCore", targets: ["PhoneCore"]),
-        .library(name: "PhoneUI", targets: ["PhoneUI"])
+        .library(name: "PhoneUI", targets: ["PhoneUI"]),
+        .library(name: "PhoneWidgetUI", targets: ["PhoneWidgetUI"])
     ],
     dependencies: [
         .package(url: "https://github.com/rsutcliffe/nightwatch.git", revision: "bc78d2c08d1e3807a561d6f808e04f2c3fcac800")
@@ -16,6 +17,8 @@ let package = Package(
     targets: [
         .target(name: "PhoneCore", dependencies: [.product(name: "SkyCore", package: "nightwatch")]),
         .target(name: "PhoneUI", dependencies: ["PhoneCore", .product(name: "SkyCore", package: "nightwatch")]),
-        .testTarget(name: "PhoneCoreTests", dependencies: ["PhoneCore", .product(name: "SkyCore", package: "nightwatch")])
+        // What the home-screen widget draws and how the app hands it the snapshot. Kept apart from PhoneUI so the widget stays small.
+        .target(name: "PhoneWidgetUI", dependencies: [.product(name: "SkyCore", package: "nightwatch")]),
+        .testTarget(name: "PhoneCoreTests", dependencies: ["PhoneCore", "PhoneWidgetUI", .product(name: "SkyCore", package: "nightwatch")])
     ]
 )

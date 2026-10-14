@@ -37,6 +37,9 @@ targets:
         product: PhoneCore
       - package: NightwatchPhone
         product: PhoneUI
+      - package: NightwatchPhone
+        product: PhoneWidgetUI
+      - target: NightwatchWidget
     info:
       path: build/NightwatchPhone-Info.plist
       properties:
@@ -56,3 +59,25 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: Nightwatch
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_ENTITLEMENTS: App/Nightwatch.entitlements
+  NightwatchWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+        excludes: [NightwatchWidget.entitlements]
+    dependencies:
+      - package: NightwatchPhone
+        product: PhoneWidgetUI
+    info:
+      path: build/NightwatchWidget-Info.plist
+      properties:
+        CFBundleDisplayName: Nightwatch
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.rsutcliffe.nightwatch.phone.widget
+        PRODUCT_NAME: NightwatchWidget
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_ENTITLEMENTS: Widget/NightwatchWidget.entitlements
+        SKIP_INSTALL: "YES"
