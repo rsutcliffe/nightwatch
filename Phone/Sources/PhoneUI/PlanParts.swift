@@ -41,7 +41,7 @@ struct TargetCardView: View {
                     if let c = target.cardNote { Text(c).font(.footnote).secondary() }
                 }
                 Text(target.commonName ?? target.typeName).font(.footnote).secondary().lineLimit(1)
-                if let note { Text(note).font(.caption).foregroundStyle(theme.warning).lineLimit(2) }
+                if let note { Text(note.plainDashes).font(.caption).foregroundStyle(theme.warning).lineLimit(2) }
                 else if let pick { Text(pick.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.bestLine).lineLimit(1) }
             }
             Spacer(minLength: 4)
@@ -123,7 +123,7 @@ struct AltitudeChart: View {
             .onAppear { revealed = true }
             HStack {
                 Text("Sunset \(Copy.hhmm(night.sunset, site: site))"); Spacer()
-                if let w = window { Text("Clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))") }
+                if let w = window { Text("Clear \(Copy.hhmm(w.start, site: site))-\(Copy.hhmm(w.end, site: site))") }
                 Spacer(); Text("Sunrise \(Copy.hhmm(night.sunrise, site: site))")
             }
             .font(.caption2).secondary()

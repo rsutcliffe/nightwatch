@@ -24,7 +24,7 @@ struct WeekScreen: View {
         // Sixty nights of Moon maths: worked out once, off the main thread, and again only when the night or the site changes.
         .task(id: "\(store.planning?.tonight.night.key ?? "")|\(store.site?.name ?? "")") {
             guard let site = store.site, let night = store.planning?.tonight.night else { return }
-            moonless = await Task.detached { MoonCalendar.nextRun(from: night, site: site).map { Copy.moonlessRun($0, site: site) } }.value
+            moonless = await Task.detached { MoonCalendar.nextRun(from: night, site: site).map { Copy.moonlessRun($0, site: site).plainDashes } }.value
         }
     }
 
@@ -33,13 +33,13 @@ struct WeekScreen: View {
             let bars = Planner.clearSkyBars(plan: n.plan, site: site)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(Copy.weekDay(n, site: site)).font(.body.weight(.semibold))
+                    Text(Copy.weekDay(n, site: site).plainDashes).font(.body.weight(.semibold))
                     Spacer()
-                    if let lead = Copy.weekLead(daysAhead: n.daysAhead) { Text(lead).font(.caption).secondary() }
+                    if let lead = Copy.weekLead(daysAhead: n.daysAhead) { Text(lead.plainDashes).font(.caption).secondary() }
                 }
                 ClearSkyBarsView(bars: bars, caption: Copy.barsLabel(plan: n.plan, site: site), trackHeight: 26)
-                Text(Copy.weekVerdict(n.plan, rule: store.config.goRule, bright: store.config.brightNights, site: site)).font(.callout.weight(.medium))
-                Text(Copy.weekDetail(n.plan, site: site)).font(.footnote).secondary()
+                Text(Copy.weekVerdict(n.plan, rule: store.config.goRule, bright: store.config.brightNights, site: site).plainDashes).font(.callout.weight(.medium))
+                Text(Copy.weekDetail(n.plan, site: site).plainDashes).font(.footnote).secondary()
                 if n.daysAhead <= 1, n.plan.primary != nil {
                     Button { onOpenPlan(n.daysAhead == 1) } label: {
                         Text(n.daysAhead == 0 ? "Open tonight's plan" : "Open tomorrow's plan").font(.footnote.weight(.medium))

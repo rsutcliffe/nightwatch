@@ -21,7 +21,7 @@ struct TargetDetailScreen: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(target.catalogueID).font(.title2.weight(.semibold))
                         Text(target.commonName ?? target.typeName).font(.callout).secondary()
-                        Text(target.subtitle).font(.footnote).secondary()
+                        Text(target.subtitle.plainDashes).font(.footnote).secondary()
                     }
                     Spacer()
                     HeartButton(store: store, id: target.id)
@@ -44,14 +44,14 @@ struct TargetDetailScreen: View {
                     let tip = ShootingTips.tip(for: target, presetID: store.config.fovPresetID, presetName: nil, stackMinutes: nil, site: site)
                     Card {
                         VStack(alignment: .leading, spacing: 8) {
-                            Label(tip.title, systemImage: tip.symbol).font(.callout.weight(.medium))
+                            Label(tip.title.plainDashes, systemImage: tip.symbol).font(.callout.weight(.medium))
                             ForEach(Array(tip.rows.enumerated()), id: \.offset) { _, r in
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(r.label).font(.caption).secondary()
-                                    Text(r.text).font(.footnote).fixedSize(horizontal: false, vertical: true)
+                                    Text(r.label.plainDashes).font(.caption).secondary()
+                                    Text(r.text.plainDashes).font(.footnote).fixedSize(horizontal: false, vertical: true)
                                 }
                             }
-                            if let s = tip.source { Text(s).font(.caption2).secondary() }
+                            if let s = tip.source { Text(s.plainDashes).font(.caption2).secondary() }
                         }
                     }
                 }

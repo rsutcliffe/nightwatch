@@ -108,7 +108,7 @@ struct TileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption).secondary()
-            Text((warns ? "! " : "") + (value ?? "–")).font(.callout.weight(warns ? .semibold : .medium)).monospacedDigit()
+            Text((warns ? "! " : "") + (value ?? "-")).font(.callout.weight(warns ? .semibold : .medium)).monospacedDigit()
                 .foregroundStyle(warns ? theme.warning : theme.textPrimary).lineLimit(1).minimumScaleFactor(0.6)
             if let hint { Text(hint).font(.caption2).secondary().lineLimit(2) }
         }

@@ -18,7 +18,15 @@ public struct TonightTiles: Equatable, Sendable {
     public var moonAt: Date?
 
     public static func make(plan: NightPlan, site: Site) -> TonightTiles {
-        let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" } ?? "None"
+        var t = makeRaw(plan: plan, site: site)
+        t.dark = t.dark.plainDashes; t.moon = t.moon.plainDashes; t.moonLine = t.moonLine?.plainDashes
+        t.seeing = t.seeing?.plainDashes; t.wind = t.wind?.plainDashes; t.dew = t.dew?.plainDashes
+        t.dewHint = t.dewHint?.plainDashes; t.transparency = t.transparency?.plainDashes
+        return t
+    }
+
+    static func makeRaw(plan: NightPlan, site: Site) -> TonightTiles {
+        let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))-\(Copy.hhmm($0.end, site: site))" } ?? "None"
         let moon = Planner.moonTonight(plan)
         let pct = "\(Int((plan.moonIllumination * 100).rounded()))%"
         let winds = plan.darkHours.compactMap(\.windKmh)
@@ -88,6 +96,10 @@ public struct TonightModel: Equatable, Sendable {
         var snap = WidgetSnapshot.make(plan: plan, tomorrow: tomorrow, fetchedAt: forecast.fetchedAt, site: site, rule: config.goRule,
                                        bright: config.brightNights, alerts: config.alerts, copy: copy, source: source)
         snap.weatherLegalURL = forecast.attributionLegalURL
+        snap.headline = snap.headline.plainDashes; snap.window = snap.window?.plainDashes; snap.windowShort = snap.windowShort?.plainDashes
+        snap.reason = snap.reason?.plainDashes; snap.agreement = snap.agreement?.plainDashes; snap.bezelLabel = snap.bezelLabel.plainDashes
+        snap.barsLabel = snap.barsLabel.plainDashes; snap.tomorrow = snap.tomorrow?.plainDashes; snap.notifyShort = snap.notifyShort?.plainDashes
+        snap.updated = snap.updated?.plainDashes
         let day = DateFormatter()
         day.locale = Locale(identifier: "en_GB"); day.timeZone = TimeZone(identifier: site.timeZoneID) ?? .current
         day.dateFormat = "EEE d MMM"
@@ -100,7 +112,7 @@ public struct TonightModel: Equatable, Sendable {
                             markURL: forecast.attributionMarkURL, legalURL: forecast.attributionLegalURL, fetchedAt: forecast.fetchedAt,
                             overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)",
                             picksHeading: chosen.isEmpty ? "UP TONIGHT" : "BEST TONIGHT",
-                            picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note,
+                            picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note?.plainDashes,
                             figureID: plan.targets.first { $0.group == .constellations }?.id)
     }
 }

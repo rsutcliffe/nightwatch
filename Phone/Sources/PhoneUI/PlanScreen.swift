@@ -27,7 +27,7 @@ struct PlanScreen: View {
 
     @ViewBuilder private func content(night: NightPlan, site: Site) -> some View {
         if let session = store.session(tomorrow: tomorrow) {
-            Text("Clear \(Copy.hhmm(session.window.start, site: site))–\(Copy.hhmm(session.window.end, site: site)) · \(String(format: "%.0f", session.window.hours)) h · Moon \(Int((night.moonIllumination * 100).rounded()))%")
+            Text("Clear \(Copy.hhmm(session.window.start, site: site))-\(Copy.hhmm(session.window.end, site: site)) · \(String(format: "%.0f", session.window.hours)) h · Moon \(Int((night.moonIllumination * 100).rounded()))%")
                 .font(.callout).secondary()
             if session.items.isEmpty {
                 EmptyState(title: "Nothing planned yet", message: "Heart targets you want to shoot. The ones that are up in tonight's clear window appear here, in order of their best time.",
@@ -58,7 +58,7 @@ struct PlanScreen: View {
                 ForEach(session.omitted) { o in
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(o.target.catalogueID) · \(o.target.commonName ?? o.target.typeName)").font(.callout).lineLimit(1)
-                        Text(o.reason).font(.caption).secondary()
+                        Text(o.reason.plainDashes).font(.caption).secondary()
                     }
                     .frame(maxWidth: .infinity, alignment: .leading).padding(12).background(theme.card.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
                 }

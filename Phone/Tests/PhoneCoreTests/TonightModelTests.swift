@@ -37,7 +37,7 @@ import SkyCore
     let p = try plans()
     let tiles = TonightTiles.make(plan: p.tonight, site: sheffield)
     // "20:23–05:25": two clock times with an en dash.
-    #expect(tiles.dark.range(of: #"^\d\d:\d\d–\d\d:\d\d$"#, options: .regularExpression) != nil)
+    #expect(tiles.dark.range(of: #"^\d\d:\d\d-\d\d:\d\d$"#, options: .regularExpression) != nil)
     #expect(tiles.wind == "10 km/h")
     #expect(tiles.dewLabel == "Dew risk")   // 9 °C never reaches frost
     #expect(tiles.moon == "Down" || tiles.moon.hasSuffix("%"))

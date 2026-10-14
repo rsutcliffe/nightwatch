@@ -36,7 +36,7 @@ public struct UserNotificationScheduler: NotificationScheduling {
 
     private static func content(title: String, body: String) -> UNMutableNotificationContent {
         let c = UNMutableNotificationContent()
-        c.title = title; c.body = body; c.sound = .default
+        c.title = title.plainDashes; c.body = body.plainDashes; c.sound = .default
         return c
     }
 }
