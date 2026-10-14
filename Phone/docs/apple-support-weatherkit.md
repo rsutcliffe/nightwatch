@@ -1,4 +1,6 @@
-# Apple code-level support request: WeatherKit fails for a new App ID (draft)
+# Apple code-level support request: WeatherKit fails for a new App ID (draft, NOT sent)
+
+**Status 14 Oct 2026:** Apple's code-level form blocks the request without a focused sample Xcode project (it shows no submit button for "No"). Owner decided not to build one, because a new project needs a new App ID and may not show the fault. So this stays unsent. The route in use is forum thread https://developer.apple.com/forums/thread/851146.
 
 Send at: https://developer.apple.com/contact/request/code-level-support/ (sign in with the developer account first).
 One issue per request, in English, as Apple asks. Paste the text between the lines into the request form. When the
@@ -29,7 +31,7 @@ The request to succeed, as it does for my other App ID on the same team (below).
 1. The signed app's entitlements and the embedded provisioning profile both contain `com.apple.developer.weatherkit`.
 2. In Certificates, Identifiers & Profiles, the App ID has WeatherKit ticked on both the Capabilities tab and the App Services tab.
 3. The Apple Developer Program License Agreement update issued 13 October 2026 was pending when the App ID was created. I accepted it on 14 October 2026 (the account page now shows accepted 14 October). The failure is unchanged since.
-4. I untick WeatherKit on the App ID, saved, ticked it again and saved, then deleted the cached provisioning profile so Xcode generated a new one (profile created 09:25 UTC on 14 October, after the change), reinstalled on both devices and retested. Same error.
+4. I unticked WeatherKit on the App ID, saved, ticked it again and saved, then deleted the cached provisioning profile so Xcode generated a new one (profile created 09:25 UTC on 14 October, after the change), reinstalled on both devices and retested. Same error.
 5. I restarted both devices and retested. Same error.
 6. The failure is the same on a second device of a different model, so it is not tied to one device.
 7. I pressed Download Manual Profiles in Xcode, did a clean build, deleted the app from both devices and installed it fresh. Same error.
