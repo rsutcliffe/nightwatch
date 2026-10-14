@@ -33,9 +33,10 @@ public struct TonightScreen: View {
     /// "TONIGHT · MALHAM TARN" over the date and Bortle class, as the Mac's popover has it.
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(model.overline).font(.caption.weight(.medium)).tracking(0.8).secondary()
+            Text(model.overline).font(.caption.weight(.medium)).tracking(0.8).secondary().lineLimit(2)
             Text(model.dateLine).font(.caption).secondary()
         }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)   // a caption never needs to be as big as the verdict
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
@@ -48,10 +49,10 @@ public struct TonightScreen: View {
         // At the accessibility text sizes the words need the full width, so the bezel sits above them.
         let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .center, spacing: spacing))
         return layout {
-            ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: bezel)
+            ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: typeSize.isAccessibilitySize ? 96 : bezel)
             VStack(alignment: .leading, spacing: 5) {
-                Text(snap.headline).font(scale == .large ? .title.weight(.medium) : .title2.weight(.medium)).fixedSize(horizontal: false, vertical: true)
-                if let w = snap.window { Text(w).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(theme.accent) }
+                Text(snap.headline).font(scale == .large ? .title.weight(.medium) : .title2.weight(.medium)).dynamicTypeSize(...DynamicTypeSize.accessibility2).fixedSize(horizontal: false, vertical: true)
+                if let w = snap.window { Text(w).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(theme.accent).lineLimit(1).minimumScaleFactor(0.5) }
                 if let r = snap.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
                 if let a = snap.agreement {
                     Text((snap.agreementWarns ? "! " : "✓ ") + a).font(.footnote.weight(snap.agreementWarns ? .semibold : .regular))

@@ -87,7 +87,7 @@ struct ClearSkyBarsView: View {
                         .frame(maxWidth: .infinity)
                     }
                 }
-                Text("Clear sky by hour").font(.caption2).secondary()
+                Text("Clear sky by hour").font(.caption2).secondary().dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             }
             .onAppear { arrived = true }
             .accessibilityElement(children: .ignore)
