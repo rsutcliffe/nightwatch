@@ -125,17 +125,15 @@ public struct RootView: View {
                     Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
                 }
                 Section {
-                    Toggle(isOn: $red) { Label("Red night mode", systemImage: "moon.fill") }
-                        .toggleStyle(PhoneToggleStyle())
-                } footer: { Text("Keeps your eyes dark-adapted at the telescope.") }
-                Section("Your sites") {
-                    ForEach(store.config.sites, id: \.name) { s in
-                        Button { store.selectSite(s); selection = .tonight } label: {
-                            HStack { Text(s.name); Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark").foregroundStyle(theme.accent) } }
+                    Button { showSites = true } label: {
+                        HStack {
+                            Label("Sites", systemImage: "mappin.and.ellipse")
+                            Spacer()
+                            Text(store.site?.name ?? "").font(.callout).secondary().lineLimit(1)
                         }
                     }
-                    if let active = store.site { Button { showHorizon = HorizonTarget(name: active.name) } label: { Label("Horizon for \(active.name)", systemImage: "mountain.2") } }
-                    Button { showSites = true } label: { Label("Add or remove sites", systemImage: "plus") }
+                    Toggle(isOn: $red) { Label("Red night mode", systemImage: "moon.fill") }
+                        .toggleStyle(PhoneToggleStyle())
                 }
             }
             .scrollContentBackground(.hidden).background(theme.background)
@@ -269,7 +267,13 @@ struct SitesSheet: View {
                     ForEach(store.config.sites, id: \.name) { s in
                         HStack {
                             Button { store.selectSite(s); dismiss() } label: {
-                                HStack { Text(s.name); Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark") } }
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(s.name)
+                                        Text(Copy.horizonSummary(s, openDeg: store.openDeg).plainDashes).font(.caption).secondary().lineLimit(1)
+                                    }
+                                    Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark") }
+                                }
                             }
                             .buttonStyle(.borderless)
                             Button { horizonSite = HorizonTarget(name: s.name) } label: {
