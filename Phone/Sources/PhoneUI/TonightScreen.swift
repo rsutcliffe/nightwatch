@@ -40,22 +40,26 @@ public struct TonightScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func verdict(big: Bool) -> some View {
+    private enum Scale { case compact, medium, large }
+
+    private func verdict(_ scale: Scale) -> some View {
+        let bezel: CGFloat = scale == .compact ? 104 : scale == .medium ? 124 : 144
+        let spacing: CGFloat = scale == .compact ? 18 : 22
         // At the accessibility text sizes the words need the full width, so the bezel sits above them.
-        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .center, spacing: big ? 28 : 18))
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .center, spacing: spacing))
         return layout {
-            ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: big ? 190 : 104)
+            ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: bezel)
             VStack(alignment: .leading, spacing: 5) {
-                Text(snap.headline).font(big ? .largeTitle.weight(.medium) : .title2.weight(.medium)).fixedSize(horizontal: false, vertical: true)
-                if let w = snap.window { Text(w).font(big ? .title3.weight(.medium) : .callout.weight(.medium)).monospacedDigit().foregroundStyle(theme.accent) }
-                if let r = snap.reason { Text(r).font(big ? .callout : .footnote).secondary().fixedSize(horizontal: false, vertical: true) }
+                Text(snap.headline).font(scale == .large ? .title.weight(.medium) : .title2.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+                if let w = snap.window { Text(w).font(.callout.weight(.medium)).monospacedDigit().foregroundStyle(theme.accent) }
+                if let r = snap.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
                 if let a = snap.agreement {
                     Text((snap.agreementWarns ? "! " : "✓ ") + a).font(.footnote.weight(snap.agreementWarns ? .semibold : .regular))
                         .foregroundStyle(snap.agreementWarns ? theme.warning : theme.textSecondary)
                 }
             }
         }
-        .heroSurface(clear: clearNight, padding: big ? 24 : 16, figure: clearNight ? nil : figureArt)
+        .heroSurface(clear: clearNight, padding: scale == .compact ? 16 : 20, figure: clearNight ? nil : figureArt)
     }
 
     private func bars(height: CGFloat) -> some View {
@@ -69,9 +73,19 @@ public struct TonightScreen: View {
             .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
+    @ViewBuilder private var tomorrowCard: some View {
+        if let t = snap.tomorrow {
+            Card {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("TOMORROW NIGHT").font(.caption.weight(.medium)).tracking(0.8).secondary()
+                    Text(t).font(.callout).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let t = snap.tomorrow { Text(t).font(.footnote).secondary() }
             if let alertsPrompt { alertsPrompt }
             SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
         }
@@ -83,9 +97,9 @@ public struct TonightScreen: View {
         GeometryReader { geo in
             ScrollView {
                 Group {
-                    if geo.size.width >= 1000 { landscape } else if geo.size.width >= 600 { portrait(width: geo.size.width) } else { compact }
+                    if geo.size.width >= 1100 { landscape } else if geo.size.width >= 640 { wide(width: geo.size.width) } else { compact }
                 }
-                .padding(geo.size.width >= 600 ? 28 : 16)
+                .padding(geo.size.width >= 640 ? 28 : 16)
                 .frame(maxWidth: 1400)
                 .frame(maxWidth: .infinity)
             }
@@ -99,22 +113,27 @@ public struct TonightScreen: View {
         VStack(alignment: .leading, spacing: 14) {
             if offline { offlineNote }
             header
-            verdict(big: false)
+            verdict(.compact)
             bars(height: 37)
             TilesView(tiles: model.tiles)
             targets()
+            tomorrowCard
             footer
         }
     }
 
-    private func portrait(width: CGFloat) -> some View {
+    /// An iPad page: the verdict and the hours side by side, the six tiles in one row, big pictures for the targets.
+    private func wide(width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             if offline { offlineNote }
             header
-            verdict(big: true)
-            bars(height: 90)
-            TilesView(tiles: model.tiles, columns: width >= 900 ? 6 : 3)
-            targets(height: 140)
+            HStack(alignment: .top, spacing: 20) {
+                verdict(.medium).frame(maxWidth: .infinity)
+                bars(height: 70).frame(maxWidth: .infinity)
+            }
+            TilesView(tiles: model.tiles, columns: width >= 760 ? 6 : 3)
+            targets(height: width >= 760 ? 230 : 170)
+            tomorrowCard
             footer
         }
     }
@@ -123,9 +142,8 @@ public struct TonightScreen: View {
         VStack(alignment: .leading, spacing: 20) {
             if offline { offlineNote }
             HStack(alignment: .top, spacing: 24) {
-                VStack(alignment: .leading, spacing: 20) { header; verdict(big: true) }.frame(maxWidth: .infinity)
-                VStack(alignment: .leading, spacing: 20) { bars(height: 110); TilesView(tiles: model.tiles, columns: 2) }.frame(maxWidth: .infinity)
-                VStack(alignment: .leading, spacing: 20) { targets(height: 110) }.frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 20) { header; verdict(.large); bars(height: 90); tomorrowCard }.frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 20) { TilesView(tiles: model.tiles, columns: 2); targets(height: 190) }.frame(maxWidth: .infinity)
             }
             footer
         }

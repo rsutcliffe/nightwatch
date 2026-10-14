@@ -19,6 +19,8 @@ public struct RootView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: SidebarItem? = .tonight
+    /// The sidebar starts closed in portrait, so the page has the full width; landscape has room for both.
+    @State private var columns: NavigationSplitViewVisibility = .automatic
     enum SidebarItem: Hashable { case tonight, settings }
 
     @ViewBuilder private var phaseContent: some View {
@@ -64,18 +66,24 @@ public struct RootView: View {
                         }
                         Button { showSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings")
                     }
+                    .plainBackground()
                 }
+                .clearNavigationBar()
         }
     }
 
     /// iPad: a sidebar with Tonight, the sites and Settings, and the page beside it.
     private func split(_ theme: PhoneTheme) -> some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columns) {
             List(selection: $selection) {
                 Section {
                     Label("Tonight", systemImage: "moon.stars").tag(SidebarItem.tonight)
                     Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
                 }
+                Section {
+                    Toggle(isOn: $red) { Label("Red night mode", systemImage: "moon.fill") }
+                        .toggleStyle(PhoneToggleStyle())
+                } footer: { Text("Keeps your eyes dark-adapted at the telescope.") }
                 Section("Your sites") {
                     ForEach(store.config.sites, id: \.name) { s in
                         Button { store.selectSite(s); selection = .tonight } label: {
@@ -93,7 +101,7 @@ public struct RootView: View {
                     if selection == .settings { SettingsScreen(store: store, red: $red, permission: permission, embedded: true) } else { phaseContent }
                 }
                 .navigationBarTitleDisplayModeInline()
-                .toolbar { ToolbarItem(placement: .primaryAction) { nightModeButton } }
+                .clearNavigationBar()
             }
         }
     }
@@ -101,7 +109,11 @@ public struct RootView: View {
     public var body: some View {
         let theme = PhoneTheme.named(red: red)
         Group {
-            if sizeClass == .regular && store.phase != .needsSite { split(theme) } else { stack(theme) }
+            if sizeClass == .regular && store.phase != .needsSite {
+                GeometryReader { geo in
+                    split(theme).onAppear { columns = geo.size.width < 1000 ? .detailOnly : .all }
+                }
+            } else { stack(theme) }
         }
         .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
@@ -113,7 +125,33 @@ public struct RootView: View {
     }
 }
 
+extension ToolbarContent {
+    /// The toolbar's buttons without iOS 26's glass capsule behind them.
+    func plainBackground() -> some ToolbarContent {
+        #if os(iOS)
+        if #available(iOS 26.0, *) { return AnyToolbarContent(self.sharedBackgroundVisibility(.hidden)) }
+        #endif
+        return AnyToolbarContent(self)
+    }
+}
+
+/// Type erasure for the two branches above.
+struct AnyToolbarContent<Content: ToolbarContent>: ToolbarContent {
+    let content: Content
+    init(_ content: Content) { self.content = content }
+    var body: some ToolbarContent { content }
+}
+
 extension View {
+    /// No translucent bar behind the title and buttons: the sky shows through to the top.
+    func clearNavigationBar() -> some View {
+        #if os(iOS)
+        toolbarBackground(.hidden, for: .navigationBar)
+        #else
+        self
+        #endif
+    }
+
     func navigationBarTitleDisplayModeInline() -> some View {
         #if os(iOS)
         navigationBarTitleDisplayMode(.inline)
