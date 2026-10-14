@@ -55,7 +55,8 @@ struct EventCard: View {
 
     private var when: String {
         guard withDate else { return Copy.hhmm(event.when, site: site) }
-        let f = DateFormatter(); f.timeZone = site.timeZone; f.locale = Locale(identifier: "en_GB"); f.dateFormat = "EEE d MMM HH:mm"
+        let f = DateFormatter(); f.timeZone = site.timeZone; f.locale = Locale(identifier: "en_GB"); let sameYear = site.calendar.component(.year, from: event.when) == site.calendar.component(.year, from: .now)
+        f.dateFormat = sameYear ? "EEE d MMM HH:mm" : "EEE d MMM yyyy HH:mm"
         return f.string(from: event.when)
     }
 
@@ -101,7 +102,7 @@ struct EventsScreen: View {
     var body: some View {
         let tonight = Events.sorted(store.events.filter(matches), by: sort)
         let tonightIDs = Set(store.events.map(\.id))
-        let ahead = store.occultationsAhead.filter { !tonightIDs.contains($0.id) && $0.time > store.now && matches($0) }.prefix(12)
+        let ahead = store.occultationsAhead.filter { !tonightIDs.contains($0.id) && $0.time > store.now && matches($0) }.sorted { $0.when < $1.when }.prefix(12)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if let site = store.site {

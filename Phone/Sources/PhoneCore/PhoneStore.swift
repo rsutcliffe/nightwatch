@@ -76,6 +76,24 @@ public final class PhoneStore: ObservableObject {
     private var feedAttempts: [String: Date] = [:]
     private var occultationsKey: String?
     private let showers: [MeteorShower]
+
+    /// Dark sites near the observing site, tonight's plan at each (the nearest eight), and a clearer site worth the drive.
+    @Published public private(set) var darkSites: [DarkSite] = []
+    @Published public private(set) var sitePlans: [SitePlan] = []
+    @Published public private(set) var bestAway: SitePlan?
+    /// True while the list is being worked out (car parks, town names and forecasts are looked up one at a time).
+    @Published public private(set) var darkSitesWorking = false
+    /// The last run left out the forecasts and lookups because the connection is costly or constrained.
+    @Published public private(set) var darkSitesSkipped = false
+    private let darkLookups: DarkLookups?
+    private let certified: [CertifiedSite]
+    private var grids: [LPGrid] { Self.lightPollution }
+    private static let lightPollution = LPGrids.bundled()
+    private var spotPlaces: [String: String] = [:]               // town name by computed spot id; "" where Apple Maps has none
+    private var spotPublic: [String: PublicPlace?] = [:]          // car park by computed spot id; nil inside: none within reach
+    private var darkFailedAt: Date?
+    private var darkGeneration = 0
+    private var darkTask: Task<Void, Never>?
     private let feeds: @Sendable (URL) async throws -> Data
     private let findOccultations: Bool
 
@@ -89,7 +107,10 @@ public final class PhoneStore: ObservableObject {
                 terrain: @escaping TerrainFetcher = { try await Terrain.fetch(site: $0, fetcher: URLSessionFetcher()) },
                 terrainPause: Duration = .seconds(10),
                 feeds: @escaping @Sendable (URL) async throws -> Data = { try await URLSessionFetcher().get($0) },
-                occultations: Bool = true) {
+                occultations: Bool = true,
+                darkLookups: DarkLookups? = .live) {
+        self.darkLookups = darkLookups
+        certified = (try? DarkSites.bundledCertified()) ?? []
         self.feeds = feeds
         self.findOccultations = occultations
         showers = (try? MeteorShowers.bundled()) ?? []
@@ -112,6 +133,8 @@ public final class PhoneStore: ObservableObject {
         comets = Self.read([CometElements].self, from: directory.appendingPathComponent("comets.json")) ?? []
         tle = Self.read(TLE.self, from: directory.appendingPathComponent("iss-tle.json"))
         feedAttempts = Self.read([String: Date].self, from: directory.appendingPathComponent("feed-attempts.json")) ?? [:]
+        spotPlaces = Self.read([String: String].self, from: directory.appendingPathComponent("spot-places.json")) ?? [:]
+        spotPublic = Self.read([String: PublicPlace?].self, from: directory.appendingPathComponent("spot-public.json")) ?? [:]
     }
 
     // MARK: Settings
@@ -243,8 +266,8 @@ public final class PhoneStore: ObservableObject {
 
     public func selectSite(_ s: Site) {
         // The page must not go on showing the last site's night under the new site's name.
-        if s.name != site?.name { phase = .loading; tonight = nil; events = []; occultationsAhead = []; occultationsKey = nil }
-        config.activeSiteName = s.name
+        if s.name != site?.name { phase = .loading; tonight = nil; events = []; occultationsAhead = []; occultationsKey = nil; darkSites = []; sitePlans = []; bestAway = nil }
+        config.choose(savedName: s.name)
         saveConfig()
         Task { await refresh(force: true) }
     }
@@ -289,6 +312,120 @@ public final class PhoneStore: ObservableObject {
         stage = .planning
         if connectivity.allowsOptionalDownloads { await refreshFeeds(now: clock()) }
         await recompute(now: clock())
+        if darkLookups != nil {
+            darkTask?.cancel()
+            darkTask = Task { [weak self] in await self?.refreshDarkSites(connectivity: connectivity) }
+        }
+    }
+
+    // MARK: Dark sites
+
+    /// Observe from a dark site without saving it, as the Mac's "Observe from here".
+    public func visit(_ s: DarkSite) {
+        config.visit(DarkSites.toSite(s, timeZoneID: site?.timeZoneID ?? TimeZone.current.identifier))
+        saveConfig()
+        phase = .loading; tonight = nil; events = []; occultationsAhead = []; occultationsKey = nil
+        Task { await refresh(force: true) }
+    }
+
+    /// Save the site being visited.
+    public func keepVisiting() { config.keepVisiting(); saveConfig() }
+
+    public func goHome() {
+        config.goHome(); saveConfig()
+        phase = .loading; tonight = nil; events = []; occultationsAhead = []; occultationsKey = nil
+        Task { await refresh(force: true) }
+    }
+
+    public var isAway: Bool { config.isAway(auto: nil) }
+    public var homeLabel: String { config.homeSite(auto: nil)?.name ?? "home" }
+    public var visitingSite: Site? { config.visiting }
+    public var distanceUnit: DistanceUnit { config.darkSites.unit }
+
+    /// Settings changed (on, radius, unit): work the list out again.
+    public func setDarkSites(_ change: (inout DarkSiteSettings) -> Void) {
+        change(&config.darkSites)
+        saveConfig()
+        darkTask?.cancel()
+        darkTask = Task { [weak self] in await self?.refreshDarkSites() }
+    }
+
+    /// Dark sites within the radius, and a forecast for the nearest eight (30-minute cache under sites/<id>.json) planned with the same
+    /// go rule. Each run takes a generation number and checks it after every await, so a run superseded by a settings change stops
+    /// and never publishes over the newer one. Looking up car parks, town names and forecasts waits for a cheap connection.
+    public func refreshDarkSites(connectivity: Connectivity = Connectivity()) async {
+        guard let lookups = darkLookups, let site, config.darkSites.enabled else { darkSites = []; sitePlans = []; bestAway = nil; return }
+        darkGeneration += 1
+        let gen = darkGeneration
+        let now = clock()
+        guard let night = try? Ephemeris.currentNight(now: now, site: site) else { return }
+        darkSitesWorking = true
+        defer { if gen == darkGeneration { darkSitesWorking = false } }
+        let home = Coordinate(latitude: site.latitude, longitude: site.longitude)
+        let radiusKm = config.darkSites.radiusKm, certified = certified, grids = grids
+        let found = await Task.detached { DarkSites.sites(near: home, radiusKm: radiusKm, certified: certified, grids: grids, maxSpots: 5) }.value
+        guard gen == darkGeneration else { return }
+        let cheap = connectivity.allowsOptionalDownloads
+        darkSitesSkipped = !cheap
+        let retry = now.timeIntervalSince(darkFailedAt ?? .distantPast) >= 3600
+
+        // A computed spot is moved to the nearest dark car park, and is left out until one is known (and when there is none).
+        var sites: [DarkSite] = [], seen = Set<String>()
+        for s in found {
+            guard s.isComputed else { sites.append(s); continue }
+            if spotPublic[s.id] == nil, cheap, retry {
+                do {
+                    spotPublic[s.id] = .some(try await lookups.publicPlace(s.coordinate, s.band, grids))
+                    Self.write(spotPublic, to: directory.appendingPathComponent("spot-public.json"))
+                } catch { darkFailedAt = now }
+                guard gen == darkGeneration else { return }
+            }
+            guard let entry = spotPublic[s.id], let p = entry else { continue }
+            let c = Coordinate(latitude: p.latitude, longitude: p.longitude)
+            let id = String(format: "place-%.3f-%.3f", c.latitude, c.longitude)
+            guard seen.insert(id).inserted else { continue }   // two spots can share a car park
+            sites.append(DarkSite(id: id, name: p.name, kind: "spot", coordinate: c, distanceKm: Geo.distanceKm(home, c),
+                                  bearingDeg: Geo.bearingDeg(from: home, to: c),
+                                  band: LPGrids.radiance(at: c, in: grids).map(DarknessBand.from) ?? s.band, bortle: nil, source: nil, isComputed: true))
+        }
+        sites = DarkSites.withoutDuplicates(sites).sorted { $0.distanceKm < $1.distanceKm }
+
+        // Every car park carries its town, so two "Car park"s can be told apart: "Car park near Kettlewell".
+        for s in sites where s.isComputed && spotPlaces[s.id] == nil && cheap && retry {
+            do {
+                spotPlaces[s.id] = try await lookups.placeName(s.coordinate) ?? ""
+                Self.write(spotPlaces, to: directory.appendingPathComponent("spot-places.json"))
+            } catch { darkFailedAt = now }
+            guard gen == darkGeneration else { return }
+        }
+        func named(_ s: DarkSite) -> DarkSite {
+            guard s.isComputed else { return s }
+            return spotPlaces[s.id].flatMap { DarkSites.spotName(place: $0, lead: s.name) }.map(s.named) ?? s
+        }
+        sites = sites.map(named)
+
+        let cacheDir = directory.appendingPathComponent("sites", isDirectory: true)
+        var plans: [SitePlan] = []
+        for s in sites.prefix(8) {
+            let asSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
+            let cache = ForecastStore(url: cacheDir.appendingPathComponent("\(s.id).json"))
+            var fc = cache.load()
+            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, cheap {
+                if let fresh = try? await provider(asSite, now, false) { fc = fresh; try? cache.save(fresh) }
+                guard gen == darkGeneration else { return }
+            }
+            // A cache over 24 hours old that could not be refreshed no longer describes tonight: no forecast, not a plan.
+            if let f = fc, now.timeIntervalSince(f.fetchedAt) > 24 * 3600 { fc = nil }
+            guard let fc else { plans.append(SitePlan.missing(s)); continue }
+            let p = Planner.plan(night: night, forecast: fc, catalog: Catalog(objects: []), constellations: [], site: asSite,
+                                 fov: config.fov, rule: config.goRule, bright: config.brightNights)
+            plans.append(SitePlan(id: s.id, site: s, score: p.score, primary: p.primary, qualifies: p.qualifies, forecastMissing: false))
+        }
+        guard gen == darkGeneration else { return }
+        darkSites = sites   // set with the plans so a page never sees a new list beside old plans
+        sitePlans = SiteComparison.sorted(plans)
+        bestAway = isAway ? nil : planning.flatMap { SiteComparison.bestAway(home: $0.tonight, sites: plans) }
+        CachePruning.prune(directory: cacheDir, keepIDs: Set(sites.map(\.id)), now: now)
     }
 
     /// Comet elements daily and the space station's elements every 2 hours (CelesTrak asks for no more), as the Mac does. Gated on the

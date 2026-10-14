@@ -9,7 +9,7 @@ final class FeedCalls: @unchecked Sendable { var urls: [URL] = [] }
     let s = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("events-\(UUID().uuidString)"),
                        provider: { site, now, _ in forecast(fetchedAt: now, from: utc(2026, 8, 11), site: site) },
                        scheduler: FakeScheduler(), clock: { clock.now },
-                       feeds: { url in feedCalls.urls.append(url); return Data() }, occultations: false)
+                       feeds: { url in feedCalls.urls.append(url); return Data() }, occultations: false, darkLookups: nil)
     s.config.sites = [sheffield]
     s.config.activeSiteName = "Sheffield"
     return s

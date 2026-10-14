@@ -33,7 +33,7 @@ struct Failure: Error {}
         calls.askedPrimary.append(ask)
         if calls.failing { throw Failure() }
         return forecast(fetchedAt: now, source: calls.source, site: site)
-    }, scheduler: scheduler, clock: { clock.now }, occultations: false)
+    }, scheduler: scheduler, clock: { clock.now }, occultations: false, darkLookups: nil)
     if withSite {
         store.config.sites = [sheffield]
         store.config.activeSiteName = "Sheffield"
