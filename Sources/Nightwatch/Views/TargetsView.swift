@@ -162,8 +162,11 @@ struct TargetsView: View {
         .onAppear {
             if !sections.contains(ui.section) { ui.section = sections[0] }   // Tonight's plan is off: The week ahead
             consumeRequest()
+            store.darkSitesPageOpen = ui.section == .darkSites
         }
         .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
+        .onChange(of: ui.section) { _, s in store.darkSitesPageOpen = s == .darkSites }
+        .onDisappear { store.darkSitesPageOpen = false }
         // Here, not on the window: a change of Text size rebuilds what is above, and `ui` has to outlive that, or the
         // sidebar went back to Nebulae and the search and open page were lost (owner, 6 October 2026).
         .textSized(store.config.textSize)
@@ -647,7 +650,7 @@ struct DarkSiteCard: View {
             if let w = plan.primary, let home = store.site {
                 Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(Font.scaled(.caption))
             } else if plan.forecastMissing {
-                Text("No forecast fetched (beyond the nearest eight, or offline)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                Text("No forecast fetched (only the nearest three are fetched, while this page is open)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             } else {
                 Text(store.copy.noWindow).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
