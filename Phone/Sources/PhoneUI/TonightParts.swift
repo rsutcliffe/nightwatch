@@ -113,7 +113,7 @@ struct TileView: View {
             if let hint { Text(hint).font(.caption2).secondary().lineLimit(2) }
         }
         .padding(.horizontal, 11).padding(.vertical, 10)
-        .frame(maxWidth: .infinity, minHeight: 58, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.tile, in: RoundedRectangle(cornerRadius: 10))
         .overlay { if warns { RoundedRectangle(cornerRadius: 10).strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])) } }
         .accessibilityElement(children: .combine)
@@ -151,7 +151,7 @@ struct MoonTileView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 11).padding(.vertical, 10)
-        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: .infinity, alignment: .leading)
         .background(theme.tile, in: RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Moon, \(value)\(line.map { ", \($0)" } ?? "")")
@@ -166,14 +166,21 @@ struct TilesView: View {
     var body: some View {
         // As the text grows the tiles drop to two columns, then one, so no value is cut off.
         let count = typeSize.isAccessibilitySize ? 1 : typeSize >= .xLarge ? min(2, columns) : columns
-        let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: count)
-        LazyVGrid(columns: cols, spacing: 8) {
-            TileView(label: "Dark", value: tiles.dark)
-            MoonTileView(value: tiles.moon, line: tiles.moonLine, at: tiles.moonAt ?? .now)
-            TileView(label: "Seeing", value: tiles.seeing)
-            TileView(label: "Wind", value: tiles.wind)
-            TileView(label: tiles.dewLabel, value: tiles.dew, hint: tiles.dewHint, warns: tiles.dew == "High" || tiles.dewLabel == "Frost likely")
-            TileView(label: "Transparency", value: tiles.transparency)
+        // A Grid, not a LazyVGrid: every tile in a row takes the height of the tallest, so a hint never leaves its neighbour short.
+        let cells: [AnyView] = [
+            AnyView(TileView(label: "Dark", value: tiles.dark)),
+            AnyView(MoonTileView(value: tiles.moon, line: tiles.moonLine, at: tiles.moonAt ?? .now)),
+            AnyView(TileView(label: "Seeing", value: tiles.seeing)),
+            AnyView(TileView(label: "Wind", value: tiles.wind)),
+            AnyView(TileView(label: tiles.dewLabel, value: tiles.dew, hint: tiles.dewHint, warns: tiles.dew == "High" || tiles.dewLabel == "Frost likely")),
+            AnyView(TileView(label: "Transparency", value: tiles.transparency)),
+        ]
+        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+            ForEach(Array(stride(from: 0, to: cells.count, by: count)), id: \.self) { start in
+                GridRow {
+                    ForEach(start..<min(start + count, cells.count), id: \.self) { cells[$0] }
+                }
+            }
         }
     }
 }
