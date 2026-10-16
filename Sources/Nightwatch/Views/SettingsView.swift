@@ -140,7 +140,18 @@ struct SettingsView: View {
                 choiceRow("Search radius", bind(\.darkSites.radiusKm), [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300]) {
                     Geo.format(km: $0, unit: store.config.darkSites.unit)
                 }
-                Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest eight.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest three, while the Dark sites page is open.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+            }
+            Section("Network use today") {
+                let tally = RequestTally.today()
+                if tally.requests.isEmpty {
+                    Text("No requests yet today.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                } else {
+                    ForEach(tally.requests.sorted { $0.key < $1.key }, id: \.key) { k, n in
+                        LabeledContent(k) { Text("\(n)").monospacedDigit() }.font(Font.scaled(.caption))
+                    }
+                }
+                Text("Counted on this Mac only, from midnight UTC. The free forecast service refuses a connection after a fixed number of requests a day; this shows where they went.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section("Bright nights") {
                 Toggle("Moon and planets when there is no proper darkness", isOn: bind(\.brightNights.enabled))

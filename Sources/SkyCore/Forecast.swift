@@ -97,6 +97,20 @@ public protocol Fetcher: Sendable {
     func get(_ url: URL) async throws -> Data
 }
 
+/// The service answered, and said no. Keeps the status, and the service's own reason when it gives one, so a daily request limit
+/// reads as that and not as a missing connection.
+public struct HTTPFailure: Error, Equatable, Sendable, LocalizedError {
+    public let status: Int
+    public let reason: String?
+    public init(status: Int, reason: String?) { self.status = status; self.reason = reason }
+    /// Too many requests from this address (Open-Meteo says "Daily API request limit exceeded" with a 429).
+    public var isRateLimit: Bool { status == 429 }
+    public var errorDescription: String? {
+        if isRateLimit { return "The forecast service has refused more requests from this connection today. It usually resets overnight; Nightwatch will try again in 30 minutes." }
+        return "The forecast service answered with an error (\(status))" + (reason.map { ": \($0)" } ?? ".")
+    }
+}
+
 public struct URLSessionFetcher: Fetcher {
     /// Names the app and its real version, as AuroraWatch UK's API terms ask ("set the HTTP User-Agent header to match the
     /// name of your app"), so every service can see who is calling.
@@ -106,9 +120,11 @@ public struct URLSessionFetcher: Fetcher {
     public func get(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url, timeoutInterval: timeout)
         req.setValue(URLSessionFetcher.userAgent, forHTTPHeaderField: "User-Agent")
+        RequestTally.record(url)
         let (data, response) = try await URLSession.shared.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            throw URLError(.badServerResponse)
+            let reason = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["reason"] as? String
+            throw HTTPFailure(status: http.statusCode, reason: reason)
         }
         return data
     }
