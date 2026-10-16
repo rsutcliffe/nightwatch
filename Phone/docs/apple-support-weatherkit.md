@@ -1,4 +1,9 @@
-# Apple code-level support request: WeatherKit fails for a new App ID (draft, NOT sent)
+# Apple code-level support request: WeatherKit fails for a new App ID (RESOLVED, see below)
+
+**Resolved 16 Oct 2026:** the cause was on our side. WeatherKit was ticked on the App ID's Capabilities tab but NOT on its
+App Services tab; both are needed (Apple DTS reply, Case-ID 22926661, pointing to forum thread 827342). Ticking App Services
+fixed it: the Tonight screen now shows the Apple Weather mark. Everything below, including its claim that both tabs were
+ticked, is the original draft and was wrong on that point.
 
 **Status 14 Oct 2026:** Apple's code-level form blocks the request without a focused sample Xcode project (it shows no submit button for "No"). Owner decided not to build one, because a new project needs a new App ID and may not show the fault. So this stays unsent. The route in use is forum thread https://developer.apple.com/forums/thread/851146.
 
