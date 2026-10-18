@@ -105,11 +105,11 @@ struct TonightView: View {
                         .foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true)
                     if let warning = dewWarning(plan) { WarningChip(warning) }
                     if plan.mode == .bright {
-                        Text(Copy.brightList(plan.brightTargets)).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
+                        Text(Copy.brightList(plan.brightTargets).plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
                     }
                     if let why = Copy.heldBack(plan.limiting) {
                         // No dot: every line under the verdict reads the same way (owner, 28 September 2026).
-                        Text(why)
+                        Text(why.plainDashes)
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
@@ -119,7 +119,7 @@ struct TonightView: View {
                 } else {
                     TwoWeight.headline(store.copy.noWindow, size: TextScale.pt(16)).fixedSize(horizontal: false, vertical: true)
                     if let why = noWindowReason(plan, site) {
-                        Text(why).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                        Text(why.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     // No "Tomorrow" line: after sunrise the popover shows tomorrow night itself (owner, 28 September 2026).
                     agreementLine(plan, site)
@@ -137,10 +137,10 @@ struct TonightView: View {
             if advice.line.hasPrefix(lead) {
                 VStack(alignment: .leading, spacing: 3) {
                     WarningChip("Less certain")
-                    Text(String(advice.line.dropFirst(lead.count))).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    Text(String(advice.line.dropFirst(lead.count)).plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                 }
             } else {
-                Text(advice.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                Text(advice.line.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
             }
         } else if let a = plan.agreement {
             HStack(spacing: 5) {
@@ -159,7 +159,7 @@ struct TonightView: View {
         if let a = store.auroraHere, store.config.aurora.shows(a), AuroraSettings.isFresh(a, now: Date()) {
             // AuroraWatch UK's terms ask for the source to be named, "ideally with a link or button" to their site.
             Link(destination: a.source.link) {
-                Text(a.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Color(hex: a.level.hex))
+                Text(a.line.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Color(hex: a.level.hex))
             }
             .buttonStyle(.plain).linkCursor().help(a.source == .noaa ? "Open NOAA's aurora forecast" : "Open AuroraWatch UK")
         } else if let a = store.bestAway, let w = a.primary {
@@ -168,7 +168,7 @@ struct TonightView: View {
                 store.targetsRequest = TargetsRequest(section: .darkSites, siteID: a.site.id)
                 open("targets")
             } label: {
-                Text("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →")
+                Text(("Clearer sky \(Geo.format(km: a.site.distanceKm, unit: store.distanceUnit)) \(a.site.compass): \(a.site.name)\(a.site.band.map { " (\($0.displayName))" } ?? ""), clear \(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) →").plainDashes)
                     .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textPrimary).multilineTextAlignment(.leading)
             }.buttonStyle(.plain)   // a link, so text.primary: red means clear sky only
         }
@@ -253,8 +253,9 @@ struct TonightView: View {
                         ThumbnailView(target: t).frame(height: 70).clipped()
                         VStack(alignment: .leading, spacing: 2) {
                             Text(t.catalogueID).font(.system(size: TextScale.pt(12), weight: .heavy)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
-                            Text((t.commonName ?? t.typeName).uppercased()).font(.system(size: TextScale.pt(9), weight: .semibold)).tracking(1).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                            Text((t.commonName ?? t.typeName).uppercased()).font(.system(size: TextScale.pt(9), weight: .semibold)).tracking(0.6).foregroundStyle(Tokens.textSecondary).lineLimit(1).minimumScaleFactor(0.7)
                             Text("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up").font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
+                                .lineLimit(1).minimumScaleFactor(0.75)
                         }
                         .padding(8).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.black.opacity(0.55))

@@ -6,8 +6,12 @@ public struct ScoreBezel: View {
     let score: Int
     let slots: [BezelSlot]
     let label: String
+    /// The dial's size before the text size scales it; the widgets' medium and large layouts use a smaller one to make room for the arc.
+    let diameter: CGFloat
 
-    public init(score: Int, slots: [BezelSlot], label: String) { self.score = score; self.slots = slots; self.label = label }
+    public init(score: Int, slots: [BezelSlot], label: String, diameter: CGFloat = 91) {
+        self.score = score; self.slots = slots; self.label = label; self.diameter = diameter
+    }
 
     private func colour(_ s: BezelSlot) -> Color {
         switch s { case .clear: Tokens.accentClear; case .partCloud: Tokens.tickPartCloud; case .cloudy: Tokens.tickCloudy; case .daylight: Tokens.tickDaylight }
@@ -41,7 +45,7 @@ public struct ScoreBezel: View {
         }
         .frame(width: 91, height: 91)
         // The whole dial grows with the app's text size, numeral and ticks together, so nothing inside it has to be refitted.
-        .scaleEffect(TextScale.factor).frame(width: TextScale.pt(91), height: TextScale.pt(91))
+        .scaleEffect(TextScale.factor * diameter / 91).frame(width: TextScale.pt(diameter), height: TextScale.pt(diameter))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
     }
