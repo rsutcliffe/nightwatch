@@ -34,7 +34,7 @@ public struct ScoreBezel: View {
             Circle().stroke(Color.white.opacity(0.09), lineWidth: 0.75).frame(width: 66, height: 66)
             ticks { $0 != .clear }
             ticks { $0 == .clear }.compositingGroup().shadow(color: Tokens.accentClear.opacity(0.7), radius: 3)   // one glow for all lit ticks
-            Text("\(score)").font(.system(size: 27, weight: .light)).foregroundStyle(Tokens.textPrimary)
+            Text("\(score)").font(.system(size: 27, weight: .bold)).foregroundStyle(Tokens.textPrimary)
                 .overlay(alignment: .top) {   // numeral centred in the bezel, caption hung beneath it (handover: caption 11 pt below centre)
                     Text("SKY SCORE").font(.system(size: 9, weight: .medium)).foregroundStyle(Tokens.textSecondary).fixedSize().offset(y: 28)
                 }

@@ -111,15 +111,20 @@ extension Text {
     var scaledItem: Text { font(Font.scaled(.body)) }
 }
 
-/// The popover's secondary button (Refresh, All targets): a filled surface.button pill with primary text, so it reads as a
-/// button rather than a caption. One style, so the two can never drift apart.
+/// The secondary button (Refresh, All targets, Open tonight's plan): a glass capsule with a hairline and primary text, so it reads as a
+/// button rather than a caption. One style, so they can never drift apart. Solid under Reduce Transparency and Increase Contrast.
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
     func makeBody(configuration: Configuration) -> some View {
+        let solid = reduceTransparency || contrast == .increased
         configuration.label
-            .font(.system(size: TextScale.pt(11), weight: .medium)).foregroundStyle(Tokens.textPrimary)
-            .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 22)
-            .background(Tokens.surfaceButton.opacity(configuration.isPressed ? 0.6 : 1), in: RoundedRectangle(cornerRadius: 6))
-            .contentShape(RoundedRectangle(cornerRadius: 6))
+            .font(.system(size: TextScale.pt(11), weight: .semibold)).foregroundStyle(Tokens.textPrimary)
+            .padding(.horizontal, 11).frame(minWidth: 44, minHeight: 22)
+            .background(solid ? Tokens.surfaceButton : Tokens.glassFill, in: Capsule())
+            .overlay(Capsule().stroke(Tokens.glassEdge, lineWidth: 1))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .contentShape(Capsule())
     }
 }
 

@@ -32,6 +32,9 @@ targets:
       - path: Resources/LightPollution   # the world light-pollution grid (#138); the widget does not need it
         type: folder
         buildPhase: resources
+      - path: Resources/Backdrop         # the night-sky pictures behind the popover and windows (wide and tall)
+        type: folder
+        buildPhase: resources
       - path: Resources/AppIcon/Nightwatch.icon   # Icon Composer: the Liquid Glass icon plus a classic .icns
         buildPhase: resources
       - path: NOTICE
