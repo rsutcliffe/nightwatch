@@ -46,9 +46,11 @@ public struct WarningChip: View {
 
 /// The one warm pill: ember with dark heavy text. One per screen at most.
 public struct PillButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .opacity(isEnabled ? 1 : 0.45)
             .font(.system(size: TextScale.pt(12), weight: .heavy))
             .padding(.horizontal, 16).padding(.vertical, 6)
             .background(Tokens.ember.opacity(configuration.isPressed ? 0.8 : 1), in: Capsule())

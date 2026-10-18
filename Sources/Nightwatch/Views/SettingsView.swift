@@ -25,7 +25,7 @@ struct SettingsView: View {
         Form {
             // Plain wording: "Beats" lost people (owner, 25 September 2026). One list: click a site to observe from it, the star
             // marks home, a visited dark site sits apart until kept, and adding a site opens its own sheet.
-            Section("Where you observe") {
+            Section(header: Text("Where you observe".uppercased()).capsLabel()) {
                 ForEach(store.config.sites, id: \.name) { s in savedSiteRow(s) }
                 HStack(spacing: 12) {
                     siteRow(title: "This Mac's location", detail: automaticStatus,
@@ -53,7 +53,7 @@ struct SettingsView: View {
                         ui.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         ui.latText = ""; ui.lonText = ""; ui.addingSite = true
                     }
-                        .buttonStyle(ScaledButtonStyle(prominent: true))
+                        .buttonStyle(PillButtonStyle())
                         .disabled(!store.config.canAddSite)
                     Spacer()
                 }
@@ -64,7 +64,7 @@ struct SettingsView: View {
                 Text("Click a site to observe from it. Home (★) is where “Back to …” returns and what dark sites are compared with.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section("Telescope") {
+            Section(header: Text("Telescope".uppercased()).capsLabel()) {
                 Picker("Preset", selection: Binding(get: { store.config.fovPresetID ?? "custom" }, set: { id in
                     store.config.fovPresetID = id == "custom" ? nil : id
                     if let p = ui.presets.first(where: { $0.id == id }) { store.config.fov = p.fov }
@@ -85,7 +85,7 @@ struct SettingsView: View {
             }
             // Tonight's plan's own section: under Telescope, "Stop by" read as a camera setting rather than bedtime (owner's
             // UAT, 29 September 2026).
-            Section("Tonight's plan") {
+            Section(header: Text("Tonight's plan".uppercased()).capsLabel()) {
                 Toggle("Show Tonight's plan in Targets and the heads-up", isOn: bind(\.showPlan))
                 Toggle("Finish by a set time", isOn: bind(\.stopBy.enabled))
                 if store.config.stopBy.enabled {
@@ -101,7 +101,7 @@ struct SettingsView: View {
                 Text("For bed or an early start: the plan ends at this time, and favourites only up after it are left out.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section("Go rule") {
+            Section(header: Text("Go rule".uppercased()).capsLabel()) {
                 Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")
                     .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 choiceRow("Clear for at least", Binding(get: { store.config.goRule.minHours }, set: { store.config.goRule.minHours = $0; store.saveConfig() }),
@@ -111,7 +111,7 @@ struct SettingsView: View {
                 choiceRow("Targets must reach", Binding(get: { store.config.goRule.minAltitudeDeg }, set: { store.config.goRule.minAltitudeDeg = $0; store.saveConfig() }),
                           Array(stride(from: 10.0, through: 60, by: 5))) { "\(Int($0))° altitude" }
             }
-            Section("Alerts") {
+            Section(header: Text("Alerts".uppercased()).capsLabel()) {
                 // The master switch, moved here from the popover's footer (owner, 27 September 2026): "Notify at 20:30" tonight.
                 Toggle(store.site.map { Copy.notifyLabel(store.plan, site: $0, settings: store.config.alerts) } ?? "Notify when clear",
                        isOn: bind(\.notifyEnabled))
@@ -133,7 +133,7 @@ struct SettingsView: View {
                 choiceRow("Quiet hours end", bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 Text("No banners between those hours; the popover still shows what was missed.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section("Dark sites") {
+            Section(header: Text("Dark sites".uppercased()).capsLabel()) {
                 Toggle("Look for darker skies nearby", isOn: bind(\.darkSites.enabled))
                 Picker("Distance unit", selection: bind(\.darkSites.unit)) { Text("Kilometres").scaledItem.tag(DistanceUnit.km); Text("Miles").scaledItem.tag(DistanceUnit.mi) }
                     .id("Distance unit \(store.config.textSize)")
@@ -142,7 +142,7 @@ struct SettingsView: View {
                 }
                 Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest three, while the Dark sites page is open.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section("Network use today") {
+            Section(header: Text("Network use today".uppercased()).capsLabel()) {
                 let tally = RequestTally.today()
                 if tally.requests.isEmpty {
                     Text("No requests yet today.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
@@ -153,13 +153,13 @@ struct SettingsView: View {
                 }
                 Text("Counted on this Mac only, from midnight UTC. The free forecast service refuses a connection after a fixed number of requests a day; this shows where they went.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section("Bright nights") {
+            Section(header: Text("Bright nights".uppercased()).capsLabel()) {
                 Toggle("Moon and planets when there is no proper darkness", isOn: bind(\.brightNights.enabled))
                 choiceRow("Minimum clear run", bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: "%.1f h", $0) }
                 Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes. The Moon or a planet must stand 15° up in a clear stretch of nautical darkness. Deep-sky targets are never suggested on a bright night.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             if Distribution.checksForUpdates {   // the App Store build has no update check
-                Section("Updates") {
+                Section(header: Text("Updates".uppercased()).capsLabel()) {
                     Toggle("Check for a new version once a day", isOn: Binding(get: { store.config.checkForUpdates }, set: {
                         store.config.checkForUpdates = $0
                         if !$0 { store.availableUpdate = nil }   // off means the line goes now, not at the next patrol
@@ -169,7 +169,7 @@ struct SettingsView: View {
                         .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
             }
-            Section("Aurora") {
+            Section(header: Text("Aurora".uppercased()).capsLabel()) {
                 Toggle("Alert me to aurora when the sky is clear", isOn: bind(\.aurora.enabled))
                 Picker("Alert from", selection: bind(\.aurora.threshold)) {
                     ForEach([AuroraLevel.yellow, .amber, .red], id: \.self) { Text($0.displayName).scaledItem.tag($0) }
@@ -177,7 +177,7 @@ struct SettingsView: View {
                 .id("Alert from \(store.config.textSize)")
                 Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University), checked every 5 minutes after dark. Elsewhere, NOAA's 30-minute aurora forecast for your site, checked every 15 minutes: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit. Quiet hours apply.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section("App") {
+            Section(header: Text("App".uppercased()).capsLabel()) {
                 // Reads the live login-item status (the user can remove it in System Settings); config.loginItem only records the choice.
                 Toggle("Start at login", isOn: Binding(get: { SMAppService.mainApp.status == .enabled }, set: { on in
                     do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }; store.config.loginItem = on; store.saveConfig() }
@@ -215,6 +215,9 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background { NightBackdrop(calm: true) }
+        .toggleStyle(WarmSwitchStyle())
         .sheet(isPresented: $ui.addingSite) { AddSiteSheet(ui: ui).environmentObject(store).scaledText() }
         .sheet(isPresented: Binding(get: { ui.horizonFor != nil }, set: { if !$0 { ui.horizonFor = nil } })) {
             if let name = ui.horizonFor { HorizonSheet(siteName: name).environmentObject(store).scaledText() }

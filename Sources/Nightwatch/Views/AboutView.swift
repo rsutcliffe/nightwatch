@@ -43,7 +43,7 @@ struct AboutView: View {
             Text("Darkness bands (Very dark to Bright) are Nightwatch's own thresholds on VIIRS upward radiance, not a Bortle class.").wrapped().font(Font.scaled(.caption2)).foregroundStyle(Theme.dim)
             TurtleGlyph().frame(width: 28, height: 18).foregroundStyle(Theme.dim.opacity(0.6))
         }
-        .padding(20).frame(width: TextScale.pt(420)).background(Theme.bg).foregroundStyle(Theme.text).preferredColorScheme(.dark)
+        .padding(20).frame(width: TextScale.pt(420)).background { NightBackdrop(calm: true) }.foregroundStyle(Theme.text).preferredColorScheme(.dark)
     }
 }
 
