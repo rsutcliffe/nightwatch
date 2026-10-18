@@ -58,15 +58,16 @@ public struct PillButtonStyle: ButtonStyle {
 
 /// A switch with a warm-white track and a dark knob when on; a faint track and a pale knob when off.
 public struct WarmSwitchStyle: ToggleStyle {
-    public init() {}
+    public var compact = false
+    public init(compact: Bool = false) { self.compact = compact }
     public func makeBody(configuration: Configuration) -> some View {
         Button { configuration.isOn.toggle() } label: {
             HStack {
                 configuration.label
                 Spacer(minLength: 12)
                 ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    Capsule().fill(configuration.isOn ? Tokens.lit : Color.white.opacity(0.18)).frame(width: 40, height: 24)
-                    Circle().fill(configuration.isOn ? Tokens.targetsBackground : Color.white.opacity(0.85)).frame(width: 18, height: 18).padding(3)
+                    Capsule().fill(configuration.isOn ? Tokens.lit : Color.white.opacity(0.18)).frame(width: compact ? 32 : 40, height: compact ? 19 : 24)
+                    Circle().fill(configuration.isOn ? Tokens.targetsBackground : Color.white.opacity(0.85)).frame(width: compact ? 13 : 18, height: compact ? 13 : 18).padding(3)
                 }
                 .animation(.easeOut(duration: 0.12), value: configuration.isOn)
             }
