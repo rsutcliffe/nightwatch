@@ -29,7 +29,7 @@ public struct NightwatchWidgetView: View {
             case .medium: medium(s)
             case .large: large(s)
             // The extra-wide layout (`extraLarge`) stayed a grey skeleton on an iPad, so this size draws the large layout until the cause is found.
-            case .extraLarge: large(s)
+            case .extraLarge: bisect(s)
             }
         } else {
             VStack(spacing: 4) {
@@ -95,7 +95,7 @@ public struct NightwatchWidgetView: View {
             if s.auroraLine(now: now) != nil { auroraLine(s) }
             else { Text(plain(stale(s) ?? s.notifyShort ?? s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1) }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private func medium(_ s: WidgetSnapshot) -> some View {
@@ -115,7 +115,17 @@ public struct NightwatchWidgetView: View {
                 Text(plain(stale(s) ?? s.updated ?? "")).font(.caption2).foregroundStyle(dim).lineLimit(1)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    /// TEMPORARY: the plainest possible extra-wide widget (no canvas, no links, no layout switching), to find out whether the content or the size itself stops it loading.
+    private func bisect(_ s: WidgetSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(plain(s.headline)).font(.title.weight(.bold)).foregroundStyle(text)
+            Text("\(s.score)").font(.system(size: 60, weight: .bold)).foregroundStyle(accent)
+            if let w = s.window { Text(plain(w)).font(.title3).foregroundStyle(text) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     /// The iPad's extra-large widget: the dial and the verdict on the left, the night's arc beneath them, and the three best targets in a column
@@ -161,7 +171,7 @@ public struct NightwatchWidgetView: View {
                 Text(plain(stale(s) ?? [s.source, s.updated].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     /// The large widget. The full layout when the widget is tall enough (an iPhone's); otherwise a shorter one, so nothing is ever clipped: an
@@ -171,7 +181,7 @@ public struct NightwatchWidgetView: View {
             largeLayout(s, full: true)
             largeLayout(s, full: false)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private func largeLayout(_ s: WidgetSnapshot, full: Bool) -> some View {
