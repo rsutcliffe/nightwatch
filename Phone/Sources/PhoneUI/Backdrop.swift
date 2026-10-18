@@ -19,18 +19,22 @@ struct StarField: View {
         }
     }
 
-    /// William Zhang's Milky Way photograph (Unsplash License), bundled at 1200 px; read once.
-    private static let photo: Image? = {
-        guard let url = Bundle.main.url(forResource: "milky-way", withExtension: "jpg", subdirectory: "Backdrop"),
+    /// The backdrop photographs, bundled and read once each: a wide one for landscape screens and a tall crop for portrait. The Unsplash
+    /// Milky Way (William Zhang, credited in the README) stays as the fallback.
+    private static func load(_ name: String) -> Image? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "jpg", subdirectory: "Backdrop"),
               let data = try? Data(contentsOf: url) else { return nil }
         return Image(platformData: data)
-    }()
+    }
+    private static let fallback: Image? = load("milky-way")
+    private static let wide: Image? = load("night-sky-wide") ?? fallback
+    private static let tall: Image? = load("night-sky-tall") ?? fallback
 
     var body: some View {
-        if reduceTransparency { Color.clear } else if let photo = Self.photo {
+        if reduceTransparency { Color.clear } else if Self.wide != nil || Self.tall != nil {
             // The real sky, held back so the cards on it stay readable: darker towards the foot, one red hue in red mode.
             GeometryReader { geo in
-                photo.resizable().scaledToFill().frame(width: geo.size.width, height: geo.size.height).clipped()
+                (geo.size.width > geo.size.height ? Self.wide : Self.tall)?.resizable().scaledToFill().frame(width: geo.size.width, height: geo.size.height).clipped()
                     .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
                     .overlay(LinearGradient(colors: [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
                                             startPoint: .top, endPoint: .bottom))

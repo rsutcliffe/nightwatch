@@ -32,17 +32,23 @@ enum Haptic {
     #endif
 }
 
-/// A card: the surface the tiles, bars and lists sit on.
+/// A card: the surface the tiles, bars and lists sit on. `glass` is the frosted card over the photograph (16 pt radius, a faint
+/// fill and a hairline); under Reduce Transparency it becomes the solid card, so text never sits on the picture.
 struct Card<Content: View>: View {
     @Environment(\.phoneTheme) private var theme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
     var padding: CGFloat = 12
+    var glass = false
     @ViewBuilder var content: Content
     var body: some View {
+        let radius: CGFloat = glass ? 16 : 14
+        let solid = !glass || reduceTransparency
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+            .background(solid ? theme.card : theme.glassFill, in: RoundedRectangle(cornerRadius: radius))
+            .overlay(RoundedRectangle(cornerRadius: radius).stroke(solid ? theme.hairline : (contrast == .increased ? theme.textSecondaryHigh : theme.glassHairline), lineWidth: 1))
     }
 }
 
