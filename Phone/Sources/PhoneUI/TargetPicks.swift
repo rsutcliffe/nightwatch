@@ -134,11 +134,13 @@ struct PicksSection: View {
 
     private var needsPhotos: Bool { model.picks.contains { if case .survey = $0.picture { true } else { false } } }
 
-    private func words(_ p: TargetPick) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(p.title).font(.title3).lineLimit(1).minimumScaleFactor(0.8)
-            Text(p.line).font(.caption).secondary().lineLimit(1)
-            Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.bestLine).lineLimit(1).minimumScaleFactor(0.85)
+    /// A target's three lines: the name heavy, what it is in wide-tracked capitals, and when it is highest. One place, so the photo card and
+    /// the solid card at accessibility sizes say it the same way.
+    private func words(_ p: TargetPick, name: Color? = nil, line: Color? = nil, best: Color? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(p.title).font(.title2.weight(.heavy)).foregroundStyle(name ?? theme.textPrimary).lineLimit(1).minimumScaleFactor(0.8)
+            Text(p.line.uppercased()).font(.caption2.weight(.regular)).tracking(1.4).foregroundStyle(line ?? theme.textSecondary).lineLimit(1)
+            Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(best ?? theme.bestLine).lineLimit(1).minimumScaleFactor(0.85)
         }
     }
 
@@ -147,11 +149,7 @@ struct PicksSection: View {
         ZStack(alignment: .bottomLeading) {
             TargetPicture(pick: p)
             LinearGradient(colors: [.clear, Color.black.opacity(0.78)], startPoint: .center, endPoint: .bottom)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(p.title).font(.title3.weight(.semibold)).foregroundStyle(Color(hex: 0xF4F1EA)).lineLimit(1).minimumScaleFactor(0.8)
-                Text(p.line).font(.caption).foregroundStyle(Color(hex: 0xC9D2EA)).lineLimit(1)
-                Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.lit).lineLimit(1).minimumScaleFactor(0.85)
-            }
+            words(p, name: Color(hex: 0xF4F1EA), line: Color(hex: 0xC9D2EA), best: theme.lit)
             .padding(14)
         }
         .frame(minHeight: minHeight, maxHeight: fills ? .infinity : minHeight)
