@@ -55,7 +55,7 @@ struct TonightHeroView: View {
                 Text(t).font(.system(size: timesSize, weight: .light)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
             }
             if let line = goldLine {
-                Text(line).font(.callout.weight(.medium)).foregroundStyle(theme.gold).fixedSize(horizontal: false, vertical: true)
+                Text(line).font(.callout.weight(hero.dewWarns ? .semibold : .medium)).foregroundStyle(theme.gold).fixedSize(horizontal: false, vertical: true)
             }
             if let r = snap.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if let a = snap.agreement {
@@ -67,7 +67,7 @@ struct TonightHeroView: View {
 
     /// "9.4 hours · medium dew risk", whichever of the two there is.
     private var goldLine: String? {
-        let parts = [hero.hours, hero.dewLine].compactMap { $0 }
+        let parts = [hero.hours, hero.dewLine.map { (hero.dewWarns ? "! " : "") + $0 }].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 

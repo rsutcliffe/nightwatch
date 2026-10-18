@@ -72,7 +72,16 @@ public struct TonightScreen: View {
         ClearHoursLine(bars: snap.bars, caption: snap.barsLabel, end: model.hero.times?.components(separatedBy: "-").last, moonNote: model.hero.moonNote)
     }
 
-    private func targets(height: CGFloat = 78) -> some View { PicksSection(model: model, pictureHeight: height) }
+    private func targets(height: CGFloat = 78, style: PicksSection.Style = .row, fills: Bool = false) -> some View {
+        PicksSection(model: model, pictureHeight: height, style: style, fills: fills)
+    }
+
+    /// Seeing, wind and transparency (and the dark hours) as one quiet line, where the six tiles were.
+    @ViewBuilder private var conditions: some View {
+        if !model.hero.conditions.isEmpty {
+            Text(model.hero.conditions).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
 
     private var offlineNote: some View {
         Card {
@@ -94,10 +103,17 @@ public struct TonightScreen: View {
         }
     }
 
-    private var footer: some View {
-        VStack(alignment: .leading, spacing: 6) {
+    /// The pale alerts pill (until alerts are decided), then the conditions line beside the source, update time and Refresh.
+    private func footer(sideBySide: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
             if let alertsPrompt { alertsPrompt }
-            SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
+            let source = SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
+            if sideBySide {
+                HStack(alignment: .center, spacing: 16) { conditions; source.fixedSize(horizontal: true, vertical: false) }
+            } else {
+                conditions
+                source
+            }
         }
     }
 
@@ -107,11 +123,12 @@ public struct TonightScreen: View {
         GeometryReader { geo in
             ScrollView {
                 Group {
-                    if geo.size.width >= 1100 { landscape } else if geo.size.width >= 640 { wide(width: geo.size.width) } else { compact }
+                    if geo.size.width >= 1100 { spacious(.large, width: geo.size.width) } else if geo.size.width >= 640 { spacious(.medium, width: geo.size.width) } else { compact }
                 }
                 .padding(geo.size.width >= 640 ? 28 : 16)
                 .frame(maxWidth: 1400)
                 .frame(maxWidth: .infinity)
+                .frame(minHeight: geo.size.height, alignment: .top)
             }
             .scrollBounceBehavior(.basedOnSize)
         }
@@ -120,44 +137,31 @@ public struct TonightScreen: View {
     }
 
     private var compact: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 18) {
             if offline { offlineNote }
             header
             visit
             verdict(.compact)
             hours
             auroraRow
-            TilesView(tiles: model.tiles)
-            targets()
+            targets(style: .list)
             tomorrowCard
-            footer
+            footer(sideBySide: false)
         }
     }
 
-    /// An iPad page: the verdict and the hours side by side, the six tiles in one row, big pictures for the targets.
-    private func wide(width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+    /// An iPad page, upright or landscape: the hero over the hours, then the three cards taking whatever height is left, then the foot.
+    private func spacious(_ scale: TonightHeroView.Scale, width: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 24) {
             if offline { offlineNote }
             header
             visit
-            verdict(.medium)
+            verdict(scale)
             hours
             auroraRow
-            TilesView(tiles: model.tiles, columns: width >= 760 ? 6 : 3)
-            targets(height: width >= 760 ? 230 : 170)
+            targets(height: scale == .large ? 150 : 200, fills: true)
             tomorrowCard
-            footer
-        }
-    }
-
-    private var landscape: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            if offline { offlineNote }
-            HStack(alignment: .top, spacing: 24) {
-                VStack(alignment: .leading, spacing: 20) { header; visit; verdict(.large); hours; auroraRow; tomorrowCard }.frame(maxWidth: .infinity)
-                VStack(alignment: .leading, spacing: 20) { TilesView(tiles: model.tiles, columns: 2); targets(height: 190) }.frame(maxWidth: .infinity)
-            }
-            footer
+            footer(sideBySide: true)
         }
     }
 }

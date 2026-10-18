@@ -6,6 +6,7 @@ struct StarField: View {
     let seed: String
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     /// Small deterministic generator (SplitMix64) so the same seed always draws the same sky.
     private struct Generator: RandomNumberGenerator {
@@ -36,7 +37,9 @@ struct StarField: View {
             GeometryReader { geo in
                 (geo.size.width > geo.size.height ? Self.wide : Self.tall)?.resizable().scaledToFill().frame(width: geo.size.width, height: geo.size.height).clipped()
                     .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
-                    .overlay(LinearGradient(colors: [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
+                    // At the accessibility text sizes the words sit on a near-solid scrim, so contrast never depends on the photograph.
+                    .overlay(LinearGradient(colors: typeSize.isAccessibilitySize ? [theme.background.opacity(0.88), theme.background.opacity(0.92)]
+                                                : [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
                                             startPoint: .top, endPoint: .bottom))
             }
             .allowsHitTesting(false).accessibilityHidden(true)

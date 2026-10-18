@@ -65,12 +65,12 @@ public struct AlertsPrompt: View {
 
     public var body: some View {
         if permission.status == .notDetermined {
-            Card {
-                VStack(alignment: .leading, spacing: 10) {
+            Card(glass: true) {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Be told when it is worth going out").font(.callout.weight(.medium))
                     Text("An alert an hour before dark, another before the clear window opens, and a note if the forecast turns. Nothing else, and never during your quiet hours.")
                         .font(.footnote).secondary().fixedSize(horizontal: false, vertical: true)
-                    PrimaryButton(title: "Turn on alerts") {
+                    PillButton(title: "Turn on alerts") {
                         Task {
                             await permission.request()
                             if permission.status == .authorized { Haptic.success(); onGranted() } else { Haptic.warning() }

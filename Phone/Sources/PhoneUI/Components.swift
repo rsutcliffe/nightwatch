@@ -33,17 +33,18 @@ enum Haptic {
 }
 
 /// A card: the surface the tiles, bars and lists sit on. `glass` is the frosted card over the photograph (16 pt radius, a faint
-/// fill and a hairline); under Reduce Transparency it becomes the solid card, so text never sits on the picture.
+/// fill and a hairline); under Reduce Transparency, or at the accessibility text sizes, it becomes the solid card, so text never sits on the picture.
 struct Card<Content: View>: View {
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.dynamicTypeSize) private var typeSize
     var padding: CGFloat = 12
     var glass = false
     @ViewBuilder var content: Content
     var body: some View {
         let radius: CGFloat = glass ? 16 : 14
-        let solid = !glass || reduceTransparency
+        let solid = !glass || reduceTransparency || typeSize.isAccessibilitySize   // big text never sits on the picture
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,6 +98,21 @@ struct PrimaryButton: View {
             Text(title).font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 15)
                 .background(theme.accent, in: RoundedRectangle(cornerRadius: 14))
                 .foregroundStyle(theme.isRed ? Color.black : Color.white)
+        }
+        .buttonStyle(PressStyle())
+    }
+}
+
+/// A pale filled pill, as the Photographic design has its one call to action: pale on the photograph, red on black in red mode.
+struct PillButton: View {
+    let title: String
+    let action: () -> Void
+    @Environment(\.phoneTheme) private var theme
+    var body: some View {
+        Button { Haptic.impact(); action() } label: {
+            Text(title).font(.callout.weight(.medium)).padding(.horizontal, 22).frame(minHeight: 44)
+                .background(theme.isRed ? theme.accent : Color(hex: 0xF4F1EA), in: Capsule())
+                .foregroundStyle(theme.isRed ? Color.black : Color(hex: 0x0A1022))
         }
         .buttonStyle(PressStyle())
     }

@@ -2,10 +2,10 @@ import Testing
 import Foundation
 @testable import PhoneCore
 
-private func tiles(seeing: String? = "0.5-0.75\"", wind: String? = "10 km/h", dewLabel: String = "Dew risk", dew: String? = "Medium",
+private func tiles(dewHint: String? = nil, seeing: String? = "0.5-0.75\"", wind: String? = "10 km/h", dewLabel: String = "Dew risk", dew: String? = "Medium",
                    transparency: String? = "Good") -> TonightTiles {
     TonightTiles(dark: "20:11-05:38", moon: "Down", moonLine: "tonight", seeing: seeing, wind: wind, dewLabel: dewLabel, dew: dew,
-                 dewHint: nil, transparency: transparency, moonAt: nil)
+                 dewHint: dewHint, transparency: transparency, moonAt: nil)
 }
 
 @Test func theHeroSplitsTheWindowAndJoinsTheConditions() {
@@ -14,7 +14,8 @@ private func tiles(seeing: String? = "0.5-0.75\"", wind: String? = "10 km/h", de
     #expect(h.hours == "9.4 hours")
     #expect(h.dewLine == "medium dew risk")
     #expect(h.moonNote == "Moon down tonight")
-    #expect(h.conditions == "Seeing 0.5-0.75\" · Wind 10 km/h · Transparency good")
+    #expect(h.conditions == "Dark 20:11-05:38 · Seeing 0.5-0.75\" · Wind 10 km/h · Transparency good")
+    #expect(h.dewWarns == false)
 }
 
 @Test func aNightWithoutAWindowHasNoTimesOrHours() {
@@ -25,12 +26,19 @@ private func tiles(seeing: String? = "0.5-0.75\"", wind: String? = "10 km/h", de
 @Test func frostReplacesTheDewLineAndMissingFiguresAreLeftOut() {
     let h = TonightHero.make(window: "21:00-04:00 · 7.0 h", tiles: tiles(seeing: nil, wind: nil, dewLabel: "Frost likely", dew: "Low", transparency: "Fair"))
     #expect(h.dewLine == "frost likely")
-    #expect(h.conditions == "Transparency fair")
-    #expect(TonightHero.make(window: nil, tiles: tiles(seeing: nil, wind: nil, dew: nil, transparency: nil)).conditions.isEmpty)
+    #expect(h.conditions == "Dark 20:11-05:38 · Transparency fair")
+    #expect(h.dewWarns)
+    #expect(TonightHero.make(window: nil, tiles: tiles(seeing: nil, wind: nil, dew: nil, transparency: nil)).conditions == "Dark 20:11-05:38")
 }
 
 @Test func aLitMoonNamesItsPhaseAndWhenItSets() {
     var t = tiles()
     t.moon = "35%"; t.moonLine = "Sets 20:36"
     #expect(TonightHero.make(window: nil, tiles: t).moonNote == "Moon 35% · Sets 20:36")
+}
+
+@Test func highDewRiskCarriesTheHeaterAdviceAndWarns() {
+    let h = TonightHero.make(window: nil, tiles: tiles(dewHint: "Dew heater advised", dew: "High"))
+    #expect(h.dewLine == "high dew risk, dew heater advised")
+    #expect(h.dewWarns)
 }
