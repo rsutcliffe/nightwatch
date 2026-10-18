@@ -56,7 +56,9 @@ targets:
   NightwatchWidget:
     type: app-extension
     platform: macOS
-    sources: [Widget/Sources]
+    sources:
+      - path: Widget/Sources
+      - path: Widget/Assets.xcassets   # the night-sky picture, kept small: a large one left every new widget a grey skeleton (iPhone and iPad, 18 October 2026)
     dependencies:
       - package: Nightwatch
         product: NightwatchUI
