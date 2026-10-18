@@ -27,7 +27,7 @@ ticks use the accent with one glow. Verdict wording, bars and tiles come from Sk
 
 ## Photographic look (iPad and iPhone, from 18 October 2026)
 
-The owner found the iPad design basic and clunky, so Tonight now sits on a full-bleed night-sky photograph, with a very large
+The owner found the iPad design basic and clunky, so Tonight now sits on a full-bleed night-sky image, with a very large
 light score numeral and frosted-glass cards. The Mac app keeps its current look; this divergence is on purpose and applies
 to iPad and iPhone only. Red night mode is unchanged: one hue on black, the photograph tinted red.
 
@@ -38,8 +38,8 @@ to iPad and iPhone only. Red night mode is unchanged: one hue on black, the phot
 | glass.hairline | white 16 % (35 % red; text colour under Increase Contrast) | card outline, 16 pt radius |
 | scrim | background colour at 16 % over the top to 78 % at the foot | holds text contrast over the photo |
 
-- **Backdrop:** `night-sky-wide.jpg` (iPad landscape) and `night-sky-tall.jpg` (portrait, iPhone), cropped from the owner-supplied
-  night-sky photograph, in `App/Resources/Backdrop`. The Unsplash Milky Way (William Zhang, credited in the README) is the
+- **Backdrop:** `night-sky-wide.jpg` (iPad landscape) and `night-sky-tall.jpg` (portrait, iPhone), cropped from owner-supplied
+  night-sky images, in `App/Resources/Backdrop`. The Unsplash Milky Way (William Zhang, credited in the README) is the
   fallback if either file is missing.
 - **Hero:** numeral about 120 pt on iPad landscape, 104 pt on iPad portrait, 80 pt on iPhone, light weight, scaled with Dynamic Type;
   "SKY SCORE" in wide-tracked capitals; the clear window in large light type; hours clear and the dew line in gold.

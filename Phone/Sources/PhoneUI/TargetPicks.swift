@@ -142,23 +142,31 @@ struct PicksSection: View {
         }
     }
 
-    private func card(_ p: TargetPick, stacked: Bool) -> some View {
-        Card(padding: 8, glass: true) {
-            VStack(alignment: .leading, spacing: 8) {
-                TargetPicture(pick: p).frame(minHeight: stacked ? 150 : pictureHeight, maxHeight: fills && !stacked ? .infinity : (stacked ? 150 : pictureHeight))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                words(p).padding(.horizontal, 4).padding(.bottom, 2)
+    /// The picture runs to the card's edges with the words over a dark foot; the "best" line is the card's one gold note.
+    private func photoCard(_ p: TargetPick, minHeight: CGFloat, fills: Bool) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            TargetPicture(pick: p)
+            LinearGradient(colors: [.clear, Color.black.opacity(0.78)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(p.title).font(.title3).foregroundStyle(Color(hex: 0xF4F1EA)).lineLimit(1).minimumScaleFactor(0.8)
+                Text(p.line).font(.caption).foregroundStyle(Color(hex: 0xC9D2EA)).lineLimit(1)
+                Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.gold).lineLimit(1).minimumScaleFactor(0.85)
             }
+            .padding(14)
         }
+        .frame(minHeight: minHeight, maxHeight: fills ? .infinity : minHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(LinearGradient(colors: [theme.glassHairline.opacity(2.2), theme.glassHairline], startPoint: .top, endPoint: .bottom), lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 12, y: 6)
         .accessibilityElement(children: .combine)
     }
 
-    private func listCard(_ p: TargetPick) -> some View {
-        Card(padding: 8, glass: true) {
-            HStack(spacing: 12) {
-                TargetPicture(pick: p).frame(width: 84, height: 84).clipShape(RoundedRectangle(cornerRadius: 10))
-                words(p)
-                Spacer(minLength: 0)
+    /// At the accessibility text sizes the words leave the picture: a solid card, picture above, words beneath.
+    private func solidCard(_ p: TargetPick) -> some View {
+        Card(padding: 8) {
+            VStack(alignment: .leading, spacing: 8) {
+                TargetPicture(pick: p).frame(height: 150).clipShape(RoundedRectangle(cornerRadius: 10))
+                words(p).padding(.horizontal, 4).padding(.bottom, 2)
             }
         }
         .accessibilityElement(children: .combine)
@@ -169,11 +177,11 @@ struct PicksSection: View {
             Text(model.picksHeading).font(.caption.weight(.medium)).tracking(0.8).secondary()
             if let note = model.picksNote { Text(note).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if typeSize.isAccessibilitySize {
-                VStack(spacing: 12) { ForEach(model.picks) { card($0, stacked: true) } }
+                VStack(spacing: 12) { ForEach(model.picks) { solidCard($0) } }
             } else if style == .list {
-                VStack(spacing: 10) { ForEach(model.picks) { listCard($0) } }
+                VStack(spacing: 12) { ForEach(model.picks) { photoCard($0, minHeight: 132, fills: false) } }
             } else {
-                HStack(alignment: .top, spacing: 12) { ForEach(model.picks) { card($0, stacked: false).frame(maxHeight: fills ? .infinity : nil) } }
+                HStack(alignment: .top, spacing: 14) { ForEach(model.picks) { photoCard($0, minHeight: pictureHeight + 60, fills: fills) } }
                     .frame(maxHeight: fills ? .infinity : nil)
             }
             if needsPhotos && !allowsDownloads {

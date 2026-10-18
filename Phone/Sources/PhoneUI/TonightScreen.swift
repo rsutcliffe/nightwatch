@@ -69,7 +69,7 @@ public struct TonightScreen: View {
     }
 
     private var hours: some View {
-        ClearHoursLine(bars: snap.bars, caption: snap.barsLabel, end: model.hero.times?.components(separatedBy: "-").last, moonNote: model.hero.moonNote)
+        ClearHoursLine(bars: snap.bars, caption: snap.barsLabel, moonNote: model.hero.moonNote)
     }
 
     private func targets(height: CGFloat = 78, style: PicksSection.Style = .row, fills: Bool = false) -> some View {

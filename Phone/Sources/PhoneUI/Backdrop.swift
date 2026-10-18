@@ -42,6 +42,7 @@ struct StarField: View {
                                                 : [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
                                             startPoint: .top, endPoint: .bottom))
             }
+            .overlay { Twinkle(tint: theme.isRed ? Color(hex: 0xFF5A4A) : .white).opacity(typeSize.isAccessibilitySize ? 0.3 : 1) }
             .allowsHitTesting(false).accessibilityHidden(true)
         } else {
             Canvas { ctx, size in
@@ -96,6 +97,36 @@ struct StarField: View {
             }
             .background(LinearGradient(colors: [theme.skyTop, theme.background], startPoint: .top, endPoint: .center))
             .allowsHitTesting(false).accessibilityHidden(true)
+        }
+    }
+}
+
+/// A few dozen stars that slowly brighten and dim over the photograph, at ten frames a second, so the sky is alive without costing
+/// anything. Still under Reduce Motion. Positions are fixed arithmetic, so they never jump.
+private struct Twinkle: View {
+    let tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if reduceMotion { EmptyView() } else {
+            TimelineView(.periodic(from: .now, by: 0.1)) { tl in
+                Canvas { ctx, size in
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                    for i in 0..<40 {
+                        let x = (Double(i) * 0.6180339887).truncatingRemainder(dividingBy: 1) * size.width
+                        let y = (Double(i) * 0.3819660113 + 0.11).truncatingRemainder(dividingBy: 1) * size.height * 0.62
+                        let glow = pow(max(0, sin(t * (0.5 + Double(i % 5) * 0.17) + Double(i) * 1.7)), 3)
+                        let r = 0.8 + Double(i % 4) * 0.45
+                        ctx.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(tint.opacity(0.18 + 0.8 * glow)))
+                        if glow > 0.7 && i % 3 == 0 {
+                            var cross = Path()
+                            cross.move(to: CGPoint(x: x - 5, y: y)); cross.addLine(to: CGPoint(x: x + 5, y: y))
+                            cross.move(to: CGPoint(x: x, y: y - 5)); cross.addLine(to: CGPoint(x: x, y: y + 5))
+                            ctx.stroke(cross, with: .color(tint.opacity(0.45 * glow)), lineWidth: 0.6)
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ private func tiles(dewHint: String? = nil, seeing: String? = "0.5-0.75\"", wind:
     #expect(h.hours == "9.4 hours")
     #expect(h.dewLine == "medium dew risk")
     #expect(h.moonNote == "Moon down tonight")
-    #expect(h.conditions == "Dark 20:11-05:38 · Seeing 0.5-0.75\" · Wind 10 km/h · Transparency good")
+    #expect(h.conditions == "Seeing 0.5-0.75\" · Wind 10 km/h · Transparency good")   // the dark span equals the window, so it is not said twice
     #expect(h.dewWarns == false)
 }
 
@@ -41,4 +41,12 @@ private func tiles(dewHint: String? = nil, seeing: String? = "0.5-0.75\"", wind:
     let h = TonightHero.make(window: nil, tiles: tiles(dewHint: "Dew heater advised", dew: "High"))
     #expect(h.dewLine == "high dew risk, dew heater advised")
     #expect(h.dewWarns)
+}
+
+@Test func aReasonThatRepeatsTheDewLineIsLeftOutButOtherReasonsStay() {
+    let t = tiles(dew: "Medium")
+    #expect(TonightHero.make(window: nil, tiles: t, reason: "Held back by medium dew risk").reason == nil)
+    #expect(TonightHero.make(window: nil, tiles: t, reason: "Held back by seeing at 1.5-2\" and high dew risk").reason == nil)
+    #expect(TonightHero.make(window: nil, tiles: t, reason: "Held back by cloud").reason == "Held back by cloud")
+    #expect(TonightHero.make(window: nil, tiles: tiles(dew: nil), reason: "Held back by medium dew risk").reason == "Held back by medium dew risk")
 }
