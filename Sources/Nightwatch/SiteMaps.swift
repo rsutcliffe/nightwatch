@@ -22,7 +22,12 @@ enum SiteMaps {
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return [] }
         ctx.interpolationQuality = .high
         ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
-        return stride(from: 0, to: px.count, by: 4).map { (0.2126 * Double(px[$0]) + 0.7152 * Double(px[$0 + 1]) + 0.0722 * Double(px[$0 + 2])) / 255 }
+        var out: [Double] = []
+        for i in stride(from: 0, to: px.count, by: 4) {
+            let r = Double(px[i]), g = Double(px[i + 1]), b = Double(px[i + 2])
+            out.append((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255)
+        }
+        return out
     }
     static func isBlank(_ img: NSImage) -> Bool { MapSnapshot.isBlank(brightness: brightness(of: img)) }
 
