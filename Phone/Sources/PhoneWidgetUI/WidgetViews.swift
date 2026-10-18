@@ -48,7 +48,7 @@ public struct NightwatchWidgetView: View {
     }
 
     /// The 12-hour bezel the app and the Mac draw: 60 ticks, hours longer, the clear ones lit.
-    private func bezel(_ s: WidgetSnapshot, _ d: CGFloat) -> some View {
+    private func bezel(_ s: WidgetSnapshot, _ d: CGFloat, glow: Bool = true) -> some View {
         ZStack {
             Canvas { ctx, size in
                 let c = CGPoint(x: size.width / 2, y: size.height / 2), r = min(size.width, size.height) / 2
@@ -58,7 +58,7 @@ public struct NightwatchWidgetView: View {
                     var p = Path()
                     p.move(to: CGPoint(x: c.x + (r - len) * cos(a), y: c.y + (r - len) * sin(a)))
                     p.addLine(to: CGPoint(x: c.x + r * cos(a), y: c.y + r * sin(a)))
-                    if s.slots[i] == .clear {
+                    if glow, s.slots[i] == .clear {
                         ctx.drawLayer { layer in layer.addFilter(.blur(radius: 2.5)); layer.stroke(p, with: .color(accent.opacity(0.7)), style: StrokeStyle(lineWidth: hour ? 3.2 : 2.4, lineCap: .round)) }
                     }
                     ctx.stroke(p, with: .color(tickColour(s.slots[i])), style: StrokeStyle(lineWidth: hour ? 2 : 1.3, lineCap: .round))
@@ -124,7 +124,7 @@ public struct NightwatchWidgetView: View {
             HStack(alignment: .top, spacing: 28) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .top, spacing: 16) {
-                        bezel(s, 96)
+                        bezel(s, 96, glow: false)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
                             TwoWeight.headline(plain(s.headline), size: 24).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
@@ -132,7 +132,7 @@ public struct NightwatchWidgetView: View {
                             if let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
                         }
                     }
-                    if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: 84, lineWidth: 3.5) }
+                    if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, glow: false, height: 84, lineWidth: 4.5) }
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 if !s.targets.isEmpty {
