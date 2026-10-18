@@ -3,7 +3,7 @@ import SkyCore
 
 /// Two sizes of home-screen widget, drawn from a snapshot. Static: no animation, nothing fetched.
 public struct NightwatchWidgetView: View {
-    public enum Size { case small, medium, large }
+    public enum Size { case small, medium, large, extraLarge }
     let snapshot: WidgetSnapshot?
     let size: Size
     let red: Bool
@@ -28,6 +28,7 @@ public struct NightwatchWidgetView: View {
             case .small: small(s)
             case .medium: medium(s)
             case .large: large(s)
+            case .extraLarge: extraLarge(s)
             }
         } else {
             VStack(spacing: 4) {
@@ -116,6 +117,52 @@ public struct NightwatchWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// The iPad's extra-large widget: the dial and the verdict on the left, the night's arc beneath them, and the three best targets in a column
+    /// on the right, each a link to its page. Wide, so it never needs the shorter layout.
+    private func extraLarge(_ s: WidgetSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 28) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top, spacing: 16) {
+                        bezel(s, 96)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
+                            TwoWeight.headline(plain(s.headline), size: 24).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
+                            if let w = s.window { Text(plain(w)).font(.system(size: 20, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
+                            if let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
+                        }
+                    }
+                    if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: 84, lineWidth: 3.5) }
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                if !s.targets.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
+                        ForEach(s.targets, id: \.id) { t in
+                            Link(destination: WidgetLink.target(t.id).url) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(plain(t.catalogueID)).font(.title3.weight(.heavy)).foregroundStyle(text).lineLimit(1)
+                                    Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1)
+                                    Text(plain(t.best)).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: 44)
+                            }
+                        }
+                    }
+                    .frame(width: 230, alignment: .topLeading)
+                }
+            }
+            Spacer(minLength: 0)
+            HStack {
+                auroraLine(s)
+                if let t = s.tomorrow { Text(plain(t)).font(.caption).foregroundStyle(dim).lineLimit(1) }
+                Spacer(minLength: 8)
+                Text(plain(stale(s) ?? [s.source, s.updated].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
     /// The large widget. The full layout when the widget is tall enough (an iPhone's); otherwise a shorter one, so nothing is ever clipped: an
     /// iPad's large widget is much shorter. The shorter layout drops the reason, the aurora line and tomorrow, and shrinks the dial and arc.
     private func large(_ s: WidgetSnapshot) -> some View {
@@ -144,7 +191,7 @@ public struct NightwatchWidgetView: View {
                     ForEach(s.targets, id: \.id) { t in
                         Link(destination: WidgetLink.target(t.id).url) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text).lineLimit(1)
+                                Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text).lineLimit(1).fixedSize().layoutPriority(2)
                                 Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1)
                                 Spacer(minLength: 4)
                                 Text(plain(t.best)).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)

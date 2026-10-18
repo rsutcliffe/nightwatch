@@ -31,8 +31,9 @@ struct NightSky: View {
         if red { Color.black } else {
             ZStack {
                 NightwatchWidgetView.background(red: false)
-                if let ui = UIImage(named: "widget-sky") { Image(uiImage: ui).resizable().scaledToFill() }
-                LinearGradient(colors: [Color.black.opacity(0.35), Color.black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
+                // From the widget's asset catalogue, so it is found in the extension's own bundle. A light scrim: the text is bold and white.
+                Image("widget-sky").resizable().scaledToFill()
+                LinearGradient(colors: [Color.black.opacity(0.12), Color.black.opacity(0.5)], startPoint: .top, endPoint: .bottom)
             }
         }
     }
@@ -42,7 +43,7 @@ struct NightwatchWidgetEntryView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
     var body: some View {
-        NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemLarge ? .large : family == .systemMedium ? .medium : .small,
+        NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemExtraLarge ? .extraLarge : family == .systemLarge ? .large : family == .systemMedium ? .medium : .small,
                              red: entry.red, now: entry.date)
             .widgetURL(family == .systemMedium ? WidgetLink.plan.url : nil)   // small opens the app on Tonight, medium on Plan; large's rows are their own links
             .containerBackground(for: .widget) { NightSky(red: entry.red) }
@@ -54,7 +55,7 @@ struct NightwatchWidget: Widget {
         StaticConfiguration(kind: "NightwatchWidget", provider: NightProvider()) { NightwatchWidgetEntryView(entry: $0) }
             .configurationDisplayName("Tonight")
             .description("Whether tonight is worth setting up for, and when the sky is clear.")
-            .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+            .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
     }
 }
 

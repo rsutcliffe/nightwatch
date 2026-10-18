@@ -144,12 +144,17 @@ struct NightwatchPhoneApp: App {
         WindowGroup {
             if CommandLine.arguments.contains("-demoWidget") {   // the two widget sizes on the home-screen background, for screenshots
                 let red = CommandLine.arguments.contains("-redNightMode") && UserDefaults.standard.bool(forKey: "redNightMode")
-                VStack(spacing: 16) {
+                VStack(spacing: 10) {
                     NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .small, red: red).padding(16).frame(width: 170, height: 170)
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                     NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .medium, red: red).padding(16).frame(width: 364, height: 170)
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                     NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .large, red: red).padding(16).frame(width: 364, height: 382)
+                        .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
+                    // The iPad's large widget is far shorter than the iPhone's, and its extra-large is twice as wide: both at the iPad's sizes.
+                    NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .large, red: red).padding(16).frame(width: 306, height: 306)
+                        .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
+                    NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .extraLarge, red: red).padding(16).frame(width: 650, height: 306)
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.gray.opacity(0.4))
             } else {
