@@ -32,7 +32,7 @@ struct TargetsScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: "targets").ignoresSafeArea() }
+        .background { StarField(seed: "targets", calm: true).ignoresSafeArea() }
         .navigationDestination(isPresented: $demoEyes) { EyesScreen(store: store) }
         .navigationDestination(isPresented: $showLinked) { if let t = linkedTarget { TargetDetailScreen(store: store, target: t) } }
         .onAppear(perform: consumeLink)
@@ -105,7 +105,7 @@ struct TargetGroupScreen: View {
         }
         .toggleStyle(PhoneToggleStyle())
         .scrollDismissesKeyboard(.interactively)
-        .background { StarField(seed: group.rawValue).ignoresSafeArea() }
+        .background { StarField(seed: group.rawValue, calm: true).ignoresSafeArea() }
         .searchable(text: $query, prompt: "M42, Orion, comet")
         .navigationTitle(group.displayName)
         .navigationBarTitleDisplayModeInline()
@@ -136,7 +136,7 @@ struct FavouritesScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: "favourites").ignoresSafeArea() }
+        .background { StarField(seed: "favourites", calm: true).ignoresSafeArea() }
         .navigationTitle("Favourites")
         .navigationBarTitleDisplayModeInline()
     }

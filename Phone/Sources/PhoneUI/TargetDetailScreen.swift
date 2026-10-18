@@ -57,7 +57,7 @@ struct TargetDetailScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: target.id).ignoresSafeArea() }
+        .background { StarField(seed: target.id, calm: true).ignoresSafeArea() }
         .navigationTitle(target.catalogueID)
         .navigationBarTitleDisplayModeInline()
     }

@@ -144,7 +144,7 @@ public struct RootView: View {
                         .toggleStyle(PhoneToggleStyle())
                 }
             }
-            .scrollContentBackground(.hidden).background(theme.background)
+            .scrollContentBackground(.hidden).background { StarField(seed: "settings", calm: true).ignoresSafeArea() }
             .navigationTitle("Nightwatch")
         } detail: {
             NavigationStack {
@@ -301,7 +301,7 @@ struct SitesSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Your sites") {
+                Section(header: Text("Your sites").capsLabel()) {
                     ForEach(store.config.sites, id: \.name) { s in
                         HStack {
                             Button { Haptic.selection(); store.selectSite(s); dismiss() } label: {
@@ -323,7 +323,7 @@ struct SitesSheet: View {
                     }
                     .onDelete { store.removeSites(at: $0) }
                 }.listRowBackground(theme.card)
-                Section("Add a site") {
+                Section(header: Text("Add a site").capsLabel()) {
                     TextField("A place name", text: $name).submitLabel(.search)
                         .onChange(of: name) { places.update(name, near: store.site) }
                     if let message { Text(message).font(.footnote) }
@@ -332,7 +332,7 @@ struct SitesSheet: View {
             }
             .sheet(item: $horizonSite) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
             .scrollDismissesKeyboard(.interactively)
-            .scrollContentBackground(.hidden).background(theme.background)
+            .scrollContentBackground(.hidden).background { StarField(seed: "settings", calm: true).ignoresSafeArea() }
             .navigationBarTitleDisplayModeInline()
             .toolbar {
                 ToolbarItem(placement: .principal) { Text("Sites").font(.headline).foregroundStyle(theme.textPrimary) }
@@ -393,14 +393,14 @@ struct SettingsScreen: View {
                 .sensoryFeedback(.selection, trigger: store.config.fovPresetID)
                 LabeledContent("Width") { fieldOfView(width: true) }
                 LabeledContent("Height") { fieldOfView(width: false) }
-            } header: { Text("Telescope") } footer: {
+            } header: { Text("Telescope").capsLabel() } footer: {
                 Text("The size of the sky your telescope or camera frames, in degrees. It decides which targets fit, and the shooting tips.")
             }.listRowBackground(theme.card)
             Section {
                 choiceRow("Clear for at least", store.config.goRule.minHours, [1, 2, 3, 4, 5, 6, 7, 8], { v in store.setGoRule { $0.minHours = v } }) { String(format: "%.0f h", $0) }
                 choiceRow("Cloud cover at most", store.config.goRule.maxCloudPct, Array(stride(from: 5, through: 60, by: 5)), { v in store.setGoRule { $0.maxCloudPct = v } }) { "\($0) %" }
                 choiceRow("Targets must reach", store.config.goRule.minAltitudeDeg, Array(stride(from: 10.0, through: 60, by: 5)), { v in store.setGoRule { $0.minAltitudeDeg = v } }) { "\(Int($0))° altitude" }
-            } header: { Text("Go rule") } footer: {
+            } header: { Text("Go rule").capsLabel() } footer: {
                 Text("A night qualifies when there is one unbroken run of clear hours inside astronomical darkness that meets all three.")
             }.listRowBackground(theme.card)
             Section {
@@ -423,7 +423,7 @@ struct SettingsScreen: View {
                     .sensoryFeedback(.selection, trigger: store.config.alerts.quietStartHour)
                 Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
                     .sensoryFeedback(.selection, trigger: store.config.alerts.quietEndHour)
-            } header: { Text("Alerts") } footer: {
+            } header: { Text("Alerts").capsLabel() } footer: {
                 Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
             }.listRowBackground(theme.card)
             Section {
@@ -433,7 +433,7 @@ struct SettingsScreen: View {
                             onIncrement: { step(30) }, onDecrement: { step(-30) })
                         .sensoryFeedback(.selection, trigger: store.config.stopBy.minutes)
                 }
-            } header: { Text("Plan") } footer: {
+            } header: { Text("Plan").capsLabel() } footer: {
                 Text("A finish time (for sleep, or work the next day) shortens the clear window the plan uses, and keeps targets that are best after it out.")
             }.listRowBackground(theme.card)
             Section {
@@ -443,7 +443,7 @@ struct SettingsScreen: View {
                     choiceRow("Minimum clear run", store.config.brightNights.minHours, Array(stride(from: 1.0, through: 6, by: 0.5)),
                               { v in store.setBrightNights { $0.minHours = v } }) { String(format: "%.1f h", $0) }
                 }
-            } header: { Text("Bright nights") } footer: {
+            } header: { Text("Bright nights").capsLabel() } footer: {
                 Text("Applies only on nights when the dark rule above cannot be met, from about early May to early August at British latitudes: the Moon or a planet must be up in a clear run at least this long.")
             }.listRowBackground(theme.card)
             Section {
@@ -455,7 +455,7 @@ struct SettingsScreen: View {
                     PhoneSegmented(selection: Binding(get: { store.config.darkSites.unit }, set: { v in store.setDarkSites { $0.unit = v } }),
                                    options: [("Kilometres", DistanceUnit.km), ("Miles", DistanceUnit.mi)])
                 }
-            } header: { Text("Dark sites") } footer: {
+            } header: { Text("Dark sites").capsLabel() } footer: {
                 Text("Darker places within this distance of where you observe. Tonight's forecast is read for the nearest three when you open the page.")
             }.listRowBackground(theme.card)
             Section {
@@ -467,7 +467,7 @@ struct SettingsScreen: View {
                     }
                     .sensoryFeedback(.selection, trigger: store.config.aurora.threshold)
                 }
-            } header: { Text("Aurora") } footer: {
+            } header: { Text("Aurora").capsLabel() } footer: {
                 Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University). Elsewhere, NOAA's 30-minute aurora forecast for your site: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit, and quiet hours apply. With no server behind it, the phone checks while Nightwatch is open, and when iOS lets it refresh in the background, so an alert can come late, or not at all, when the app is closed. The Mac app, left running, is the dependable one.")
             }.listRowBackground(theme.card)
             Section {
@@ -478,7 +478,7 @@ struct SettingsScreen: View {
                         Text(tally.points[k].map { "\(n) requests, \($0) points" } ?? "\(n) requests").monospacedDigit()
                     }.font(.footnote)
                 }
-            } header: { Text("Network use today (this device)") } footer: {
+            } header: { Text("Network use today (this device)").capsLabel() } footer: {
                 Text("The free forecast service allows 10,000 calls a day and 5,000 an hour, and refuses more until it resets (UTC midnight, about 01:00 British Summer Time). If it refuses, Nightwatch says so on Tonight and keeps the forecast it has.")
             }.listRowBackground(theme.card)
             Section {
@@ -486,11 +486,11 @@ struct SettingsScreen: View {
             }.listRowBackground(theme.card)
             Section {
                 Toggle("Red night mode", isOn: $red)
-            } header: { Text("Display") } footer: {
+            } header: { Text("Display").capsLabel() } footer: {
                 Text("Keeps your eyes dark-adapted. iOS cannot recolour the status bar, keyboard or permission alerts, and screen brightness is yours to lower. For a fully red screen, use iOS Settings, Accessibility, Display, Colour Filters, Colour Tint.")
             }.listRowBackground(theme.card)
         }
-        .scrollContentBackground(.hidden).background(theme.background)
+        .scrollContentBackground(.hidden).background { StarField(seed: "settings", calm: true).ignoresSafeArea() }
         .scrollDismissesKeyboard(.interactively)
         .toggleStyle(PhoneToggleStyle())
         .navigationBarTitleDisplayModeInline()

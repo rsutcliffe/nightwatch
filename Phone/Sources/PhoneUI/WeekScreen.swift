@@ -20,7 +20,7 @@ struct WeekScreen: View {
             }
             .padding(16).frame(maxWidth: 800).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: "week").ignoresSafeArea() }
+        .background { StarField(seed: "week", calm: true).ignoresSafeArea() }
         // Sixty nights of Moon maths: worked out once, off the main thread, and again only when the night or the site changes.
         .task(id: "\(store.planning?.tonight.night.key ?? "")|\(store.site?.name ?? "")") {
             guard let site = store.site, let night = store.planning?.tonight.night else { return }
@@ -37,7 +37,7 @@ struct WeekScreen: View {
                     Spacer()
                     if let lead = Copy.weekLead(daysAhead: n.daysAhead) { Text(lead.plainDashes).font(.caption).secondary() }
                 }
-                NightArc(bars: bars, caption: Copy.barsLabel(plan: n.plan, site: site), moonNote: nil, compact: true)
+                ClearSkyBarsView(bars: bars, caption: Copy.barsLabel(plan: n.plan, site: site), trackHeight: 26)
                 Text(Copy.weekVerdict(n.plan, rule: store.config.goRule, bright: store.config.brightNights, site: site).plainDashes).font(.callout.weight(.bold))
                 Text(Copy.weekDetail(n.plan, site: site).plainDashes).font(.footnote).secondary()
                 if n.daysAhead <= 1, n.plan.primary != nil {

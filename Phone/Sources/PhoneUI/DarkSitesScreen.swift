@@ -46,7 +46,7 @@ struct DarkSitesScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: "dark-sites").ignoresSafeArea() }
+        .background { StarField(seed: "dark-sites", calm: true).ignoresSafeArea() }
         .onAppear { store.darkSitesPage(open: true) }
         .onDisappear { store.darkSitesPage(open: false) }
         .navigationTitle("Dark sites")
@@ -67,9 +67,9 @@ struct DarkSiteCard: View {
             SiteMapPicture(site: s).frame(height: 110).clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(alignment: .topTrailing) { if nearestClear { Chip(text: "Nearest clear sky", symbol: "mappin.and.ellipse").padding(6) } }
             HStack(alignment: .firstTextBaseline) {
-                Text(s.name.plainDashes).font(.callout.weight(.semibold)).lineLimit(2)
+                Text(s.name.plainDashes).font(.headline.weight(.heavy)).lineLimit(2)
                 Spacer()
-                if !plan.forecastMissing { Text("\(plan.score)").font(.title3.weight(.semibold)).monospacedDigit().foregroundStyle(plan.qualifies ? theme.accent : theme.textSecondary) }
+                if !plan.forecastMissing { Text("\(plan.score)").font(.title2.weight(.heavy)).monospacedDigit().foregroundStyle(plan.qualifies ? theme.accent : theme.textSecondary) }
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" +
                  (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? "")).font(.caption).secondary()
@@ -103,7 +103,7 @@ struct DarkSiteCard: View {
         let maps = Button { Haptic.selection(); openMaps(s) } label: { Label("Open in Maps", systemImage: "map").lineLimit(1) }
             .buttonStyle(PressStyle()).font(.callout.weight(.medium)).foregroundStyle(theme.accent).frame(minHeight: 44)
         let observe = Button { Haptic.impact(.medium); store.visit(s) } label: { Text("Observe from here").lineLimit(1) }
-            .buttonStyle(PressStyle()).font(.callout.weight(.semibold)).foregroundStyle(theme.accent).frame(minHeight: 44)
+            .buttonStyle(PressStyle()).font(.callout.weight(.heavy)).foregroundStyle(theme.ember).frame(minHeight: 44)
         let source = Group { if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).font(.caption) } }
         // Side by side when they fit; one above the other, flush right, when the width or the text size says they do not.
         return ViewThatFits(in: .horizontal) {

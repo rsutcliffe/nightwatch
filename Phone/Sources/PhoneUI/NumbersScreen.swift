@@ -21,7 +21,7 @@ struct NumbersScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: "numbers").ignoresSafeArea() }
+        .background { StarField(seed: "numbers", calm: true).ignoresSafeArea() }
         .navigationTitle("What the numbers mean")
         .navigationBarTitleDisplayModeInline()
     }

@@ -68,7 +68,7 @@ struct LoadingScreen: View {
             Spacer(); Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background { StarField(seed: siteName).ignoresSafeArea() }
+        .background { StarField(seed: siteName, calm: true).ignoresSafeArea() }
         .task {
             // The ticks light in turn, round and round: motion that says "working", not progress that is not real.
             guard !reduceMotion else { lit = 15; return }

@@ -14,8 +14,8 @@ imported on iOS; this app's `PhoneTokens` will carry these values with `UIColor`
 | track | `#272A34` | bar gaps, outlines, timeline tracks |
 | text.primary | `#E8EAEF` | body |
 | text.secondary | `#A8AEBE` | supporting text (brighter, `#CDD2DC`, under Increase Contrast) |
-| accent.clear | system accent (blue with Multicolour) | clear-sky bars, bezel ticks, links |
-| control.on | `#0A84FF` | switches |
+| accent.clear | warm white `#F4F1EA` on iPad and iPhone (the Mac keeps the system blue) | clear-sky bars, bezel ticks, links |
+| control.on | warm white track with a dark knob on iPad and iPhone (the Mac keeps `#0A84FF`) | switches |
 | status.warning | `#EDB40D` | warnings, such as Dew risk: High |
 | glass.hairline | white 12 % (45 % under Increase Contrast) | outlines |
 | surface.tile | white 6 % (12 %) | tiles |
@@ -49,6 +49,22 @@ to iPad and iPhone only. Red night mode is unchanged: one hue on black, the phot
   text sizes the cards are solid and the scrim is near-opaque (88 to 92 %), so text never sits on the picture.
 - The Mac's 60-tick score bezel is not drawn on Tonight now; `ScoreBezelView` remains in the code until the owner decides whether
   to bring it back as a thin ring round the numeral.
+
+## The same look on every screen (18 October 2026)
+
+Plan, Targets and its pages, Week, Events, Dark sites, Settings and Sites share the Tonight language through a few shared pieces, so a
+change is one edit:
+
+- **Card surface:** `cardSurface()` / `Card` is the one glass card (16 pt radius, glass fill and hairline); solid under Reduce Transparency and
+  at accessibility text sizes. No screen draws its own card background.
+- **Section labels:** `capsLabel()`, small semibold wide-tracked capitals ("BEST TONIGHT", "TAKEN OFF TONIGHT", the Settings headers).
+- **Type:** SF Pro only. Names, titles and values are heavy (target names, day names, site names, fact values); descriptors are small
+  tracked capitals; running text is regular; the large clear-window times are thin.
+- **Accent:** warm white for what is lit and for links and the selected tab; ember (`#E8A04A`) only for the one call to action on a
+  screen (`PillButton`: Turn on alerts, Add to plan, Observe from here), a favourite heart and the map pin. The selected segment of a
+  switcher is a warm-white pill with dark text.
+- **Backdrop:** the night image on every screen; list and form screens use a darker scrim (`StarField(calm: true)`) so small text on cards stays readable.
+- **Week:** keeps one bar chart per night, as before; the horizon arc is Tonight's alone.
 
 ## Red night mode
 

@@ -65,7 +65,7 @@ struct EventCard: View {
             Image(systemName: event.kind.phoneSymbol).font(.title3).foregroundStyle(theme.accent)
                 .frame(width: 52, height: 52).background(theme.tile, in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
-                Text(event.title.plainDashes).font(.callout.weight(.bold)).lineLimit(2)
+                Text(event.title.plainDashes).font(.headline.weight(.heavy)).lineLimit(2)
                 Text(event.detail.plainDashes).font(.footnote).secondary().lineLimit(3)
                 Text("\(event.kind.phoneName) · \(when)").font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.bestLine)
                 EventChips(event: event).padding(.top, 2)
@@ -126,7 +126,7 @@ struct EventsScreen: View {
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background { StarField(seed: "events").ignoresSafeArea() }
+        .background { StarField(seed: "events", calm: true).ignoresSafeArea() }
         .searchable(text: $query, prompt: "Perseids, eclipse, Moon")
         .navigationTitle("Events")
         .navigationBarTitleDisplayModeInline()
@@ -172,7 +172,7 @@ struct EventDetailScreen: View {
             }
             .padding(16).frame(maxWidth: 700).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: event.id).ignoresSafeArea() }
+        .background { StarField(seed: event.id, calm: true).ignoresSafeArea() }
         .navigationTitle(event.kind.phoneName)
         .navigationBarTitleDisplayModeInline()
         .onAppear(perform: prepareCalendar)

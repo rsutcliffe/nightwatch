@@ -22,7 +22,7 @@ struct PlanScreen: View {
             }
             .padding(16).frame(maxWidth: 900).frame(maxWidth: .infinity)
         }
-        .background { StarField(seed: "plan").ignoresSafeArea() }
+        .background { StarField(seed: "plan", calm: true).ignoresSafeArea() }
     }
 
     @ViewBuilder private func content(night: NightPlan, site: Site) -> some View {

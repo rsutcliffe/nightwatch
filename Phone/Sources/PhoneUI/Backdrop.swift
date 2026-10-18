@@ -4,6 +4,8 @@ import SwiftUI
 /// costs anything after the first draw. Red mode: dim red stars on black. Off under Reduce Transparency.
 struct StarField: View {
     let seed: String
+    /// A darker scrim for the list and form screens, whose small text sits on cards over the picture: Tonight alone shows the sky bright.
+    var calm = false
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -39,7 +41,7 @@ struct StarField: View {
                     .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
                     // At the accessibility text sizes the words sit on a near-solid scrim, so contrast never depends on the photograph.
                     .overlay(LinearGradient(colors: typeSize.isAccessibilitySize ? [theme.background.opacity(0.88), theme.background.opacity(0.92)]
-                                                : [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
+                                                : calm ? [theme.background.opacity(0.55), theme.background.opacity(0.88)] : [theme.background.opacity(theme.isRed ? 0.50 : 0.16), theme.background.opacity(0.78)],
                                             startPoint: .top, endPoint: .bottom))
             }
             .overlay { Twinkle(tint: theme.isRed ? Color(hex: 0xFF5A4A) : .white).opacity(typeSize.isAccessibilitySize ? 0.3 : 1) }
