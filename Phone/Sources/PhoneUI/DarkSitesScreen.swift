@@ -95,8 +95,7 @@ struct DarkSiteCard: View {
             actions(s)
         }
         .padding(12)
-        .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+        .cardSurface()
         .accessibilityElement(children: .contain)
     }
 
@@ -135,7 +134,7 @@ struct SiteMapPicture: View {
             if let image {
                 image.resizable().aspectRatio(contentMode: .fill)
                     .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
-                Circle().fill(theme.accent).frame(width: 12, height: 12).overlay(Circle().stroke(Color.white, lineWidth: 2))
+                Circle().fill(theme.ember).frame(width: 12, height: 12).overlay(Circle().stroke(Color.white, lineWidth: 2))
             } else {
                 Image(systemName: "map").font(.title2).foregroundStyle(theme.textSecondary)
             }

@@ -52,7 +52,7 @@ public struct PhoneTheme: Equatable, Sendable {
     public static let normal = PhoneTheme(
         isRed: false, background: Color(hex: 0x14171D), card: Color(hex: 0x1C1F27, opacity: 0.80), track: Color(hex: 0x272A34),
         textPrimary: Color(hex: 0xE8EAEF), textSecondary: Color(hex: 0xA8AEBE), textSecondaryHigh: Color(hex: 0xCDD2DC),
-        accent: Color(hex: 0x0A84FF), warning: Color(hex: 0xEDB40D), hairline: Color(hex: 0x272A34),
+        accent: Color(hex: 0xF4F1EA), warning: Color(hex: 0xEDB40D), hairline: Color(hex: 0x272A34),
         barCloudy: Color.white.opacity(0.35), barTrack: Color.white.opacity(0.07),
         tickCloudy: Color.white.opacity(0.31), tickPartCloud: Color.white.opacity(0.47), tickDaylight: Color.white.opacity(0.12),
         ring: Color.white.opacity(0.09),

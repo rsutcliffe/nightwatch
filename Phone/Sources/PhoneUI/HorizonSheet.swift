@@ -128,7 +128,7 @@ struct HorizonSheet: View {
     @ViewBuilder private var terrainBox: some View {
         Card {
             VStack(alignment: .leading, spacing: 8) {
-                Text("HILLS AROUND HERE").font(.caption.weight(.medium)).tracking(0.8).secondary()
+                Text("HILLS AROUND HERE").capsLabel()
                 if store.terrainChecking.contains(siteName) {
                     ShimmerText(text: "Checking the hills around \(siteName)")
                 } else if store.terrainFailed.contains(siteName) {

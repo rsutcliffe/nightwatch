@@ -25,7 +25,7 @@ struct EyesScreen: View {
                     }
                 }
                 if let site = store.site, !events.isEmpty {
-                    Text("EVENTS").font(.caption.weight(.medium)).tracking(0.8).secondary().padding(.top, 10)
+                    Text("EVENTS").capsLabel().padding(.top, 10)
                     ForEach(events) { e in
                         NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(PressStyle())
                     }

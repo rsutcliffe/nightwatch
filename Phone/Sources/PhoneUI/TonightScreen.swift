@@ -36,7 +36,7 @@ public struct TonightScreen: View {
     /// "TONIGHT · MALHAM TARN" over the date and Bortle class, as the Mac's popover has it.
     private var header: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(model.overline).font(.caption.weight(.medium)).tracking(0.8).secondary().lineLimit(2)
+            Text(model.overline).capsLabel().lineLimit(2)
             Text(model.dateLine).font(.caption).secondary()
         }
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)   // a caption never needs to be as big as the verdict
@@ -60,8 +60,7 @@ public struct TonightScreen: View {
                     Image(systemName: "arrow.up.right").font(.footnote).secondary()
                 }
                 .padding(.horizontal, 12).frame(minHeight: 44)
-                .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+                .cardSurface()
             }
             .buttonStyle(PressStyle())
             .accessibilityLabel("\(line.text), from \(a.source.name). Opens their page.")
@@ -78,7 +77,7 @@ public struct TonightScreen: View {
     }
 
     private var hours: some View {
-        ClearHoursLine(bars: snap.bars, caption: snap.barsLabel, moonNote: model.hero.moonNote, nowFraction: nowFraction)
+        NightArc(bars: snap.bars, caption: snap.barsLabel, moonNote: model.hero.moonNote, nowFraction: nowFraction)
     }
 
     private func targets(height: CGFloat = 78, style: PicksSection.Style = .row, fills: Bool = false) -> some View {
@@ -98,7 +97,7 @@ public struct TonightScreen: View {
         if let t = snap.tomorrow {
             Card {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("TOMORROW NIGHT").font(.caption.weight(.medium)).tracking(0.8).secondary()
+                    Text("TOMORROW NIGHT").capsLabel()
                     Text(t.hasPrefix("Tomorrow ") ? String(t.dropFirst(9)) : t).font(.callout).fixedSize(horizontal: false, vertical: true)
                 }
             }

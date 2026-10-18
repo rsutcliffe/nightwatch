@@ -74,8 +74,7 @@ struct EventCard: View {
             Image(systemName: "chevron.right").font(.footnote).secondary().padding(.top, 4)
         }
         .padding(10)
-        .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+        .cardSurface()
         .accessibilityElement(children: .combine)
     }
 }
@@ -117,7 +116,7 @@ struct EventsScreen: View {
                         NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(PressStyle()).risesIn(i)
                     }
                     if !ahead.isEmpty {
-                        Text("COMING UP").font(.caption.weight(.medium)).tracking(0.8).secondary().padding(.top, 12)
+                        Text("COMING UP").capsLabel().padding(.top, 12)
                         ForEach(Array(ahead), id: \.id) { e in
                             NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site, withDate: true) }.buttonStyle(PressStyle())
                         }

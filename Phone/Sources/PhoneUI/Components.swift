@@ -32,24 +32,41 @@ enum Haptic {
     #endif
 }
 
-/// A card: the surface the tiles, bars and lists sit on. `glass` is the frosted card over the photograph (16 pt radius, a faint
-/// fill and a hairline); under Reduce Transparency, or at the accessibility text sizes, it becomes the solid card, so text never sits on the picture.
-struct Card<Content: View>: View {
+/// The card surface of the Photographic look: a faint white fill and a hairline, 16 pt radius (a red-only pair in red mode). Under Reduce
+/// Transparency, or at the accessibility text sizes, it becomes the solid card, so text never sits on the picture. Every card in the app
+/// takes its surface from here; `glass: false` forces the solid one.
+struct CardSurface: ViewModifier {
+    var glass = true
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.dynamicTypeSize) private var typeSize
+
+    func body(content: Content) -> some View {
+        let solid = !glass || reduceTransparency || typeSize.isAccessibilitySize
+        content
+            .background(solid ? theme.card : theme.glassFill, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(solid ? theme.hairline : (contrast == .increased ? theme.textSecondaryHigh : theme.glassHairline), lineWidth: 1))
+    }
+}
+
+extension View {
+    func cardSurface(glass: Bool = true) -> some View { modifier(CardSurface(glass: glass)) }
+
+    /// A section label: small wide-tracked capitals, semibold, in the supporting colour ("BEST TONIGHT", "TAKEN OFF TONIGHT").
+    func capsLabel() -> some View { font(.caption.weight(.semibold)).tracking(1.4).secondary() }
+}
+
+/// A card: the surface the lists, charts and rows sit on.
+struct Card<Content: View>: View {
     var padding: CGFloat = 12
-    var glass = false
+    var glass = true
     @ViewBuilder var content: Content
     var body: some View {
-        let radius: CGFloat = glass ? 16 : 14
-        let solid = !glass || reduceTransparency || typeSize.isAccessibilitySize   // big text never sits on the picture
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(solid ? theme.card : theme.glassFill, in: RoundedRectangle(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).stroke(solid ? theme.hairline : (contrast == .increased ? theme.textSecondaryHigh : theme.glassHairline), lineWidth: 1))
+            .cardSurface(glass: glass)
     }
 }
 
@@ -73,15 +90,10 @@ struct EmptyState: View {
     @Environment(\.phoneTheme) private var theme
     var body: some View {
         VStack(spacing: 10) {
-            Text(title).font(.title3.weight(.medium))
+            Text(title).font(.title3.weight(.heavy))
             Text(message).font(.callout).secondary().multilineTextAlignment(.center)
             if let action {
-                Button(action: action.run) {
-                    Text(action.title).font(.body.weight(.medium)).frame(maxWidth: 280).padding(.vertical, 14)
-                        .background(theme.accent, in: RoundedRectangle(cornerRadius: 14)).foregroundStyle(theme.isRed ? Color.black : Color.white)
-                }
-                .buttonStyle(PressStyle())
-                .padding(.top, 6)
+                PillButton(title: action.title, action: action.run).padding(.top, 6)
             }
         }
         .padding(24)
@@ -92,25 +104,18 @@ struct EmptyState: View {
 struct PrimaryButton: View {
     let title: String
     let action: () -> Void
-    @Environment(\.phoneTheme) private var theme
-    var body: some View {
-        Button { Haptic.impact(); action() } label: {
-            Text(title).font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 15)
-                .background(theme.accent, in: RoundedRectangle(cornerRadius: 14))
-                .foregroundStyle(theme.isRed ? Color.black : Color.white)
-        }
-        .buttonStyle(PressStyle())
-    }
+    var body: some View { PillButton(title: title, fullWidth: true, action: action) }
 }
 
 /// The one warm pill: the Photographic design's single call to action, ember with dark text, red on black in red mode.
 struct PillButton: View {
     let title: String
+    var fullWidth = false
     let action: () -> Void
     @Environment(\.phoneTheme) private var theme
     var body: some View {
         Button { Haptic.impact(); action() } label: {
-            Text(title).font(.callout.weight(.medium)).padding(.horizontal, 22).frame(minHeight: 44)
+            Text(title).font(.callout.weight(.heavy)).padding(.horizontal, 22).frame(maxWidth: fullWidth ? .infinity : nil, minHeight: 48)
                 .background(theme.ember, in: Capsule())
                 .foregroundStyle(theme.isRed ? Color.black : Color(hex: 0x1A1206))
         }
@@ -144,9 +149,9 @@ struct PhoneToggleStyle: ToggleStyle {
             HStack {
                 configuration.label
                 Spacer()
-                Capsule().fill(configuration.isOn ? theme.accent : theme.track).frame(width: 51, height: 31)
+                Capsule().fill(configuration.isOn ? (theme.isRed ? theme.accent : theme.lit) : theme.track).frame(width: 51, height: 31)
                     .overlay(alignment: configuration.isOn ? .trailing : .leading) {
-                        Circle().fill(configuration.isOn ? (theme.isRed ? Color.black : Color.white) : theme.textSecondary)
+                        Circle().fill(configuration.isOn ? (theme.isRed ? Color.black : Color(hex: 0x0A1022)) : theme.textSecondary)
                             .frame(width: 25, height: 25).padding(3)
                     }
                     .animation(.spring(response: 0.25, dampingFraction: 0.8), value: configuration.isOn)
@@ -172,9 +177,9 @@ struct PhoneSegmented<Value: Hashable>: View {
             ForEach(options.indices, id: \.self) { i in
                 let on = options[i].value == selection
                 Button { selection = options[i].value } label: {
-                    Text(options[i].label).font(.callout.weight(on ? .semibold : .regular)).frame(maxWidth: .infinity, minHeight: 40)
-                        .foregroundStyle(on ? (theme.isRed ? Color.black : Color.white) : theme.textPrimary)
-                        .background(on ? theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+                    Text(options[i].label).font(.callout.weight(on ? .heavy : .regular)).frame(maxWidth: .infinity, minHeight: 40)
+                        .foregroundStyle(on ? (theme.isRed ? Color.black : Color(hex: 0x0A1022)) : theme.textPrimary)
+                        .background(on ? (theme.isRed ? theme.accent : theme.lit) : Color.clear, in: RoundedRectangle(cornerRadius: 9))
                 }
                 .buttonStyle(PressStyle())
                 .accessibilityAddTraits(on ? .isSelected : [])

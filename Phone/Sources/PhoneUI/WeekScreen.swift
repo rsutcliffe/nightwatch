@@ -33,12 +33,12 @@ struct WeekScreen: View {
             let bars = Planner.clearSkyBars(plan: n.plan, site: site)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(Copy.weekDay(n, site: site).plainDashes).font(.body.weight(.semibold))
+                    Text(Copy.weekDay(n, site: site).plainDashes).font(.title3.weight(.heavy))
                     Spacer()
                     if let lead = Copy.weekLead(daysAhead: n.daysAhead) { Text(lead.plainDashes).font(.caption).secondary() }
                 }
-                ClearSkyBarsView(bars: bars, caption: Copy.barsLabel(plan: n.plan, site: site), trackHeight: 26)
-                Text(Copy.weekVerdict(n.plan, rule: store.config.goRule, bright: store.config.brightNights, site: site).plainDashes).font(.callout.weight(.medium))
+                NightArc(bars: bars, caption: Copy.barsLabel(plan: n.plan, site: site), moonNote: nil, compact: true)
+                Text(Copy.weekVerdict(n.plan, rule: store.config.goRule, bright: store.config.brightNights, site: site).plainDashes).font(.callout.weight(.bold))
                 Text(Copy.weekDetail(n.plan, site: site).plainDashes).font(.footnote).secondary()
                 if n.daysAhead <= 1, n.plan.primary != nil {
                     Button { onOpenPlan(n.daysAhead == 1) } label: {
@@ -47,8 +47,7 @@ struct WeekScreen: View {
                     }.buttonStyle(PressStyle())
                 }
             }
-            .padding(14).background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+            .padding(14).cardSurface()
             .accessibilityElement(children: .contain)
         }
     }

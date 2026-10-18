@@ -11,7 +11,7 @@ struct HeartButton: View {
     var body: some View {
         let on = store.isFavourite(id)
         Button { store.toggleFavourite(id) } label: {
-            Image(systemName: on ? "heart.fill" : "heart").font(.title3).foregroundStyle(on ? theme.accent : theme.textSecondary)
+            Image(systemName: on ? "heart.fill" : "heart").font(.title3).foregroundStyle(on ? theme.ember : theme.textSecondary)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(PressStyle())
@@ -39,10 +39,10 @@ struct TargetCardView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(target.catalogueID).font(.callout.weight(.bold)).lineLimit(1)
+                    Text(target.catalogueID).font(.headline.weight(.heavy)).lineLimit(1)
                     if let c = target.cardNote { Text(c).font(.footnote).secondary() }
                 }
-                Text(target.commonName ?? target.typeName).font(.footnote).secondary().lineLimit(1)
+                Text((target.commonName ?? target.typeName).uppercased()).font(.caption2).tracking(1.2).secondary().lineLimit(1)
                 if let note { Text(note.plainDashes).font(.caption).foregroundStyle(theme.warning).lineLimit(2) }
                 else if let eye {
                     Chip(text: eye.rawValue, symbol: eye == .nakedEye ? "eye" : "binoculars")
@@ -54,8 +54,7 @@ struct TargetCardView: View {
             if !MilkyWay.isMilkyWay(target.id) { HeartButton(store: store, id: target.id) }   // not a catalogue target: no place in Favourites or the plan
         }
         .padding(10)
-        .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+        .cardSurface()
         .accessibilityElement(children: .contain)
     }
 }

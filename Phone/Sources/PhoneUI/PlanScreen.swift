@@ -43,24 +43,24 @@ struct PlanScreen: View {
                 }
             }
             if !session.takenOff.isEmpty {
-                Text(tomorrow ? "TAKEN OFF TOMORROW" : "TAKEN OFF TONIGHT").font(.caption.weight(.medium)).tracking(0.8).secondary()
+                Text(tomorrow ? "TAKEN OFF TOMORROW" : "TAKEN OFF TONIGHT").capsLabel()
                 ForEach(session.takenOff) { t in
                     HStack {
                         Text("\(t.catalogueID) · \(t.commonName ?? t.typeName)").font(.callout).lineLimit(1)
                         Spacer()
                         Button("Put back") { Haptic.success(); store.setInPlan(t.id, on: true, tomorrow: tomorrow) }.buttonStyle(PressStyle()).foregroundStyle(theme.accent).frame(minHeight: 44)
                     }
-                    .padding(.horizontal, 12).background(theme.card, in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 12).cardSurface()
                 }
             }
             if !session.omitted.isEmpty {
-                Text("LEFT OUT").font(.caption.weight(.medium)).tracking(0.8).secondary()
+                Text("LEFT OUT").capsLabel()
                 ForEach(session.omitted) { o in
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(o.target.catalogueID) · \(o.target.commonName ?? o.target.typeName)").font(.callout).lineLimit(1)
                         Text(o.reason.plainDashes).font(.caption).secondary()
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(12).background(theme.card.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(12).cardSurface().opacity(0.8)
                 }
             }
             Text("Heart a target to keep it in every plan, or add it to one night only from its page.").font(.footnote).secondary()
@@ -74,15 +74,15 @@ struct PlanScreen: View {
         let t = item.target, style = ChartLayout.styles(for: store.session(tomorrow: tomorrow)?.items.map(\.id) ?? [], count: count)[t.id] ?? index
         return HStack(alignment: .top, spacing: 12) {
             VStack(spacing: 6) {
-                Text(Copy.hhmm(t.peakTime, site: site)).font(.title3.weight(.semibold)).monospacedDigit()
+                Text(Copy.hhmm(t.peakTime, site: site)).font(.title2.weight(.heavy)).monospacedDigit()
                 Path { p in p.move(to: .zero); p.addLine(to: CGPoint(x: 34, y: 0)) }
                     .stroke(ChartLine.colour(style, theme: theme), style: StrokeStyle(lineWidth: 2.4, lineCap: .round, dash: ChartLine.dash(style)))
                     .frame(width: 34, height: 2)
             }.frame(width: 58)
             NavigationLink { TargetDetailScreen(store: store, target: t) } label: {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) { Text(t.catalogueID).font(.callout.weight(.bold)); if item.added { Text("added").font(.caption).secondary() } }
-                    Text(t.commonName ?? t.typeName).font(.footnote).secondary()
+                    HStack(spacing: 6) { Text(t.catalogueID).font(.headline.weight(.heavy)); if item.added { Text("added").font(.caption).secondary() } }
+                    Text((t.commonName ?? t.typeName).uppercased()).font(.caption2).tracking(1.2).secondary()
                     Text("Best \(Copy.hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°").font(.caption).monospacedDigit().foregroundStyle(theme.bestLine)
                     if !item.clashes.isEmpty {
                         Text("! Same best time as \(item.clashes.map(\.catalogueID).joined(separator: ", "))").font(.caption.weight(.semibold)).foregroundStyle(theme.warning)
@@ -94,7 +94,6 @@ struct PlanScreen: View {
                     .background(theme.track, in: RoundedRectangle(cornerRadius: 8))
             }.buttonStyle(PressStyle())
         }
-        .padding(12).background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+        .padding(12).cardSurface()
     }
 }

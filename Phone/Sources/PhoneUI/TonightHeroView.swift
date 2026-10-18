@@ -81,10 +81,13 @@ struct TonightHeroView: View {
 
 /// The night as a low arc over the horizon: each hour a stretch of the curve, lit white where the sky is clear (brighter the
 /// clearer it is), a faint line where it is not, and the Moon note beneath. It replaces the ten bars on Tonight; the Week page keeps its bars.
-struct ClearHoursLine: View {
+struct NightArc: View {
     let bars: [ClearSkyBar]
     let caption: String
-    let moonNote: String
+    /// Shown beneath the arc; nil on the Week page, where each night has its own words.
+    let moonNote: String?
+    /// A smaller arc for the Week page: thinner, with an hour label every third hour.
+    var compact = false
     /// How far through the night it is now (0 to 1), or nil when it is outside the night: the ember dot sits there.
     var nowFraction: Double? = nil
     @Environment(\.phoneTheme) private var theme
@@ -103,19 +106,21 @@ struct ClearHoursLine: View {
             VStack(spacing: 6) {
                 Canvas { ctx, size in
                     let path = arc(size), n = Double(bars.count), gap = 0.004
+                    let w: CGFloat = compact ? 3 : 4
                     ctx.stroke(path, with: .color(theme.textPrimary.opacity(0.18)), style: StrokeStyle(lineWidth: 1, lineCap: .round))
                     func seg(_ i: Int) -> Path { path.trimmedPath(from: Double(i) / n + gap, to: Double(i + 1) / n - gap) }
                     // The clear hours glow in warm white, as the dial's lit ticks do.
                     ctx.drawLayer { layer in
                         layer.addFilter(.blur(radius: 5))
-                        for (i, b) in bars.enumerated() where b.lit { layer.stroke(seg(i), with: .color(theme.lit.opacity(0.8 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 8)) }
+                        for (i, b) in bars.enumerated() where b.lit { layer.stroke(seg(i), with: .color(theme.lit.opacity(0.8 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: compact ? 6 : 8)) }
                     }
                     for (i, b) in bars.enumerated() {
-                        if b.lit { ctx.stroke(seg(i), with: .color(theme.lit.opacity(0.55 + 0.45 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 4, lineCap: .butt)) }
-                        else if b.clearPct > 0 { ctx.stroke(seg(i), with: .color(theme.textPrimary.opacity(0.28)), style: StrokeStyle(lineWidth: 3, lineCap: .butt)) }
+                        if b.lit { ctx.stroke(seg(i), with: .color(theme.lit.opacity(0.55 + 0.45 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: w, lineCap: .butt)) }
+                        else if b.clearPct > 0 { ctx.stroke(seg(i), with: .color(theme.textPrimary.opacity(0.28)), style: StrokeStyle(lineWidth: w - 1, lineCap: .butt)) }
                         // The hour under its stretch of the curve: bright and heavy when it is clear, faint when it is not.
                         let mid = path.trimmedPath(from: 0, to: (Double(i) + 0.5) / n).currentPoint ?? .zero
-                        let label = Text(b.hour).font(.system(size: 11, weight: b.lit ? .heavy : .regular)).monospacedDigit()
+                        guard !compact || i % 3 == 0 || i == bars.count - 1 else { continue }
+                        let label = Text(b.hour).font(.system(size: compact ? 9 : 11, weight: b.lit ? .heavy : .regular)).monospacedDigit()
                             .foregroundStyle(b.lit ? theme.lit : theme.textPrimary.opacity(0.45))
                         ctx.draw(ctx.resolve(label), at: CGPoint(x: mid.x, y: mid.y + 17), anchor: .center)
                     }
@@ -125,15 +130,15 @@ struct ClearHoursLine: View {
                         ctx.stroke(Path(ellipseIn: dot), with: .color(theme.textPrimary), lineWidth: 1.5)
                     }
                 }
-                .frame(height: 88)
+                .frame(height: compact ? 58 : 88)
                 // Room above and below the curve, so the glow and the hour labels are never cut off at the edge of the drawing.
                 .mask { GeometryReader { g in Rectangle().frame(width: arrived || reduceMotion ? g.size.width : 0)
                     .animation(reduceMotion ? nil : .easeOut(duration: 1.1), value: arrived) } }
-                Text(moonNote).font(.caption).monospacedDigit().secondary().dynamicTypeSize(...DynamicTypeSize.xxxLarge).multilineTextAlignment(.center)
+                if let moonNote { Text(moonNote).font(.caption).monospacedDigit().secondary().dynamicTypeSize(...DynamicTypeSize.xxxLarge).multilineTextAlignment(.center) }
             }
             .onAppear { arrived = true }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(ClearSkyBarsView.speech(caption: caption, bars: bars) + ". " + moonNote)
+            .accessibilityLabel(ClearSkyBarsView.speech(caption: caption, bars: bars) + (moonNote.map { ". " + $0 } ?? ""))
         }
     }
 }

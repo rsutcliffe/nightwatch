@@ -172,7 +172,7 @@ struct PicksSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(model.picksHeading).font(.caption.weight(.semibold)).tracking(0.8).secondary()
+            Text(model.picksHeading).capsLabel()
             if let note = model.picksNote { Text(note).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if typeSize.isAccessibilitySize {
                 VStack(spacing: 12) { ForEach(model.picks) { solidCard($0) } }

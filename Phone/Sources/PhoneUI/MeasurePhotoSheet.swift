@@ -37,8 +37,7 @@ struct MeasurePhotoSheet: View {
                         .font(.footnote).secondary()
                     PhotosPicker(selection: $picked, matching: .images) {
                         Label(photo == nil ? "Choose a photo" : "Choose another photo", systemImage: "photo").font(.body.weight(.medium))
-                            .frame(maxWidth: .infinity, minHeight: 48).background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+                            .frame(maxWidth: .infinity, minHeight: 48).cardSurface()
                     }
                     if failed { problem("Nightwatch can't open this as a photo", "Choose the original from the Photos app.") }
                     if let photo, let image { picture(image, photo); readings(photo) }
@@ -89,7 +88,7 @@ struct MeasurePhotoSheet: View {
                         }
                         if photo.focalPx != nil {
                             Rectangle().fill(theme.accent).frame(width: g.size.width, height: 2).offset(y: skylineY * scale - 1)
-                            Text(measured.map { "\(Int($0.rounded()))°" } ?? "").font(.caption.weight(.semibold)).foregroundStyle(.white)
+                            Text(measured.map { "\(Int($0.rounded()))°" } ?? "").font(.caption.weight(.semibold)).foregroundStyle(theme.isRed ? Color.black : Color(hex: 0x0A1022))
                                 .frame(width: 52, height: 28).background(theme.accent, in: Capsule()).overlay(Capsule().stroke(.white, lineWidth: 2))
                                 .offset(x: g.size.width / 2 - 26, y: skylineY * scale - 14)
                         }
@@ -142,7 +141,7 @@ struct MeasurePhotoSheet: View {
                     ForEach(0..<8, id: \.self) { i in
                         Button { Haptic.selection(); pickedDirection = i } label: {
                             Text(Site.horizonDirections[i]).font(.callout.weight(pickedDirection == i ? .semibold : .regular)).frame(maxWidth: .infinity, minHeight: 44)
-                                .foregroundStyle(pickedDirection == i ? (theme.isRed ? Color.black : Color.white) : theme.textPrimary)
+                                .foregroundStyle(pickedDirection == i ? (theme.isRed ? Color.black : Color(hex: 0x0A1022)) : theme.textPrimary)
                                 .background(pickedDirection == i ? theme.accent : theme.track, in: RoundedRectangle(cornerRadius: 10))
                         }.buttonStyle(PressStyle())
                     }

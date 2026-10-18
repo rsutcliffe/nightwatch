@@ -51,15 +51,14 @@ struct TargetsScreen: View {
     private func row<D: View>(title: String, symbol: String, count: Int, @ViewBuilder dest: @escaping () -> D) -> some View {
         NavigationLink(destination: dest) {
             HStack(spacing: 12) {
-                Image(systemName: symbol).frame(width: 28).foregroundStyle(theme.accent)
-                Text(title).font(.body.weight(.medium))
+                Image(systemName: symbol).frame(width: 28).foregroundStyle(theme.lit)
+                Text(title).font(.title3.weight(.heavy))
                 Spacer()
-                Text("\(count)").font(.callout).monospacedDigit().secondary()
+                Text("\(count)").font(.callout.weight(.semibold)).monospacedDigit().secondary()
                 Image(systemName: "chevron.right").font(.footnote).secondary()
             }
             .padding(.horizontal, 14).frame(minHeight: 56)
-            .background(theme.card, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.hairline, lineWidth: 1))
+            .cardSurface()
         }
         .buttonStyle(PressStyle())
     }
