@@ -96,36 +96,3 @@ struct StarField: View {
         }
     }
 }
-
-/// The hero card: a dusk-to-night gradient that follows the verdict, with a lit top edge.
-struct HeroSurface: ViewModifier {
-    let clear: Bool
-    /// A constellation's figure and star plot (the owner's art), drawn faint at the trailing edge.
-    var figure: (Data, Data)? = nil
-    var padding: CGFloat = 16
-    @Environment(\.phoneTheme) private var theme
-
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(alignment: .bottomTrailing) {
-                if let figure, let f = Image(platformData: figure.0), let p = Image(platformData: figure.1) {
-                    ZStack { f.resizable().scaledToFit(); p.resizable().scaledToFit() }
-                        .saturation(theme.isRed ? 0 : 1).colorMultiply(theme.isRed ? Color(hex: 0xC0180E) : .white)
-                        .opacity(0.13).padding(10).offset(x: 14, y: 14).accessibilityHidden(true)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                }
-            }
-            .background(LinearGradient(colors: clear ? theme.heroClear : theme.heroDull, startPoint: .top, endPoint: .bottom),
-                        in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(
-                LinearGradient(colors: [theme.highlight, theme.outline], startPoint: .top, endPoint: .bottom), lineWidth: 1))
-    }
-}
-
-extension View {
-    func heroSurface(clear: Bool, padding: CGFloat = 16, figure: (Data, Data)? = nil) -> some View {
-        modifier(HeroSurface(clear: clear, figure: figure, padding: padding))
-    }
-}

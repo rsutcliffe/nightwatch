@@ -91,8 +91,13 @@ struct ClearSkyBarsView: View {
             }
             .onAppear { arrived = true }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(caption + " " + bars.map { "\($0.hour) hundred hours \($0.clearPct) percent clear" }.joined(separator: ", "))
+            .accessibilityLabel(Self.speech(caption: caption, bars: bars))
         }
+    }
+
+    /// What VoiceOver says for the hours, shared with the thin line Tonight draws instead.
+    static func speech(caption: String, bars: [ClearSkyBar]) -> String {
+        caption + " " + bars.map { "\($0.hour) hundred hours \($0.clearPct) percent clear" }.joined(separator: ", ")
     }
 }
 
