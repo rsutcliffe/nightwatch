@@ -198,21 +198,29 @@ struct TonightView: View {
                      Fact(label: "Wind", value: windText),
                      Fact(label: "Transparency", value: Copy.transparencyText(plan.darkHours)),
                      Fact(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName, hint: dew == .high ? "Dew heater advised" : nil)].compactMap { $0 }
-        return VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 3), alignment: .leading, spacing: 10) {
-                ForEach(facts) { f in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(f.label.uppercased()).capsLabel()
-                        Text((f.value ?? "No data").plainDashes).font(.system(size: TextScale.pt(14), weight: .heavy))
-                            .foregroundStyle(f.value == nil ? Tokens.textSecondary : Tokens.lit).fixedSize(horizontal: false, vertical: true)
-                        if let hint = f.hint { Text(hint).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true) }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .accessibilityElement(children: .combine)
-                }
+        // Three to a row; the last row is what is left of the facts with the Moon filling the rest of it, so no row has an orphan or a gap.
+        let full = facts.count / 3 * 3
+        let rest = Array(facts[full...])
+        func cell(_ f: Fact) -> some View {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(f.label.uppercased()).capsLabel()
+                Text((f.value ?? "No data").plainDashes).font(.system(size: TextScale.pt(14), weight: .heavy))
+                    .foregroundStyle(f.value == nil ? Tokens.textSecondary : Tokens.lit).fixedSize(horizontal: false, vertical: true)
+                if let hint = f.hint { Text(hint).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true) }
             }
-            // "Down" over "tonight", as "34%" sits over "Sets 06:10": on one line it broke the word, "Down tonig" / "ht" (1.6.4).
-            MoonTile(value: moon == .down ? "Down" : pct, line: moon.flatMap { $0 == .down ? "tonight" : Copy.moonText($0, site: site) }, at: moonAt, plain: true)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .accessibilityElement(children: .combine)
+        }
+        // "Down" over "tonight", as "34%" sits over "Sets 06:10": on one line it broke the word, "Down tonig" / "ht" (1.6.4).
+        let moonCell = MoonTile(value: moon == .down ? "Down" : pct, line: moon.flatMap { $0 == .down ? "tonight" : Copy.moonText($0, site: site) }, at: moonAt, plain: true)
+        return Grid(alignment: .topLeading, horizontalSpacing: 10, verticalSpacing: 10) {
+            ForEach(0..<(full / 3), id: \.self) { row in
+                GridRow { ForEach(facts[row * 3 ..< row * 3 + 3]) { cell($0) } }
+            }
+            GridRow {
+                ForEach(rest) { cell($0) }
+                moonCell.gridCellColumns(3 - rest.count)
+            }
         }
     }
 
