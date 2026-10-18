@@ -28,7 +28,8 @@ public struct NightwatchWidgetView: View {
             case .small: small(s)
             case .medium: medium(s)
             case .large: large(s)
-            case .extraLarge: extraLarge(s)
+            // The extra-wide layout (`extraLarge`) stayed a grey skeleton on an iPad, so this size draws the large layout until the cause is found.
+            case .extraLarge: large(s)
             }
         } else {
             VStack(spacing: 4) {

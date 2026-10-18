@@ -33,7 +33,7 @@ struct NightSky: View {
                 NightwatchWidgetView.background(red: false)
                 // From the widget's asset catalogue, so it is found in the extension's own bundle. A dark scrim, so the dim lines (site name, update time) stay readable over the picture.
                 Image("widget-sky").resizable().scaledToFill()
-                LinearGradient(colors: [Color.black.opacity(0.4), Color.black.opacity(0.78)], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [Color.black.opacity(0.55), Color.black.opacity(0.86)], startPoint: .top, endPoint: .bottom)
             }
         }
     }

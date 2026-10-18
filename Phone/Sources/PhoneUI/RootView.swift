@@ -145,7 +145,8 @@ public struct RootView: View {
                         .toggleStyle(PhoneToggleStyle())
                 }
             }
-            .scrollContentBackground(.hidden).background { StarField(seed: "settings", calm: true).ignoresSafeArea() }
+            // Plain dark, not the picture: the page beside it has its own backdrop, and a second crop of the image would never line up with it.
+            .scrollContentBackground(.hidden).background(theme.background.ignoresSafeArea())
             .navigationTitle("Nightwatch")
         } detail: {
             NavigationStack {
