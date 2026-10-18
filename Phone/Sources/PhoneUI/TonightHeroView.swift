@@ -49,16 +49,12 @@ struct TonightHeroView: View {
                 Text(line).font(.callout).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)
             }
             if hero.dewWarns, let dew = hero.dewLine {
-                // A warning is an icon and words in a quiet outlined chip, never colour alone and never a shouting line of type.
-                Label(dew.prefix(1).uppercased() + dew.dropFirst(), systemImage: "exclamationmark.triangle.fill")
-                    .font(.footnote.weight(.semibold)).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(theme.warning.opacity(0.16), in: Capsule()).overlay(Capsule().strokeBorder(theme.warning, lineWidth: 1))
+                WarningChip(text: dew.prefix(1).uppercased() + dew.dropFirst())
             }
             if let r = hero.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if let a = snap.agreement {
-                Text((snap.agreementWarns ? "! " : "✓ ") + a).font(.footnote.weight(snap.agreementWarns ? .semibold : .regular))
-                    .foregroundStyle(snap.agreementWarns ? theme.warning : theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+                if snap.agreementWarns { WarningChip(text: a) }
+                else { Text("✓ " + a).font(.footnote).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true) }
             }
         }
     }

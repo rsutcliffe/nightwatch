@@ -210,6 +210,20 @@ extension View {
     func risesIn(_ index: Int = 0) -> some View { modifier(RisesIn(index: index)) }
 }
 
+/// A warning, drawn once for the whole app: a triangle and words in a quiet capsule with an ember outline and a faint ember fill. Never a shouting
+/// line of coloured type and never a "!" in the text; the icon and the outline mean it does not rely on colour alone (red mode has one hue).
+struct WarningChip: View {
+    let text: String
+    @Environment(\.phoneTheme) private var theme
+    var body: some View {
+        Label(text, systemImage: "exclamationmark.triangle.fill")
+            .font(.footnote.weight(.semibold)).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(theme.warning.opacity(0.16), in: Capsule()).overlay(Capsule().strokeBorder(theme.warning, lineWidth: 1))
+            .accessibilityElement(children: .combine)
+    }
+}
+
 /// A small label with a symbol. A warning keeps its colour, a dashed outline and a "!", so it never relies on colour alone.
 struct Chip: View {
     let text: String
@@ -217,11 +231,11 @@ struct Chip: View {
     var warning = false
     @Environment(\.phoneTheme) private var theme
     var body: some View {
-        Label((warning ? "! " : "") + text, systemImage: symbol).font(.caption.weight(warning ? .semibold : .medium)).lineLimit(2)
-            .foregroundStyle(warning ? theme.warning : theme.textSecondary)
+        Label(text, systemImage: symbol).font(.caption.weight(warning ? .semibold : .medium)).lineLimit(2)
+            .foregroundStyle(warning ? theme.lit : theme.textSecondary)
             .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(theme.tile, in: Capsule())
-            .overlay { if warning { Capsule().strokeBorder(theme.warning, style: StrokeStyle(lineWidth: 1, dash: [4, 3])) } }
+            .background(warning ? theme.warning.opacity(0.16) : theme.tile, in: Capsule())
+            .overlay { if warning { Capsule().strokeBorder(theme.warning, lineWidth: 1) } }
     }
 }
 

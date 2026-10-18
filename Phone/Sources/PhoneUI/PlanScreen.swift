@@ -85,7 +85,7 @@ struct PlanScreen: View {
                     Text((t.commonName ?? t.typeName).uppercased()).font(.caption2).tracking(1.2).secondary()
                     Text("Best \(Copy.hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°").font(.caption).monospacedDigit().foregroundStyle(theme.bestLine)
                     if !item.clashes.isEmpty {
-                        Text("! Same best time as \(item.clashes.map(\.catalogueID).joined(separator: ", "))").font(.caption.weight(.semibold)).foregroundStyle(theme.warning)
+                        WarningChip(text: "Same best time as \(item.clashes.map(\.catalogueID).joined(separator: ", "))").padding(.top, 4)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }.buttonStyle(PressStyle())
