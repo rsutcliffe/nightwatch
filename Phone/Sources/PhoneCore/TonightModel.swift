@@ -87,6 +87,8 @@ public struct TonightModel: Equatable, Sendable {
     public var picksNote: String?
     /// The best-placed constellation tonight, for the faint figure behind the verdict on a night with no clear window.
     public var figureID: String?
+    /// The site's time zone, so the page can mark the current hour on the night's arc.
+    public var timeZoneID: String
 
     public var siteName: String { snapshot.siteName }
 
@@ -114,6 +116,6 @@ public struct TonightModel: Equatable, Sendable {
                             overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)",
                             picksHeading: chosen.isEmpty ? "UP TONIGHT" : "BEST TONIGHT",
                             picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note?.plainDashes,
-                            figureID: plan.targets.first { $0.group == .constellations }?.id)
+                            figureID: plan.targets.first { $0.group == .constellations }?.id, timeZoneID: site.timeZoneID)
     }
 }

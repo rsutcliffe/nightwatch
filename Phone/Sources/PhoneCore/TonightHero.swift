@@ -15,8 +15,16 @@ public struct TonightHero: Equatable, Sendable {
     public var dewWarns: Bool
     /// "Moon down tonight", or "Moon 35% · Sets 20:36": the Moon note under the clear-hours line.
     public var moonNote: String
-    /// "Dark 20:11-05:38 · Seeing 0.5-0.75" · Wind 10 km/h · Transparency good": what the tiles said, as one quiet line. Empty when none is known.
-    public var conditions: String
+    /// What the tiles said, as label and value pairs drawn small-over-bold: Dark (only when it differs from the window), Seeing, Wind, Transparency.
+    public var facts: [Fact]
+
+    public struct Fact: Equatable, Sendable {
+        public var label: String
+        public var value: String
+    }
+
+    /// The facts as one sentence, for VoiceOver and tests: "Seeing 0.5-0.75" · Wind 10 km/h · Transparency Good".
+    public var conditions: String { facts.map { "\($0.label) \($0.value)" }.joined(separator: " · ") }
 
     public static func make(window: String?, tiles: TonightTiles, reason: String? = nil) -> TonightHero {
         var times: String?, hours: String?
@@ -28,14 +36,13 @@ public struct TonightHero: Equatable, Sendable {
         let frost = tiles.dewLabel == "Frost likely"
         let dewLine = frost ? "frost likely" : tiles.dew.map { "\($0.lowercased()) dew risk" + (tiles.dewHint.map { ", " + $0.lowercased() } ?? "") }
         // "Dark" is left out when it is the same span as the clear window already shown above.
-        let conditions = [tiles.dark == "None" || tiles.dark == times ? nil : "Dark \(tiles.dark)",
-                          tiles.seeing.map { "Seeing \($0)" },
-                          tiles.wind.map { "Wind \($0)" },
-                          tiles.transparency.map { "Transparency \($0.lowercased())" }]
-            .compactMap { $0 }.joined(separator: " · ")
+        let facts: [Fact] = [tiles.dark == "None" || tiles.dark == times ? nil : Fact(label: "Dark", value: tiles.dark),
+                             tiles.seeing.map { Fact(label: "Seeing", value: $0) },
+                             tiles.wind.map { Fact(label: "Wind", value: $0) },
+                             tiles.transparency.map { Fact(label: "Transparency", value: $0) }].compactMap { $0 }
         let moonNote = tiles.moon == "Down" ? "Moon down tonight" : "Moon \(tiles.moon)" + (tiles.moonLine.map { " · \($0)" } ?? "")
         let shownReason = reason.flatMap { dewLine != nil && $0.lowercased().contains("dew risk") ? nil : $0 }
-        return TonightHero(times: times, hours: hours, dewLine: dewLine, reason: shownReason, dewWarns: frost || tiles.dew == "High", moonNote: moonNote, conditions: conditions)
+        return TonightHero(times: times, hours: hours, dewLine: dewLine, reason: shownReason, dewWarns: frost || tiles.dew == "High", moonNote: moonNote, facts: facts)
     }
 }
 

@@ -68,19 +68,21 @@ public struct TonightScreen: View {
         }
     }
 
+    /// How far through the night it is now, from the hour bars and the site's clock; nil by day.
+    private var nowFraction: Double? {
+        guard let tz = TimeZone(identifier: model.timeZoneID) else { return nil }
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = tz
+        let c = cal.dateComponents([.hour, .minute], from: now)
+        guard let h = c.hour, let m = c.minute, let i = snap.bars.firstIndex(where: { $0.hour == String(format: "%02d", h) }) else { return nil }
+        return (Double(i) + Double(m) / 60) / Double(snap.bars.count)
+    }
+
     private var hours: some View {
-        ClearHoursLine(bars: snap.bars, caption: snap.barsLabel, moonNote: model.hero.moonNote)
+        ClearHoursLine(bars: snap.bars, caption: snap.barsLabel, moonNote: model.hero.moonNote, nowFraction: nowFraction)
     }
 
     private func targets(height: CGFloat = 78, style: PicksSection.Style = .row, fills: Bool = false) -> some View {
         PicksSection(model: model, pictureHeight: height, style: style, fills: fills)
-    }
-
-    /// Seeing, wind and transparency (and the dark hours) as one quiet line, where the six tiles were.
-    @ViewBuilder private var conditions: some View {
-        if !model.hero.conditions.isEmpty {
-            Text(model.hero.conditions).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
-        }
     }
 
     private var offlineNote: some View {
@@ -103,17 +105,11 @@ public struct TonightScreen: View {
         }
     }
 
-    /// The pale alerts pill (until alerts are decided), then the conditions line beside the source, update time and Refresh.
-    private func footer(sideBySide: Bool) -> some View {
+    /// The ember alerts pill (until alerts are decided), then the source, update time and Refresh.
+    private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let alertsPrompt { alertsPrompt }
-            let source = SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
-            if sideBySide {
-                HStack(alignment: .center, spacing: 16) { conditions; source.fixedSize(horizontal: true, vertical: false) }
-            } else {
-                conditions
-                source
-            }
+            SourceFooter(model: model, markData: markData, refreshing: refreshing, onRefresh: onRefresh)
         }
     }
 
@@ -143,10 +139,11 @@ public struct TonightScreen: View {
             visit
             verdict(.compact)
             hours
+            FactsRow(facts: model.hero.facts)
             auroraRow
             targets(style: .list)
             tomorrowCard
-            footer(sideBySide: false)
+            footer
         }
     }
 
@@ -158,10 +155,11 @@ public struct TonightScreen: View {
             visit
             verdict(scale)
             hours
+            FactsRow(facts: model.hero.facts)
             auroraRow
             targets(height: scale == .large ? 150 : 200, fills: true)
             tomorrowCard
-            footer(sideBySide: true)
+            footer
         }
     }
 }

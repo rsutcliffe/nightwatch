@@ -12,9 +12,10 @@ private func tiles(dewHint: String? = nil, seeing: String? = "0.5-0.75\"", wind:
     let h = TonightHero.make(window: "20:11-05:38 · 9.4 h", tiles: tiles())
     #expect(h.times == "20:11-05:38")
     #expect(h.hours == "9.4 hours")
+    #expect(h.facts.map(\.label) == ["Seeing", "Wind", "Transparency"])
     #expect(h.dewLine == "medium dew risk")
     #expect(h.moonNote == "Moon down tonight")
-    #expect(h.conditions == "Seeing 0.5-0.75\" · Wind 10 km/h · Transparency good")   // the dark span equals the window, so it is not said twice
+    #expect(h.conditions == "Seeing 0.5-0.75\" · Wind 10 km/h · Transparency Good")   // the dark span equals the window, so it is not said twice
     #expect(h.dewWarns == false)
 }
 
@@ -26,7 +27,7 @@ private func tiles(dewHint: String? = nil, seeing: String? = "0.5-0.75\"", wind:
 @Test func frostReplacesTheDewLineAndMissingFiguresAreLeftOut() {
     let h = TonightHero.make(window: "21:00-04:00 · 7.0 h", tiles: tiles(seeing: nil, wind: nil, dewLabel: "Frost likely", dew: "Low", transparency: "Fair"))
     #expect(h.dewLine == "frost likely")
-    #expect(h.conditions == "Dark 20:11-05:38 · Transparency fair")
+    #expect(h.conditions == "Dark 20:11-05:38 · Transparency Fair")
     #expect(h.dewWarns)
     #expect(TonightHero.make(window: nil, tiles: tiles(seeing: nil, wind: nil, dew: nil, transparency: nil)).conditions == "Dark 20:11-05:38")
 }

@@ -148,7 +148,7 @@ struct PicksSection: View {
             TargetPicture(pick: p)
             LinearGradient(colors: [.clear, Color.black.opacity(0.78)], startPoint: .center, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 2) {
-                Text(p.title).font(.title3).foregroundStyle(Color(hex: 0xF4F1EA)).lineLimit(1).minimumScaleFactor(0.8)
+                Text(p.title).font(.title3.weight(.semibold)).foregroundStyle(Color(hex: 0xF4F1EA)).lineLimit(1).minimumScaleFactor(0.8)
                 Text(p.line).font(.caption).foregroundStyle(Color(hex: 0xC9D2EA)).lineLimit(1)
                 Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.lit).lineLimit(1).minimumScaleFactor(0.85)
             }
@@ -174,7 +174,7 @@ struct PicksSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(model.picksHeading).font(.caption.weight(.medium)).tracking(0.8).secondary()
+            Text(model.picksHeading).font(.caption.weight(.semibold)).tracking(0.8).secondary()
             if let note = model.picksNote { Text(note).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if typeSize.isAccessibilitySize {
                 VStack(spacing: 12) { ForEach(model.picks) { solidCard($0) } }

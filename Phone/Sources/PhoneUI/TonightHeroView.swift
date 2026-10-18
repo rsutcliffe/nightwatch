@@ -15,7 +15,7 @@ struct FigureArt: View {
     }
 }
 
-/// The Tonight verdict on the photograph, with no card: a very large light numeral over a wide-tracked "SKY SCORE", and beside it
+/// The Tonight verdict on the photograph, with no card: the Mac's dial with the score inside, and beside it
 /// the headline, the clear window in large light type, then hours clear and the dew line in warm white.
 struct TonightHeroView: View {
     enum Scale { case compact, medium, large }
@@ -25,34 +25,20 @@ struct TonightHeroView: View {
     var figure: (Data, Data)? = nil
     @Environment(\.phoneTheme) private var theme
     @Environment(\.dynamicTypeSize) private var typeSize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .largeTitle) private var large: CGFloat = 120
-    @ScaledMetric(relativeTo: .largeTitle) private var medium: CGFloat = 104
-    @ScaledMetric(relativeTo: .largeTitle) private var compact: CGFloat = 80
-    @State private var arrived = false
-
-    private var numeralSize: CGFloat { scale == .large ? large : scale == .medium ? medium : compact }
+    private var dialSize: CGFloat { typeSize.isAccessibilitySize ? 140 : scale == .large ? 200 : scale == .medium ? 170 : 120 }
     private var timesSize: CGFloat { scale == .large ? 38 : scale == .medium ? 34 : 28 }
 
-    private var numeral: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("\(arrived ? snap.score : 0)").font(.system(size: numeralSize, weight: .thin)).monospacedDigit()
-                .contentTransition(.numericText(value: Double(arrived ? snap.score : 0)))
-                .animation(reduceMotion ? nil : .easeOut(duration: 0.9), value: arrived)
-                .lineLimit(1).minimumScaleFactor(0.5)
-            Text("SKY SCORE").font(.caption.weight(.medium)).tracking(3).secondary()
-                .dynamicTypeSize(...DynamicTypeSize.accessibility1).padding(.leading, 4)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(snap.bezelLabel)
+    /// The Mac's 60-tick, 12-hour dial with the score inside: ticks inside a clear window are lit.
+    private var dial: some View {
+        ScoreBezelView(score: snap.score, slots: snap.slots, label: snap.bezelLabel, size: dialSize, lit: theme.lit, numeralWeight: .bold)
     }
 
     private var words: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(snap.headline).font(.title3.weight(.light)).secondary().dynamicTypeSize(...DynamicTypeSize.accessibility2)
+            Text(snap.headline).font(.title2.weight(.bold)).dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 .fixedSize(horizontal: false, vertical: true)
             if let t = hero.times {
-                Text(t).font(.system(size: timesSize, weight: .thin)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                Text(t).font(.system(size: timesSize, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
             }
             if let line = hoursLine {
                 Text(line).font(.callout.weight(hero.dewWarns ? .semibold : .regular)).foregroundStyle(hero.dewWarns ? theme.warning : theme.lit).fixedSize(horizontal: false, vertical: true)
@@ -75,12 +61,11 @@ struct TonightHeroView: View {
         // At the accessibility text sizes the numeral sits above the words so neither is squeezed.
         let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .center, spacing: scale == .compact ? 22 : 36))
         layout {
-            numeral
+            dial
             words.frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(alignment: .trailing) { if let figure { FigureArt(figure: figure).frame(maxHeight: 220) } }
-        .onAppear { arrived = true }
     }
 }
 
@@ -90,6 +75,8 @@ struct ClearHoursLine: View {
     let bars: [ClearSkyBar]
     let caption: String
     let moonNote: String
+    /// How far through the night it is now (0 to 1), or nil when it is outside the night: the ember dot sits there.
+    var nowFraction: Double? = nil
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var arrived = false
@@ -112,6 +99,11 @@ struct ClearHoursLine: View {
                         if b.lit { ctx.stroke(seg(i), with: .color(theme.lit.opacity(0.55 + 0.45 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 4, lineCap: .butt)) }
                         else if b.clearPct > 0 { ctx.stroke(seg(i), with: .color(theme.textPrimary.opacity(0.28)), style: StrokeStyle(lineWidth: 3, lineCap: .butt)) }
                     }
+                    if let f = nowFraction, let pt = path.trimmedPath(from: 0, to: min(max(f, 0.001), 1)).currentPoint {
+                        let dot = CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12)
+                        ctx.fill(Path(ellipseIn: dot), with: .color(theme.ember))
+                        ctx.stroke(Path(ellipseIn: dot), with: .color(theme.textPrimary), lineWidth: 1.5)
+                    }
                 }
                 // Room above and below the curve, so the glow is never cut off at the edge of the drawing.
                 .frame(height: 74)
@@ -122,6 +114,26 @@ struct ClearHoursLine: View {
             .onAppear { arrived = true }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(ClearSkyBarsView.speech(caption: caption, bars: bars) + ". " + moonNote)
+        }
+    }
+}
+
+/// Seeing, wind, transparency (and the dark hours when they differ from the window): a small capital label over a bold value, left-aligned
+/// with room between, where the grey footer line was.
+struct FactsRow: View {
+    let facts: [TonightHero.Fact]
+    var body: some View {
+        if facts.isEmpty { EmptyView() } else {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12, alignment: .leading)], alignment: .leading, spacing: 14) {
+                ForEach(facts, id: \.label) { f in
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(f.label.uppercased()).font(.caption2.weight(.semibold)).tracking(0.8).secondary().lineLimit(1).minimumScaleFactor(0.8)
+                        Text(f.value).font(.headline.weight(.bold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                    }
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(facts.map { "\($0.label) \($0.value)" }.joined(separator: ", "))
         }
     }
 }

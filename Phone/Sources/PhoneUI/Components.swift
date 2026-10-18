@@ -103,7 +103,7 @@ struct PrimaryButton: View {
     }
 }
 
-/// A pale filled pill, as the Photographic design has its one call to action: pale on the photograph, red on black in red mode.
+/// The one warm pill: the Photographic design's single call to action, ember with dark text, red on black in red mode.
 struct PillButton: View {
     let title: String
     let action: () -> Void
@@ -111,8 +111,8 @@ struct PillButton: View {
     var body: some View {
         Button { Haptic.impact(); action() } label: {
             Text(title).font(.callout.weight(.medium)).padding(.horizontal, 22).frame(minHeight: 44)
-                .background(theme.isRed ? theme.accent : Color(hex: 0xF4F1EA), in: Capsule())
-                .foregroundStyle(theme.isRed ? Color.black : Color(hex: 0x0A1022))
+                .background(theme.ember, in: Capsule())
+                .foregroundStyle(theme.isRed ? Color.black : Color(hex: 0x1A1206))
         }
         .buttonStyle(PressStyle())
     }

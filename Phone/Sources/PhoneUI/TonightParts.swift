@@ -9,12 +9,16 @@ struct ScoreBezelView: View {
     let slots: [BezelSlot]
     let label: String
     var size: CGFloat = 104
+    /// The colour of the lit (clear) ticks; the system accent when nil, as on the Mac.
+    var lit: Color? = nil
+    /// The score's weight: light on the Mac's dial, bold on Tonight.
+    var numeralWeight: Font.Weight = .light
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var arrived = false
 
     private func colour(_ s: BezelSlot) -> Color {
-        switch s { case .clear: theme.accent; case .partCloud: theme.tickPartCloud; case .cloudy: theme.tickCloudy; case .daylight: theme.tickDaylight }
+        switch s { case .clear: lit ?? theme.accent; case .partCloud: theme.tickPartCloud; case .cloudy: theme.tickCloudy; case .daylight: theme.tickDaylight }
     }
 
     private func ticks(_ include: @escaping (BezelSlot) -> Bool) -> some View {
@@ -38,8 +42,8 @@ struct ScoreBezelView: View {
         ZStack {
             Circle().stroke(theme.ring, lineWidth: 0.75).frame(width: 66, height: 66)
             ticks { $0 != .clear }
-            ticks { $0 == .clear }.compositingGroup().shadow(color: theme.accent.opacity(0.7), radius: 3)
-            Text("\(arrived ? score : 0)").font(.system(size: 27, weight: .light)).monospacedDigit().foregroundStyle(theme.textPrimary)
+            ticks { $0 == .clear }.compositingGroup().shadow(color: (lit ?? theme.accent).opacity(0.7), radius: 3)
+            Text("\(arrived ? score : 0)").font(.system(size: 27, weight: numeralWeight)).monospacedDigit().foregroundStyle(theme.textPrimary)
                 .contentTransition(.numericText(value: Double(arrived ? score : 0)))
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.9), value: arrived)
                 .overlay(alignment: .top) {
