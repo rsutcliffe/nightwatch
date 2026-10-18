@@ -282,6 +282,18 @@ struct NightWidgetBackground: View {
     }
 }
 
+/// On the desktop macOS draws widgets in its accented style, which removes the container background and tints content white, so the
+/// picture above never shows. There the picture is drawn as content instead, already darkened (no scrim to be tinted), and marked
+/// full colour so the system leaves it alone. In full colour (the gallery) the container background does the job and this draws nothing.
+struct DesktopPicture: View {
+    @Environment(\.widgetRenderingMode) private var mode
+    var body: some View {
+        if mode != .fullColor, #available(macOS 15, *) {
+            Image("night-sky-dim").resizable().widgetAccentedRenderingMode(.fullColor).scaledToFill()
+        }
+    }
+}
+
 struct NightwatchWidgetView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
@@ -313,6 +325,7 @@ struct NightwatchWidgetView: View {
         // The small widget and the empty state are centred, as on the canvas; medium and large read from the top left.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: entry.snapshot == nil || family == .systemSmall ? .center : .topLeading)
         .padding(padding)
+        .background { DesktopPicture() }
         .containerBackground(for: .widget) { NightWidgetBackground() }
         .widgetURL(WidgetLink.targets.url)
     }
