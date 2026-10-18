@@ -86,7 +86,7 @@ struct SiteMapView: View {
             RoundedRectangle(cornerRadius: 8).fill(Tokens.surfaceTile)
             if let image {
                 Color.clear.overlay(Image(nsImage: image).resizable().aspectRatio(contentMode: .fill))
-                Circle().fill(Tokens.controlOn).frame(width: 16, height: 16).overlay(Circle().stroke(.white, lineWidth: 2.5))
+                Circle().fill(Tokens.ember).frame(width: 16, height: 16).overlay(Circle().stroke(.white, lineWidth: 2.5))
             } else {
                 Image(systemName: "moon.stars").font(Font.scaled(.title2)).foregroundStyle(Theme.dim)
             }

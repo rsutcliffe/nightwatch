@@ -648,9 +648,9 @@ struct DarkSiteCard: View {
                     if nearestClear { Chip(text: "Nearest clear sky", icon: "mappin.and.ellipse").padding(6) }
                 }
             HStack(alignment: .firstTextBaseline) {
-                Text(s.name).font(Font.scaled(.callout).weight(.semibold)).lineLimit(2)
+                Text(s.name).font(Font.scaled(.callout).weight(.heavy)).lineLimit(2)
                 Spacer()
-                if !plan.forecastMissing { Text("\(plan.score)").font(Font.scaled(.title3).weight(.semibold)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
+                if !plan.forecastMissing { Text("\(plan.score)").font(Font.scaled(.title3).weight(.heavy)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" + (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? ""))
                 .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
@@ -680,9 +680,11 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).linkCursor().font(Font.scaled(.caption)) }
                 Spacer()
-                Button("Open in Maps") { SiteMaps.open(s) }.buttonStyle(ScaledButtonStyle())
-                // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
-                Button("Observe from here") { store.visit(s) }.buttonStyle(ScaledButtonStyle())
+                Button("Open in Maps") { SiteMaps.open(s) }
+                    .buttonStyle(.plain).font(.system(size: TextScale.pt(12), weight: .heavy)).foregroundStyle(Tokens.lit).padding(.vertical, 4)
+                // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026). The one warm action on the card.
+                Button("Observe from here") { store.visit(s) }
+                    .buttonStyle(.plain).font(.system(size: TextScale.pt(12), weight: .heavy)).foregroundStyle(Tokens.ember).padding(.vertical, 4).padding(.leading, 12)
             }
         }
         .padding(12)
