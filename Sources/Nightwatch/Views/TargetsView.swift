@@ -28,6 +28,17 @@ final class TargetsViewState: ObservableObject {
     @Published var tomorrow = false
 }
 
+/// A sidebar row's icon in the lit colour. The native sidebar draws a Label's symbol in the system accent whatever its row is set
+/// to, so the icon is placed here by hand.
+private struct SidebarLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 8) {
+            configuration.icon.foregroundStyle(Tokens.lit).frame(width: TextScale.pt(18))
+            configuration.title
+        }
+    }
+}
+
 struct TargetsView: View {
     @EnvironmentObject var store: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -133,26 +144,14 @@ struct TargetsView: View {
                 sidebarRow(section).tag(section)
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(Tokens.targetsBackground)
             .safeAreaInset(edge: .bottom) { filters }
             // As wide as its longest name needs at the chosen Text size: at Extra large a fixed 232 cut "Eyes and binoculars"
             // to "Eyes and binocul…" (owner's screenshot, 6 October 2026).
             .navigationSplitViewColumnWidth(TextScale.pt(232))
         } detail: {
-            if let ev = ui.selectedEvent {
-                // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
-                EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
-            } else if let selected = ui.selected {
-                // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
-                DetailView(target: selected, plan: plan, back: sectionTitle, eye: ui.section == .eyes ? eyeView(selected) : nil) { ui.selected = nil }
-                    .id(selected.id)
-            } else {
-                switch ui.section {
-                case .darkSites: darkSitesList
-                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
-                case .week: WeekView { tomorrow in ui.tomorrow = tomorrow; ui.section = .plan }
-                case .group, .favourites, .eyes: grid
-                }
-            }
+            detailPage.background { NightBackdrop(calm: true) }
         }
         // No "What the numbers mean" button here: it made the title bar busy (owner's UAT, 29 September 2026). Settings
         // and About open the guide.
@@ -170,6 +169,27 @@ struct TargetsView: View {
         // Here, not on the window: a change of Text size rebuilds what is above, and `ui` has to outlive that, or the
         // sidebar went back to Nebulae and the search and open page were lost (owner, 6 October 2026).
         .textSized(store.config.textSize)
+    }
+
+    /// The page the detail column shows: an event, a target, or the chosen section.
+    @ViewBuilder private var detailPage: some View {
+        Group {
+            if let ev = ui.selectedEvent {
+                // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
+                EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
+            } else if let selected = ui.selected {
+                // A fresh page per target: a late image from the previous target's cancelled load can never land on this one.
+                DetailView(target: selected, plan: plan, back: sectionTitle, eye: ui.section == .eyes ? eyeView(selected) : nil) { ui.selected = nil }
+                    .id(selected.id)
+            } else {
+                switch ui.section {
+                case .darkSites: darkSitesList
+                case .plan: PlanView(plan: plan, canPlanTomorrow: canPlanTomorrow, tomorrow: $ui.tomorrow) { ui.selected = $0 }
+                case .week: WeekView { tomorrow in ui.tomorrow = tomorrow; ui.section = .plan }
+                case .group, .favourites, .eyes: grid
+                }
+            }
+        }
     }
 
     private func sidebarRow(_ section: BrowserSection) -> some View {
@@ -193,6 +213,8 @@ struct TargetsView: View {
             }
         }
         .font(.system(size: TextScale.pt(12)))
+        .foregroundStyle(Tokens.lit)
+        .labelStyle(SidebarLabelStyle())
     }
 
     /// Switches with the Moon line above them, so the Moon one has context (follow-on 5). Both read "Show …", so on always
@@ -209,12 +231,12 @@ struct TargetsView: View {
             }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
-                Text("SHOW").font(.system(size: TextScale.pt(9.5))).foregroundStyle(Tokens.textSecondary).padding(.top, 2)
+                Text("SHOW").capsLabel().padding(.top, 2)
                 Toggle("Doesn't fit my frame", isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
                 Toggle("Washed out by the Moon", isOn: $ui.includeMoonWashed)
             }
         }
-        .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: TextScale.pt(11))).padding(10)
+        .toggleStyle(WarmSwitchStyle(compact: true)).font(.system(size: TextScale.pt(11))).padding(10)
     }
 
     /// Applies a pending request from the popover once, then clears it.
@@ -453,8 +475,7 @@ struct TargetsView: View {
                     }
                     .opens { ui.selectedEvent = e }
                     .padding(.horizontal, 12).padding(.vertical, 8)
-                    .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 9))
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
+                    .cardSurface(radius: 14)
                 }
             }
             .padding(.horizontal, 20).padding(.bottom, 20)
@@ -531,7 +552,7 @@ struct TargetsView: View {
         let on = isFavourite(t)
         return Button { toggleFavourite(t) } label: {
             Image(systemName: on ? "heart.fill" : "heart").font(.system(size: TextScale.pt(12), weight: .semibold))
-                .foregroundStyle(on ? Theme.accent : Tokens.textPrimary).padding(5)
+                .foregroundStyle(on ? Tokens.ember : Tokens.textPrimary).padding(5)
                 .background(Circle().fill(.black.opacity(0.45)))
         }
         .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
@@ -666,7 +687,6 @@ struct DarkSiteCard: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
+        .cardSurface(radius: 16)
     }
 }

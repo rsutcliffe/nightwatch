@@ -12,8 +12,8 @@ struct StatTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
-            Text(value ?? "No data").font(.system(size: TextScale.pt(12.5), weight: .medium))
+            Text(label.uppercased()).capsLabel()
+            Text(value ?? "No data").font(.system(size: TextScale.pt(13), weight: .heavy))
                 .foregroundStyle(value == nil ? Tokens.textSecondary : Tokens.textPrimary).fixedSize(horizontal: false, vertical: true)
             if let hint { Text(hint).font(.system(size: TextScale.pt(9))).foregroundStyle(Tokens.textPrimary).fixedSize(horizontal: false, vertical: true) }
         }
@@ -21,7 +21,7 @@ struct StatTile: View {
         .accessibilityElement(children: .combine)
         // A plain translucent fill on the glass panel, not a second glass layer: measured live (25 Sep 2026), system glass
         // tinted surface.tile rendered #5A5D63 and left text.secondary at 2.9:1. The fill keeps it near #373A40 (spec §7).
-        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
+        .cardSurface(radius: 12)
     }
 }
 
@@ -78,9 +78,10 @@ struct Chip: View {
             Text(text)
         }
         .font(.system(size: TextScale.pt(9.5), weight: .medium))
-        .foregroundStyle(warning ? Tokens.statusWarning : Tokens.textPrimary)
+        .foregroundStyle(warning ? Tokens.lit : Tokens.textPrimary)
         .padding(.horizontal, 7).padding(.vertical, 3)
-        .nightwatchGlass(in: Capsule(), fill: Color.black.opacity(0.55))
+        .background(Color.black.opacity(0.55), in: Capsule())
+        .overlay(Capsule().stroke(warning ? Tokens.ember : Tokens.glassEdge, lineWidth: 1))
     }
 }
 
