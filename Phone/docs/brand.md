@@ -28,12 +28,12 @@ ticks use the accent with one glow. Verdict wording, bars and tiles come from Sk
 ## Photographic look (iPad and iPhone, from 18 October 2026)
 
 The owner found the iPad design basic and clunky, so Tonight now sits on a full-bleed night-sky image, with a very large
-light score numeral and frosted-glass cards. The Mac app keeps its current look; this divergence is on purpose and applies
+thin score numeral and frosted-glass cards, in one typeface (SF Pro, thin to regular) with no gold, glow or serif. The Mac app keeps its current look; this divergence is on purpose and applies
 to iPad and iPhone only. Red night mode is unchanged: one hue on black, the photograph tinted red.
 
 | Token | Value | Use |
 |---|---|---|
-| gold | `#F2D49B` (red mode: the red accent) | emphasis only: hours clear, the dew line, lit parts |
+| lit | `#F4F1EA` (red mode: the red accent) | what is lit: the clear hours on the arc, the hours and dew line, a target's best time. Warm white, not a colour |
 | glass.fill | white 9 % (red mode: `#A0140C` at 10 %) | cards over the photograph |
 | glass.hairline | white 16 % (35 % red; text colour under Increase Contrast) | card outline, 16 pt radius |
 | scrim | background colour at 16 % over the top to 78 % at the foot | holds text contrast over the photo |
@@ -42,7 +42,7 @@ to iPad and iPhone only. Red night mode is unchanged: one hue on black, the phot
   night-sky images, in `App/Resources/Backdrop`. The Unsplash Milky Way (William Zhang, credited in the README) is the
   fallback if either file is missing.
 - **Hero:** numeral about 120 pt on iPad landscape, 104 pt on iPad portrait, 80 pt on iPhone, light weight, scaled with Dynamic Type;
-  "SKY SCORE" in wide-tracked capitals; the clear window in large light type; hours clear and the dew line in gold.
+  "SKY SCORE" in wide-tracked capitals; the clear window in large light type; hours clear and the dew line in warm white.
 - **Cards:** the three best targets as glass cards with a brightened picture; a card a line on iPhone.
 - **System blue** is left to controls the system draws; the call to action is a pale pill.
 - **Accessibility:** under Reduce Transparency the glass becomes the solid card and the photograph is dropped. At the accessibility

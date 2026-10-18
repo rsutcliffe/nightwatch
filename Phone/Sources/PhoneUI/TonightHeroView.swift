@@ -16,7 +16,7 @@ struct FigureArt: View {
 }
 
 /// The Tonight verdict on the photograph, with no card: a very large light numeral over a wide-tracked "SKY SCORE", and beside it
-/// the headline, the clear window in large light type, then hours clear and the dew line in warm pale gold.
+/// the headline, the clear window in large light type, then hours clear and the dew line in warm white.
 struct TonightHeroView: View {
     enum Scale { case compact, medium, large }
     let snap: WidgetSnapshot
@@ -26,7 +26,6 @@ struct TonightHeroView: View {
     @Environment(\.phoneTheme) private var theme
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @ScaledMetric(relativeTo: .largeTitle) private var large: CGFloat = 120
     @ScaledMetric(relativeTo: .largeTitle) private var medium: CGFloat = 104
     @ScaledMetric(relativeTo: .largeTitle) private var compact: CGFloat = 80
@@ -37,21 +36,12 @@ struct TonightHeroView: View {
 
     private var numeral: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("\(arrived ? snap.score : 0)").font(.system(size: numeralSize, weight: .light, design: .serif)).monospacedDigit()
-                .foregroundStyle(LinearGradient(colors: [theme.textPrimary, theme.gold], startPoint: .top, endPoint: .bottom))
-                .shadow(color: theme.gold.opacity(reduceTransparency ? 0 : 0.4), radius: 22)
+            Text("\(arrived ? snap.score : 0)").font(.system(size: numeralSize, weight: .thin)).monospacedDigit()
                 .contentTransition(.numericText(value: Double(arrived ? snap.score : 0)))
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.9), value: arrived)
                 .lineLimit(1).minimumScaleFactor(0.5)
             Text("SKY SCORE").font(.caption.weight(.medium)).tracking(3).secondary()
                 .dynamicTypeSize(...DynamicTypeSize.accessibility1).padding(.leading, 4)
-        }
-        .background(alignment: .leading) {
-            // A soft lamp behind the numeral: the night's one warm light.
-            if !reduceTransparency {
-                RadialGradient(colors: [theme.gold.opacity(0.20), .clear], center: .center, startRadius: 0, endRadius: numeralSize * 1.1)
-                    .frame(width: numeralSize * 2.4, height: numeralSize * 2.4).offset(x: -numeralSize * 0.15).allowsHitTesting(false)
-            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(snap.bezelLabel)
@@ -59,13 +49,13 @@ struct TonightHeroView: View {
 
     private var words: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(snap.headline).font(.title3.weight(.regular)).secondary().dynamicTypeSize(...DynamicTypeSize.accessibility2)
+            Text(snap.headline).font(.title3.weight(.light)).secondary().dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 .fixedSize(horizontal: false, vertical: true)
             if let t = hero.times {
-                Text(t).font(.system(size: timesSize, weight: .light)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                Text(t).font(.system(size: timesSize, weight: .thin)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
             }
-            if let line = goldLine {
-                Text(line).font(.callout.weight(hero.dewWarns ? .semibold : .medium)).foregroundStyle(theme.gold).fixedSize(horizontal: false, vertical: true)
+            if let line = hoursLine {
+                Text(line).font(.callout.weight(hero.dewWarns ? .semibold : .regular)).foregroundStyle(hero.dewWarns ? theme.warning : theme.lit).fixedSize(horizontal: false, vertical: true)
             }
             if let r = hero.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if let a = snap.agreement {
@@ -76,7 +66,7 @@ struct TonightHeroView: View {
     }
 
     /// "9.4 hours · medium dew risk", whichever of the two there is.
-    private var goldLine: String? {
+    private var hoursLine: String? {
         let parts = [hero.hours, hero.dewLine.map { (hero.dewWarns ? "! " : "") + $0 }].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
@@ -94,7 +84,7 @@ struct TonightHeroView: View {
     }
 }
 
-/// The night as a low arc over the horizon: each hour a stretch of the curve, lit gold with a glow where the sky is clear (brighter the
+/// The night as a low arc over the horizon: each hour a stretch of the curve, lit white where the sky is clear (brighter the
 /// clearer it is), a faint line where it is not, and the Moon note beneath. It replaces the ten bars on Tonight; the Week page keeps its bars.
 struct ClearHoursLine: View {
     let bars: [ClearSkyBar]
@@ -102,7 +92,6 @@ struct ClearHoursLine: View {
     let moonNote: String
     @Environment(\.phoneTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var arrived = false
 
     private func arc(_ size: CGSize) -> Path {
@@ -119,14 +108,8 @@ struct ClearHoursLine: View {
                     let path = arc(size), n = Double(bars.count), gap = 0.004
                     ctx.stroke(path, with: .color(theme.textPrimary.opacity(0.18)), style: StrokeStyle(lineWidth: 1, lineCap: .round))
                     func seg(_ i: Int) -> Path { path.trimmedPath(from: Double(i) / n + gap, to: Double(i + 1) / n - gap) }
-                    if !reduceTransparency {
-                        ctx.drawLayer { layer in
-                            layer.addFilter(.blur(radius: 6))
-                            for (i, b) in bars.enumerated() where b.lit { layer.stroke(seg(i), with: .color(theme.gold.opacity(0.55 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 8)) }
-                        }
-                    }
                     for (i, b) in bars.enumerated() {
-                        if b.lit { ctx.stroke(seg(i), with: .color(theme.gold.opacity(0.6 + 0.4 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 5, lineCap: .butt)) }
+                        if b.lit { ctx.stroke(seg(i), with: .color(theme.lit.opacity(0.55 + 0.45 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 4, lineCap: .butt)) }
                         else if b.clearPct > 0 { ctx.stroke(seg(i), with: .color(theme.textPrimary.opacity(0.28)), style: StrokeStyle(lineWidth: 3, lineCap: .butt)) }
                     }
                 }

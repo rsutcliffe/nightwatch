@@ -142,7 +142,7 @@ struct PicksSection: View {
         }
     }
 
-    /// The picture runs to the card's edges with the words over a dark foot; the "best" line is the card's one gold note.
+    /// The picture runs to the card's edges with the words over a dark foot; the "best" line is the card's one warm-white note.
     private func photoCard(_ p: TargetPick, minHeight: CGFloat, fills: Bool) -> some View {
         ZStack(alignment: .bottomLeading) {
             TargetPicture(pick: p)
@@ -150,7 +150,7 @@ struct PicksSection: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(p.title).font(.title3).foregroundStyle(Color(hex: 0xF4F1EA)).lineLimit(1).minimumScaleFactor(0.8)
                 Text(p.line).font(.caption).foregroundStyle(Color(hex: 0xC9D2EA)).lineLimit(1)
-                Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.gold).lineLimit(1).minimumScaleFactor(0.85)
+                Text(p.best).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(theme.lit).lineLimit(1).minimumScaleFactor(0.85)
             }
             .padding(14)
         }
