@@ -151,10 +151,8 @@ struct NightwatchPhoneApp: App {
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                     NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .large, red: red).padding(16).frame(width: 364, height: 382)
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
-                    // The iPad's large widget is far shorter than the iPhone's, and its extra-large is twice as wide: both at the iPad's sizes.
+                    // The iPad's large widget is far shorter than the iPhone's: drawn at the iPad's size.
                     NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .large, red: red).padding(16).frame(width: 306, height: 306)
-                        .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
-                    NightwatchWidgetView(snapshot: store.tonight?.snapshot ?? .sample, size: .extraLarge, red: red).padding(16).frame(width: 650, height: 306)
                         .background(NightwatchWidgetView.background(red: red), in: RoundedRectangle(cornerRadius: 22))
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.gray.opacity(0.4))
             } else {
