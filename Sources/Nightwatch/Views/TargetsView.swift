@@ -28,6 +28,17 @@ final class TargetsViewState: ObservableObject {
     @Published var tomorrow = false
 }
 
+/// A sidebar row's icon in the lit colour. The native sidebar draws a Label's symbol in the system accent whatever its row is set
+/// to, so the icon is placed here by hand.
+private struct SidebarLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 8) {
+            configuration.icon.foregroundStyle(Tokens.lit).frame(width: TextScale.pt(18))
+            configuration.title
+        }
+    }
+}
+
 struct TargetsView: View {
     @EnvironmentObject var store: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -135,7 +146,6 @@ struct TargetsView: View {
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
             .background(Tokens.targetsBackground)
-            .tint(Color.white.opacity(0.2))   // the selected row: a quiet pill, not the system accent
             .safeAreaInset(edge: .bottom) { filters }
             // As wide as its longest name needs at the chosen Text size: at Extra large a fixed 232 cut "Eyes and binoculars"
             // to "Eyes and binocul…" (owner's screenshot, 6 October 2026).
@@ -204,6 +214,7 @@ struct TargetsView: View {
         }
         .font(.system(size: TextScale.pt(12)))
         .foregroundStyle(Tokens.lit)
+        .labelStyle(SidebarLabelStyle())
     }
 
     /// Switches with the Moon line above them, so the Moon one has context (follow-on 5). Both read "Show …", so on always
