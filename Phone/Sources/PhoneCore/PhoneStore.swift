@@ -420,6 +420,15 @@ public final class PhoneStore: ObservableObject {
         Task { await refresh(force: true) }
     }
 
+    /// A saved site whose time zone was wrong (a place found without one took this device's): set it right and read the forecast again, so the
+    /// night, the plan and the alerts are at the place's own hours.
+    public func correctTimeZone(of name: String, to id: String) {
+        guard let i = config.sites.firstIndex(where: { $0.name == name }), config.sites[i].timeZoneID != id, TimeZone(identifier: id) != nil else { return }
+        config.sites[i].timeZoneID = id
+        saveConfig()
+        if site?.name == name { Task { await refresh(force: true) } }
+    }
+
     public func removeSites(at offsets: IndexSet) {
         for i in offsets.sorted(by: >) { config.sites.remove(at: i) }
         if site == nil { config.activeSiteName = config.sites.first?.name }

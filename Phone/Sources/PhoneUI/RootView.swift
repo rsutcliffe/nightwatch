@@ -12,11 +12,13 @@ public struct RootView: View {
     @State private var showSites = false
     @State private var showSettings = false
     @State private var showHorizon: HorizonTarget?
+    /// Sites whose time zone has been checked this launch, so the geocoder is asked once for each.
+    @State private var zonesChecked: Set<String> = []
 
     public init(store: PhoneStore, connectivity: ConnectivityMonitor) {
         self.store = store; self.connectivity = connectivity
-        // `-demoTab plan` (or targets, week) opens that section first, for screenshots in the Simulator.
-        let first = UserDefaults.standard.string(forKey: "demoTab").flatMap { ["tonight": SidebarItem.tonight, "plan": .plan, "targets": .targets, "week": .week][$0] } ?? .tonight
+        // `-demoTab plan` (or targets, week, and sites on iPad) opens that section first, for screenshots in the Simulator.
+        let first = UserDefaults.standard.string(forKey: "demoTab").flatMap { ["tonight": SidebarItem.tonight, "plan": .plan, "targets": .targets, "week": .week, "sites": .sites][$0] } ?? .tonight
         _tab = State(initialValue: first); _selection = State(initialValue: first)
     }
 
@@ -35,7 +37,7 @@ public struct RootView: View {
     @State private var selection: SidebarItem?
     /// The sidebar starts closed in portrait, so the page has the full width; landscape has room for both.
     @State private var columns: NavigationSplitViewVisibility = .automatic
-    enum SidebarItem: Hashable { case tonight, plan, targets, week, settings }
+    enum SidebarItem: Hashable { case tonight, plan, targets, week, settings, sites }
     @State private var tab: SidebarItem
     @State private var planTomorrow = false
 
@@ -80,6 +82,7 @@ public struct RootView: View {
         case .targets: "Targets"
         case .week: "The week ahead"
         case .settings: "Settings"
+        case .sites: "Sites"
         }
     }
 
@@ -133,13 +136,11 @@ public struct RootView: View {
                     Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
                 }
                 Section {
-                    Button { showSites = true } label: {
-                        HStack {
-                            Label("Sites", systemImage: "mappin.and.ellipse")
-                            Spacer()
-                            Text(store.site?.name ?? "").font(.callout).secondary().lineLimit(1)
-                        }
-                    }
+                    HStack {
+                        Label("Sites", systemImage: "mappin.and.ellipse")
+                        Spacer()
+                        Text(store.site?.name ?? "").font(.callout).secondary().lineLimit(1)
+                    }.tag(SidebarItem.sites)
                     Toggle(isOn: $red) { Label("Red night mode", systemImage: "moon.fill") }
                         .toggleStyle(PhoneToggleStyle())
                 }
@@ -149,7 +150,9 @@ public struct RootView: View {
         } detail: {
             NavigationStack {
                 Group {
-                    if selection == .settings { SettingsScreen(store: store, red: $red, permission: permission, embedded: true) } else { page(selection ?? .tonight) }
+                    if selection == .settings { SettingsScreen(store: store, red: $red, permission: permission, embedded: true) }
+                    else if selection == .sites { SitesScreen(store: store, embedded: true, onChosen: { selection = .tonight }) }
+                    else { page(selection ?? .tonight) }
                 }
                 .navigationBarTitleDisplayModeInline()
                 .clearNavigationBar()
@@ -166,7 +169,7 @@ public struct RootView: View {
                 }
             } else { stack(theme) }
         }
-        .sheet(isPresented: $showSites) { SitesSheet(store: store).phoneTheme(theme) }
+        .sheet(isPresented: $showSites) { SitesScreen(store: store).phoneTheme(theme) }
         .sheet(item: $showHorizon) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
         // While the app is open and aurora alerts are on: look every 5 minutes (the sources' own gaps still apply).
         .task(id: store.config.aurora.enabled) {
@@ -185,6 +188,13 @@ public struct RootView: View {
         .sheet(isPresented: $showSettings) { SettingsScreen(store: store, red: $red, permission: permission).phoneTheme(theme) }
         .phoneTheme(theme)
         .environment(\.allowsOptionalDownloads, connectivity.current.allowsOptionalDownloads)
+        // A site saved with this device's time zone may be somewhere else (the zone was missing when it was found): ask once, and correct it.
+        .task(id: store.site?.name) {
+            guard let s = store.site, s.timeZoneID == TimeZone.current.identifier, zonesChecked.insert(s.name).inserted else { return }
+            if let tz = await PlaceCompleter.timeZone(latitude: s.latitude, longitude: s.longitude), tz.identifier != s.timeZoneID {
+                store.correctTimeZone(of: s.name, to: tz.identifier)
+            }
+        }
         .task {
             refresh()
             // `-demoOpen horizon` opens the active site's horizon sheet at launch, for screenshots in the Simulator.
@@ -289,8 +299,12 @@ struct FirstRunScreen: View {
 /// A site named for the horizon sheet to open.
 struct HorizonTarget: Identifiable { let name: String; var id: String { name } }
 
-struct SitesSheet: View {
+/// The sites: a sheet on iPhone, a page in the sidebar on iPad (`embedded`), the same list either way.
+struct SitesScreen: View {
     @ObservedObject var store: PhoneStore
+    var embedded = false
+    /// Called after a site is chosen in the embedded page, which has no sheet to close.
+    var onChosen: () -> Void = {}
     @Environment(\.phoneTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -299,12 +313,24 @@ struct SitesSheet: View {
     @StateObject private var places = PlaceCompleter()
 
     var body: some View {
-        NavigationStack {
+        if embedded { list } else {
+            NavigationStack {
+                list
+                    .navigationBarTitleDisplayModeInline()
+                    .toolbar {
+                        ToolbarItem(placement: .principal) { Text("Sites").font(.headline).foregroundStyle(theme.textPrimary) }
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                    }
+            }
+        }
+    }
+
+    private var list: some View {
             List {
                 Section(header: Text("Your sites").capsLabel()) {
                     ForEach(store.config.sites, id: \.name) { s in
                         HStack {
-                            Button { Haptic.selection(); store.selectSite(s); dismiss() } label: {
+                            Button { Haptic.selection(); store.selectSite(s); if embedded { onChosen() } else { dismiss() } } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(s.name)
@@ -333,12 +359,6 @@ struct SitesSheet: View {
             .sheet(item: $horizonSite) { HorizonSheet(store: store, siteName: $0.name).phoneTheme(theme) }
             .scrollDismissesKeyboard(.interactively)
             .scrollContentBackground(.hidden).background { StarField(seed: "settings", calm: true).ignoresSafeArea() }
-            .navigationBarTitleDisplayModeInline()
-            .toolbar {
-                ToolbarItem(placement: .principal) { Text("Sites").font(.headline).foregroundStyle(theme.textPrimary) }
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-            }
-        }
     }
 }
 

@@ -68,8 +68,17 @@ public final class PlaceCompleter: NSObject, ObservableObject, MKLocalSearchComp
         guard let item = try? await MKLocalSearch(request: MKLocalSearch.Request(completion: completion)).start().mapItems.first else { return nil }
         let pm = item.placemark
         let loc = pm.location ?? CLLocation(latitude: pm.coordinate.latitude, longitude: pm.coordinate.longitude)
+        // MapKit often leaves the time zone out of a result (a park, a car park). Asking the geocoder is better than assuming the place keeps this
+        // device's time: a site in another zone would otherwise have its night, its plan and its alerts at the wrong hours.
+        let zone: TimeZone? = if let z = pm.timeZone { z } else { await timeZone(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude) }
         return Site(name: item.name ?? completion.title, latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude,
-                    elevationM: max(0, loc.altitude), timeZoneID: pm.timeZone?.identifier ?? TimeZone.current.identifier, bortle: 5)
+                    elevationM: max(0, loc.altitude), timeZoneID: zone?.identifier ?? TimeZone.current.identifier, bortle: 5)
+    }
+
+    /// The time zone at a coordinate, from the geocoder; nil when it cannot say.
+    public static func timeZone(latitude: Double, longitude: Double) async -> TimeZone? {
+        let found = try? await CLGeocoder().reverseGeocodeLocation(CLLocation(latitude: latitude, longitude: longitude))
+        return found?.first?.timeZone
     }
 }
 

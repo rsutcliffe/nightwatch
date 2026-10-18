@@ -233,3 +233,13 @@ struct Failure: Error {}
     #expect(c.requests["api.open-meteo.com/v1/elevation"] == 1 && c.points["api.open-meteo.com/v1/elevation"] == 3)
     #expect(RequestTally.today(now: day2, defaults: defaults).requests.isEmpty)
 }
+
+@MainActor @Test func aSiteWithTheWrongTimeZoneIsCorrectedAndTheNightMoves() async {
+    let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: Calls())
+    #expect(store.site?.timeZoneID == "Europe/London")
+    store.correctTimeZone(of: "Sheffield", to: "America/Los_Angeles")
+    #expect(store.site?.timeZoneID == "America/Los_Angeles")
+    store.correctTimeZone(of: "Sheffield", to: "Not/AZone")        // an unknown zone is refused
+    store.correctTimeZone(of: "Nowhere", to: "Europe/Paris")       // so is a site that is not saved
+    #expect(store.site?.timeZoneID == "America/Los_Angeles")
+}
