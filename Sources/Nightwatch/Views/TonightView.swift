@@ -21,8 +21,9 @@ struct TonightView: View {
                 content
             }
         }
-        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassHairline, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 13))
+        .background { NightBackdrop() }
+        .clipShape(RoundedRectangle(cornerRadius: 13))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Tokens.glassEdge, lineWidth: 1))
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
@@ -35,7 +36,8 @@ struct TonightView: View {
             if store.isAway { awayBar }
             if let plan = store.plan, let site = store.site {
                 verdict(plan, site)
-                ClearSkyBars(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site))
+                NightArcCanvas(bars: Planner.clearSkyBars(plan: plan, site: site), label: Copy.barsLabel(plan: plan, site: site),
+                               ember: Tokens.ember, nowFraction: nowFraction(plan), height: 96)
                 notice(site)
                 tiles(plan, site)
                 best(plan, site)
@@ -58,13 +60,13 @@ struct TonightView: View {
             Button("Back to \(store.homeLabel)") { store.goHome() }.buttonStyle(SecondaryButtonStyle())
         }
         .padding(8)
-        .background(Tokens.surfaceTile, in: RoundedRectangle(cornerRadius: 8))
+        .cardSurface(radius: 10)
     }
 
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)
+                Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").capsLabel()
                 if let s = store.site, let p = store.plan {
                     Text("\(Copy.dayMonth(p.night.localDate, site: s)) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")" + (p.mode == .bright ? " · bright night" : ""))
                         .font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)   // wedge angle = site latitude; the vendor app does the alignment
@@ -97,8 +99,11 @@ struct TonightView: View {
                        label: Copy.bezelLabel(plan, site: site))
             VStack(alignment: .leading, spacing: 4) {
                 if let w = plan.primary {
-                    Text(plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight").font(.system(size: TextScale.pt(15), weight: .medium))
-                    Text("\(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site)) · \(String(format: "%.1f h", w.hours))").font(.system(size: TextScale.pt(13)))
+                    TwoWeight.headline(plan.mode == .bright ? "Bright night: Moon and planets" : "Clear window tonight", size: TextScale.pt(16))
+                    (Text("\(Copy.hhmm(w.start, site: site))–\(Copy.hhmm(w.end, site: site))".plainDashes).font(.system(size: TextScale.pt(24), weight: .thin))
+                        + Text(" · \(String(format: "%.1f h", w.hours))").font(.system(size: TextScale.pt(13))))
+                        .foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true)
+                    if let warning = dewWarning(plan) { WarningChip(warning) }
                     if plan.mode == .bright {
                         Text(Copy.brightList(plan.brightTargets)).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
                     }
@@ -109,10 +114,10 @@ struct TonightView: View {
                     }
                     agreementLine(plan, site)
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
-                    Text("No astronomical darkness").font(.system(size: TextScale.pt(15), weight: .medium))
+                    TwoWeight.headline("No astronomical darkness", size: TextScale.pt(16))
                     Text("Too far north or south for this date.").font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
                 } else {
-                    Text(store.copy.noWindow).font(.system(size: TextScale.pt(15), weight: .medium)).fixedSize(horizontal: false, vertical: true)
+                    TwoWeight.headline(store.copy.noWindow, size: TextScale.pt(16)).fixedSize(horizontal: false, vertical: true)
                     if let why = noWindowReason(plan, site) {
                         Text(why).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
@@ -128,7 +133,15 @@ struct TonightView: View {
     /// (owner, 28 September 2026).
     @ViewBuilder private func agreementLine(_ plan: NightPlan, _ site: Site) -> some View {
         if let advice = Copy.advice(plan, site: site, alerts: store.config.alerts) {
-            Text(advice.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+            let lead = "Less certain: "
+            if advice.line.hasPrefix(lead) {
+                VStack(alignment: .leading, spacing: 3) {
+                    WarningChip("Less certain")
+                    Text(String(advice.line.dropFirst(lead.count))).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                Text(advice.line).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+            }
         } else if let a = plan.agreement {
             HStack(spacing: 5) {
                 Image(systemName: "checkmark").font(.system(size: TextScale.pt(7), weight: .bold)).accessibilityHidden(true)
@@ -161,31 +174,59 @@ struct TonightView: View {
         }
     }
 
+    /// One fact on the picture: a small capital label over a heavy value, and an optional hint.
+    private struct Fact: Identifiable {
+        let label: String
+        let value: String?
+        var hint: String? = nil
+        var id: String { label }
+    }
+
     private func tiles(_ plan: NightPlan, _ site: Site) -> some View {
         let dark = plan.darkSpan.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" } ?? "None"
+        let window = plan.primary.map { "\(Copy.hhmm($0.start, site: site))–\(Copy.hhmm($0.end, site: site))" }
         let moon = Planner.moonTonight(plan)
         let pct = "\(Int((plan.moonIllumination * 100).rounded()))%"
-        let seeingText = Copy.seeingText(plan.darkHours)
         let wind = plan.darkHours.compactMap(\.windKmh)
         let windText = wind.isEmpty ? nil : String(format: "%.0f km/h", wind.reduce(0, +) / Double(wind.count))
         let dew = Planner.dewRisk(plan.darkHours)
         let frost = plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false
-        let transpText = Copy.transparencyText(plan.darkHours)
         let moonAt = plan.primary?.midpoint ?? plan.night.darkStart ?? plan.night.sunset
-        return VStack(spacing: 8.5) {
-            TileRow {
-                StatTile(label: "Dark", value: dark)
-                // "Down" over "tonight", as "34%" sits over "Sets 06:10": on one line the tile broke the word, "Down tonig" / "ht" (1.6.4).
-                MoonTile(value: moon == .down ? "Down" : pct, line: moon.flatMap { $0 == .down ? "tonight" : Copy.moonText($0, site: site) }, at: moonAt)
-                StatTile(label: "Seeing", value: seeingText)
+        // "Dark" is left out when it is the same span as the clear window shown above it; everything else the tiles said stays.
+        let facts = [dark == window ? nil : Fact(label: "Dark", value: dark),
+                     Fact(label: "Seeing", value: Copy.seeingText(plan.darkHours)),
+                     Fact(label: "Wind", value: windText),
+                     Fact(label: "Transparency", value: Copy.transparencyText(plan.darkHours)),
+                     Fact(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName, hint: dew == .high ? "Dew heater advised" : nil)].compactMap { $0 }
+        return VStack(alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 3), alignment: .leading, spacing: 10) {
+                ForEach(facts) { f in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(f.label.uppercased()).capsLabel()
+                        Text((f.value ?? "No data").plainDashes).font(.system(size: TextScale.pt(14), weight: .heavy))
+                            .foregroundStyle(f.value == nil ? Tokens.textSecondary : Tokens.lit).fixedSize(horizontal: false, vertical: true)
+                        if let hint = f.hint { Text(hint).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.lit).fixedSize(horizontal: false, vertical: true) }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .accessibilityElement(children: .combine)
+                }
             }
-            TileRow {
-                StatTile(label: "Wind", value: windText)
-                StatTile(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName,
-                         hint: dew == .high ? "Dew heater advised" : nil)
-                StatTile(label: "Transparency", value: transpText)
-            }
+            // "Down" over "tonight", as "34%" sits over "Sets 06:10": on one line it broke the word, "Down tonig" / "ht" (1.6.4).
+            MoonTile(value: moon == .down ? "Down" : pct, line: moon.flatMap { $0 == .down ? "tonight" : Copy.moonText($0, site: site) }, at: moonAt, plain: true)
         }
+    }
+
+    /// How far through the night's hours the current time is, for the arc's "now" dot; nil outside them.
+    private func nowFraction(_ plan: NightPlan) -> Double? {
+        guard let first = plan.darkHours.first?.time else { return nil }
+        let span = Double(plan.darkHours.count) * 3600, t = Date().timeIntervalSince(first)
+        return t >= 0 && t <= span ? t / span : nil
+    }
+
+    /// A chip under the times when dew is likely to be a problem or the night drops to freezing; the Dew risk fact keeps the full words.
+    private func dewWarning(_ plan: NightPlan) -> String? {
+        if (plan.darkHours.compactMap(\.tempC).min().map { $0 <= 0 } ?? false) { return "Frost likely" }
+        return Planner.dewRisk(plan.darkHours) == .high ? "High dew risk" : nil
     }
 
     /// Deep-sky picks on a dark night; the Moon and planets on a bright one.
@@ -194,7 +235,7 @@ struct TonightView: View {
     private func best(_ plan: NightPlan, _ site: Site) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(picks(plan).isEmpty ? "UP TONIGHT" : "BEST TONIGHT").font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
+                Text(picks(plan).isEmpty ? "UP TONIGHT" : "BEST TONIGHT").capsLabel()
                 Spacer()
                 Button("All targets →") { open("targets") }
                     .buttonStyle(SecondaryButtonStyle())
@@ -208,12 +249,18 @@ struct TonightView: View {
             }
             HStack(alignment: .top, spacing: 8) {
                 ForEach(picks(plan)) { t in
-                    VStack(alignment: .leading, spacing: 3) {
-                        ThumbnailView(target: t).frame(height: 64).clipShape(RoundedRectangle(cornerRadius: 7))
-                        Text(t.catalogueID).font(.system(size: TextScale.pt(10.5), weight: .bold)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
-                        Text(t.commonName ?? t.typeName).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).lineLimit(1)
-                        Text("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up").font(.system(size: TextScale.pt(8.5), weight: .medium)).foregroundStyle(Tokens.bestLine)
+                    VStack(spacing: 0) {
+                        ThumbnailView(target: t).frame(height: 70).clipped()
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t.catalogueID).font(.system(size: TextScale.pt(12), weight: .heavy)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
+                            Text((t.commonName ?? t.typeName).uppercased()).font(.system(size: TextScale.pt(9), weight: .semibold)).tracking(1).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                            Text("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up").font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
+                        }
+                        .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.black.opacity(0.55))
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Tokens.glassEdge, lineWidth: 1))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityElement(children: .combine)
                 }
