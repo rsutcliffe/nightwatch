@@ -116,41 +116,51 @@ public struct NightwatchWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// The large widget: the verdict, the hours, the three best targets (each a link to its page), the aurora, tomorrow and the source.
+    /// The large widget. The full layout when the widget is tall enough (an iPhone's); otherwise a shorter one, so nothing is ever clipped: an
+    /// iPad's large widget is much shorter. The shorter layout drops the reason, the aurora line and tomorrow, and shrinks the dial and arc.
     private func large(_ s: WidgetSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        ViewThatFits(in: .vertical) {
+            largeLayout(s, full: true)
+            largeLayout(s, full: false)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func largeLayout(_ s: WidgetSnapshot, full: Bool) -> some View {
+        VStack(alignment: .leading, spacing: full ? 12 : 6) {
             HStack(alignment: .top, spacing: 14) {
-                bezel(s, 82)
-                VStack(alignment: .leading, spacing: 4) {
+                bezel(s, full ? 82 : 60)
+                VStack(alignment: .leading, spacing: full ? 4 : 2) {
                     Text(s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
-                    TwoWeight.headline(plain(s.headline), size: 20).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.7)
-                    if let w = s.window { Text(plain(w)).font(.system(size: 17, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
-                    if let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
+                    TwoWeight.headline(plain(s.headline), size: full ? 20 : 17).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
+                    if let w = s.window { Text(plain(w)).font(.system(size: full ? 17 : 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
+                    if full, let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
                 }
             }
-            if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: 78, lineWidth: 3.5) }
+            if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: full ? 78 : 56, lineWidth: 3.5) }
             if !s.targets.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: full ? 4 : 2) {
                     Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
                     ForEach(s.targets, id: \.id) { t in
                         Link(destination: WidgetLink.target(t.id).url) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text)
+                                Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text).lineLimit(1)
                                 Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1)
                                 Spacer(minLength: 4)
-                                Text(plain(t.best)).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7)
+                                Text(plain(t.best)).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
                             }
-                            .frame(minHeight: 28)
+                            .frame(minHeight: full ? 28 : 22)
                         }
                     }
                 }
             }
-            Spacer(minLength: 0)
-            auroraLine(s)
-            if let t = s.tomorrow { Text(plain(t)).font(.caption).foregroundStyle(dim).lineLimit(1) }
+            if full {
+                Spacer(minLength: 0)
+                auroraLine(s)
+                if let t = s.tomorrow { Text(plain(t)).font(.caption).foregroundStyle(dim).lineLimit(1) }
+            }
             Text(plain(stale(s) ?? [s.source, s.updated].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
