@@ -16,7 +16,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "PhoneCore", dependencies: [.product(name: "SkyCore", package: "nightwatch")]),
-        .target(name: "PhoneUI", dependencies: ["PhoneCore", .product(name: "SkyCore", package: "nightwatch")]),
+        .target(name: "PhoneUI", dependencies: ["PhoneCore", "PhoneWidgetUI", .product(name: "SkyCore", package: "nightwatch")]),
         // What the home-screen widget draws and how the app hands it the snapshot. Kept apart from PhoneUI so the widget stays small.
         .target(name: "PhoneWidgetUI", dependencies: [.product(name: "SkyCore", package: "nightwatch")]),
         .testTarget(name: "PhoneCoreTests", dependencies: ["PhoneCore", "PhoneWidgetUI", .product(name: "SkyCore", package: "nightwatch")])

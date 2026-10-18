@@ -15,7 +15,8 @@ public struct NightwatchWidgetView: View {
 
     private var text: Color { red ? Color(red: 1, green: 0.16, blue: 0.1) : .white }
     private var dim: Color { red ? Color(red: 0.7, green: 0.1, blue: 0.06) : Color(white: 0.62) }
-    private var accent: Color { red ? Color(red: 1, green: 0.16, blue: 0.1) : Color(red: 0.04, green: 0.52, blue: 1) }
+    /// What is lit: warm white on the photograph, as in the app (red in red mode). The photograph supplies the colour.
+    private var accent: Color { red ? Color(red: 1, green: 0.16, blue: 0.1) : Color(red: 0.957, green: 0.945, blue: 0.918) }
     public static func background(red: Bool) -> Color { red ? .black : Color(red: 0.078, green: 0.09, blue: 0.114) }
 
     /// Plain hyphens only, never an en or em dash, whatever wording SkyCore supplies.
@@ -56,10 +57,13 @@ public struct NightwatchWidgetView: View {
                     var p = Path()
                     p.move(to: CGPoint(x: c.x + (r - len) * cos(a), y: c.y + (r - len) * sin(a)))
                     p.addLine(to: CGPoint(x: c.x + r * cos(a), y: c.y + r * sin(a)))
+                    if s.slots[i] == .clear {
+                        ctx.drawLayer { layer in layer.addFilter(.blur(radius: 2.5)); layer.stroke(p, with: .color(accent.opacity(0.7)), style: StrokeStyle(lineWidth: hour ? 3.2 : 2.4, lineCap: .round)) }
+                    }
                     ctx.stroke(p, with: .color(tickColour(s.slots[i])), style: StrokeStyle(lineWidth: hour ? 2 : 1.3, lineCap: .round))
                 }
             }
-            Text("\(s.score)").font(.system(size: d * 0.3, weight: .light)).monospacedDigit().foregroundStyle(text)
+            Text("\(s.score)").font(.system(size: d * 0.3, weight: .bold)).monospacedDigit().foregroundStyle(text)
         }
         .frame(width: d, height: d)
         .accessibilityElement(children: .ignore)
@@ -84,8 +88,8 @@ public struct NightwatchWidgetView: View {
                 bezel(s, 62)
                 Spacer(minLength: 0)
             }
-            Text(plain(s.headline)).font(.footnote.weight(.semibold)).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.8)
-            if let w = s.windowShort ?? s.window { Text(plain(w)).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7) }
+            TwoWeight.headline(plain(s.headline), size: 15).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.7)
+            if let w = s.windowShort ?? s.window { Text(plain(w)).font(.caption.weight(.light)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7) }
             if s.auroraLine(now: now) != nil { auroraLine(s) }
             else { Text(plain(stale(s) ?? s.notifyShort ?? s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1) }
         }
@@ -99,9 +103,9 @@ public struct NightwatchWidgetView: View {
                 Text(plain(s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(plain(s.headline)).font(.subheadline.weight(.semibold)).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.8)
-                if let w = s.window { Text(plain(w)).font(.footnote.weight(.medium)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
-                if !s.bars.isEmpty { bars(s.bars).padding(.vertical, 2) }
+                TwoWeight.headline(plain(s.headline), size: 17).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.7)
+                if let w = s.window { Text(plain(w)).font(.system(size: 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
+                if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, labels: false, height: 34, lineWidth: 3) }
                 auroraLine(s)
                 if !s.targets.isEmpty {
                     Text(plain(s.targets.prefix(2).map { "\($0.catalogueID) \($0.best)" }.joined(separator: " · "))).font(.caption).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
@@ -118,28 +122,21 @@ public struct NightwatchWidgetView: View {
             HStack(alignment: .top, spacing: 14) {
                 bezel(s, 82)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(s.siteName.uppercased()).font(.caption2.weight(.medium)).tracking(0.8).foregroundStyle(dim).lineLimit(1)
-                    Text(plain(s.headline)).font(.headline).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.8)
-                    if let w = s.window { Text(plain(w)).font(.subheadline.weight(.medium)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
+                    Text(s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
+                    TwoWeight.headline(plain(s.headline), size: 20).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.7)
+                    if let w = s.window { Text(plain(w)).font(.system(size: 17, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
                     if let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
                 }
             }
-            if !s.bars.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    bars(s.bars)
-                    HStack(spacing: 0) {
-                        ForEach(Array(s.bars.enumerated()), id: \.offset) { _, b in Text(b.hour).font(.system(size: 8.5)).foregroundStyle(dim).frame(maxWidth: .infinity) }
-                    }
-                }
-            }
+            if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: 78, lineWidth: 3.5) }
             if !s.targets.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.medium)).tracking(0.8).foregroundStyle(dim)
+                    Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
                     ForEach(s.targets, id: \.id) { t in
                         Link(destination: WidgetLink.target(t.id).url) {
                             HStack(alignment: .firstTextBaseline) {
-                                Text(plain(t.catalogueID)).font(.callout.weight(.semibold)).foregroundStyle(text)
-                                Text(plain(t.name)).font(.footnote).foregroundStyle(dim).lineLimit(1)
+                                Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text)
+                                Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1)
                                 Spacer(minLength: 4)
                                 Text(plain(t.best)).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7)
                             }
@@ -154,19 +151,6 @@ public struct NightwatchWidgetView: View {
             Text(plain(stale(s) ?? [s.source, s.updated].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func bars(_ bars: [ClearSkyBar]) -> some View {
-        HStack(alignment: .bottom, spacing: 2) {
-            ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
-                ZStack(alignment: .bottom) {
-                    RoundedRectangle(cornerRadius: 1.5).fill(dim.opacity(0.25))
-                    RoundedRectangle(cornerRadius: 1.5).fill(b.lit ? accent : dim).frame(height: max(2, 28 * CGFloat(b.clearPct) / 100))
-                }
-                .frame(height: 28)
-            }
-        }
-        .accessibilityHidden(true)
     }
 }
 

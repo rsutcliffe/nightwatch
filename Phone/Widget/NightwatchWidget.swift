@@ -24,6 +24,20 @@ struct NightProvider: TimelineProvider {
     }
 }
 
+/// The widget's background: the same night sky as the app, under a dark scrim; plain black in red mode.
+struct NightSky: View {
+    let red: Bool
+    var body: some View {
+        if red { Color.black } else {
+            ZStack {
+                NightwatchWidgetView.background(red: false)
+                if let ui = UIImage(named: "widget-sky") { Image(uiImage: ui).resizable().scaledToFill() }
+                LinearGradient(colors: [Color.black.opacity(0.35), Color.black.opacity(0.72)], startPoint: .top, endPoint: .bottom)
+            }
+        }
+    }
+}
+
 struct NightwatchWidgetEntryView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
@@ -31,7 +45,7 @@ struct NightwatchWidgetEntryView: View {
         NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemLarge ? .large : family == .systemMedium ? .medium : .small,
                              red: entry.red, now: entry.date)
             .widgetURL(family == .systemMedium ? WidgetLink.plan.url : nil)   // small opens the app on Tonight, medium on Plan; large's rows are their own links
-            .containerBackground(NightwatchWidgetView.background(red: entry.red), for: .widget)
+            .containerBackground(for: .widget) { NightSky(red: entry.red) }
     }
 }
 

@@ -1,6 +1,7 @@
 import SwiftUI
 import SkyCore
 import PhoneCore
+import PhoneWidgetUI
 
 /// A constellation's figure and star plot (the owner's art), drawn faint behind the hero on a night with no clear window.
 struct FigureArt: View {
@@ -28,14 +29,8 @@ struct TonightHeroView: View {
     private var dialSize: CGFloat { typeSize.isAccessibilitySize ? 140 : scale == .large ? 200 : scale == .medium ? 170 : 120 }
     @ScaledMetric(relativeTo: .title) private var headSize: CGFloat = 30
 
-    /// The headline in two weights, as in the mountain reference ("twenty one" bold over "thirty one" thin): everything heavy but the last
-    /// word, which is thin. "Clear window" heavy, "tonight" thin.
-    private var headline: Text {
-        let words = snap.headline.split(separator: " ")
-        guard words.count > 1, let last = words.last else { return Text(snap.headline).font(.system(size: headSize, weight: .heavy)) }
-        return Text(words.dropLast().joined(separator: " ") + " ").font(.system(size: headSize, weight: .heavy))
-            + Text(String(last)).font(.system(size: headSize, weight: .thin))
-    }
+    /// The headline in two weights (see `TwoWeight`).
+    private var headline: Text { TwoWeight.headline(snap.headline, size: headSize) }
 
     private var timesSize: CGFloat { scale == .large ? 38 : scale == .medium ? 34 : 28 }
 
@@ -51,7 +46,14 @@ struct TonightHeroView: View {
                 Text(t).font(.system(size: timesSize, weight: .thin)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
             }
             if let line = hoursLine {
-                Text(line).font(.callout.weight(hero.dewWarns ? .semibold : .regular)).foregroundStyle(hero.dewWarns ? theme.warning : theme.lit).fixedSize(horizontal: false, vertical: true)
+                Text(line).font(.callout).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)
+            }
+            if hero.dewWarns, let dew = hero.dewLine {
+                // A warning is an icon and words in a quiet outlined chip, never colour alone and never a shouting line of type.
+                Label(dew.prefix(1).uppercased() + dew.dropFirst(), systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote.weight(.semibold)).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(theme.warning.opacity(0.16), in: Capsule()).overlay(Capsule().strokeBorder(theme.warning, lineWidth: 1))
             }
             if let r = hero.reason { Text(r).font(.footnote).secondary().fixedSize(horizontal: false, vertical: true) }
             if let a = snap.agreement {
@@ -63,13 +65,13 @@ struct TonightHeroView: View {
 
     /// "9.4 hours · medium dew risk", whichever of the two there is.
     private var hoursLine: String? {
-        let parts = [hero.hours, hero.dewLine.map { (hero.dewWarns ? "! " : "") + $0 }].compactMap { $0 }
+        let parts = [hero.hours, hero.dewWarns ? nil : hero.dewLine].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     var body: some View {
         // At the accessibility text sizes the numeral sits above the words so neither is squeezed.
-        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .center, spacing: scale == .compact ? 22 : 36))
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(alignment: .top, spacing: scale == .compact ? 22 : 36))
         layout {
             dial
             words.frame(maxWidth: .infinity, alignment: .leading)
@@ -91,42 +93,10 @@ struct NightArc: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var arrived = false
 
-    private func arc(_ size: CGSize) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: 3, y: size.height - 30))
-        p.addQuadCurve(to: CGPoint(x: size.width - 3, y: size.height - 30), control: CGPoint(x: size.width / 2, y: -size.height * 0.45))
-        return p
-    }
-
     var body: some View {
         if bars.isEmpty { EmptyView() } else {
             VStack(spacing: 6) {
-                Canvas { ctx, size in
-                    let path = arc(size), n = Double(bars.count), gap = 0.004
-                    ctx.stroke(path, with: .color(theme.textPrimary.opacity(0.18)), style: StrokeStyle(lineWidth: 1, lineCap: .round))
-                    func seg(_ i: Int) -> Path { path.trimmedPath(from: Double(i) / n + gap, to: Double(i + 1) / n - gap) }
-                    // The clear hours glow in warm white, as the dial's lit ticks do.
-                    ctx.drawLayer { layer in
-                        layer.addFilter(.blur(radius: 5))
-                        for (i, b) in bars.enumerated() where b.lit { layer.stroke(seg(i), with: .color(theme.lit.opacity(0.8 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 8)) }
-                    }
-                    for (i, b) in bars.enumerated() {
-                        if b.lit { ctx.stroke(seg(i), with: .color(theme.lit.opacity(0.55 + 0.45 * Double(b.clearPct) / 100)), style: StrokeStyle(lineWidth: 4, lineCap: .butt)) }
-                        else if b.clearPct > 0 { ctx.stroke(seg(i), with: .color(theme.textPrimary.opacity(0.28)), style: StrokeStyle(lineWidth: 3, lineCap: .butt)) }
-                        // The hour under its stretch of the curve: bright and heavy when it is clear, faint when it is not.
-                        let mid = path.trimmedPath(from: 0, to: (Double(i) + 0.5) / n).currentPoint ?? .zero
-                        let label = Text(b.hour).font(.system(size: 11, weight: b.lit ? .heavy : .regular)).monospacedDigit()
-                            .foregroundStyle(b.lit ? theme.lit : theme.textPrimary.opacity(0.45))
-                        ctx.draw(ctx.resolve(label), at: CGPoint(x: mid.x, y: mid.y + 17), anchor: .center)
-                    }
-                    if let f = nowFraction, let pt = path.trimmedPath(from: 0, to: min(max(f, 0.001), 1)).currentPoint {
-                        let dot = CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12)
-                        ctx.fill(Path(ellipseIn: dot), with: .color(theme.ember))
-                        ctx.stroke(Path(ellipseIn: dot), with: .color(theme.textPrimary), lineWidth: 1.5)
-                    }
-                }
-                .frame(height: 88)
-                // Room above and below the curve, so the glow and the hour labels are never cut off at the edge of the drawing.
+                NightArcCanvas(bars: bars, lit: theme.lit, faint: theme.textPrimary, ember: theme.ember, nowFraction: nowFraction)
                 .mask { GeometryReader { g in Rectangle().frame(width: arrived || reduceMotion ? g.size.width : 0)
                     .animation(reduceMotion ? nil : .easeOut(duration: 1.1), value: arrived) } }
                 Text(moonNote).font(.caption).monospacedDigit().secondary().dynamicTypeSize(...DynamicTypeSize.xxxLarge).multilineTextAlignment(.center)
@@ -142,13 +112,17 @@ struct NightArc: View {
 /// with room between, where the grey footer line was.
 struct FactsRow: View {
     let facts: [TonightHero.Fact]
+    /// Two by two on iPhone, one row on iPad; one column at the accessibility text sizes. Every value is the same size and none is cut short.
+    var columns = 2
+    @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
         if facts.isEmpty { EmptyView() } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12, alignment: .leading)], alignment: .leading, spacing: 14) {
+            let count = typeSize.isAccessibilitySize ? 1 : max(1, min(columns, facts.count))
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .topLeading), count: count), alignment: .leading, spacing: 16) {
                 ForEach(facts, id: \.label) { f in
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(f.label.uppercased()).font(.caption2.weight(.semibold)).tracking(0.8).secondary().lineLimit(1).minimumScaleFactor(0.8)
-                        Text(f.value).font(.title3.weight(.heavy)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                        Text(f.label.uppercased()).font(.caption2.weight(.semibold)).tracking(0.8).secondary().lineLimit(1)
+                        Text(f.value).font(.title3.weight(.heavy)).monospacedDigit().fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }

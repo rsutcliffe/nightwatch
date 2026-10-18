@@ -138,7 +138,7 @@ public struct TonightScreen: View {
             visit
             verdict(.compact)
             hours
-            FactsRow(facts: model.hero.facts)
+            FactsRow(facts: model.hero.facts, columns: 2)
             auroraRow
             targets(style: .list)
             tomorrowCard
@@ -154,7 +154,7 @@ public struct TonightScreen: View {
             visit
             verdict(scale)
             hours
-            FactsRow(facts: model.hero.facts)
+            FactsRow(facts: model.hero.facts, columns: 4)
             auroraRow
             targets(height: scale == .large ? 150 : 200, fills: true)
             tomorrowCard
