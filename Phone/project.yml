@@ -47,6 +47,7 @@ targets:
       path: build/NightwatchPhone-Info.plist
       properties:
         CFBundleDisplayName: Nightwatch
+        CFBundleVersion: "2"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
@@ -78,6 +79,7 @@ targets:
       path: build/NightwatchWidget-Info.plist
       properties:
         CFBundleDisplayName: Nightwatch
+        CFBundleVersion: "2"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
