@@ -159,7 +159,8 @@ public struct NightwatchWidgetView: View {
                 auroraLine(s)
                 if let t = s.tomorrow { Text(plain(t)).font(.caption).foregroundStyle(dim).lineLimit(1) }
             }
-            Text(plain(stale(s) ?? [s.source, s.updated].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
+            // "w3" is a marker for this build of the widget, so a screenshot shows which code is running (temporary).
+            Text(plain(stale(s) ?? [s.source, s.updated, "w3"].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
         }
     }
 }
