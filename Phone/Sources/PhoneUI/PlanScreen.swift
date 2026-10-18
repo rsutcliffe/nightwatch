@@ -74,11 +74,11 @@ struct PlanScreen: View {
         let t = item.target, style = ChartLayout.styles(for: store.session(tomorrow: tomorrow)?.items.map(\.id) ?? [], count: count)[t.id] ?? index
         return HStack(alignment: .top, spacing: 12) {
             VStack(spacing: 6) {
-                Text(Copy.hhmm(t.peakTime, site: site)).font(.title2.weight(.heavy)).monospacedDigit()
+                Text(Copy.hhmm(t.peakTime, site: site)).font(.title3.weight(.heavy)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
                 Path { p in p.move(to: .zero); p.addLine(to: CGPoint(x: 34, y: 0)) }
                     .stroke(ChartLine.colour(style, theme: theme), style: StrokeStyle(lineWidth: 2.4, lineCap: .round, dash: ChartLine.dash(style)))
                     .frame(width: 34, height: 2)
-            }.frame(width: 58)
+            }.frame(width: 66)
             NavigationLink { TargetDetailScreen(store: store, target: t) } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) { Text(t.catalogueID).font(.headline.weight(.heavy)); if item.added { Text("added").font(.caption).secondary() } }

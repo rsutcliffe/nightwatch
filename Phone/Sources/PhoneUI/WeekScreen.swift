@@ -44,6 +44,7 @@ struct WeekScreen: View {
                     Button { onOpenPlan(n.daysAhead == 1) } label: {
                         Text(n.daysAhead == 0 ? "Open tonight's plan" : "Open tomorrow's plan").font(.footnote.weight(.medium))
                             .padding(.horizontal, 12).frame(minHeight: 44).background(theme.track, in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(theme.glassHairline, lineWidth: 1))
                     }.buttonStyle(PressStyle())
                 }
             }

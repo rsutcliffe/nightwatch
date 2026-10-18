@@ -333,7 +333,7 @@ struct SitesScreen: View {
                             Button { Haptic.selection(); store.selectSite(s); if embedded { onChosen() } else { dismiss() } } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(s.name)
+                                        Text(s.name).multilineTextAlignment(.leading)
                                         Text(Copy.horizonSummary(s, openDeg: store.openDeg).plainDashes).font(.caption).secondary().lineLimit(1)
                                     }
                                     Spacer(); if s.name == store.site?.name { Image(systemName: "checkmark") }
