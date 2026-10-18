@@ -52,7 +52,8 @@ struct NightwatchWidgetEntryView: View {
 
 struct NightwatchWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "NightwatchTonight", provider: NightProvider())   // renamed (18 Oct 2026): iOS had kept re-showing a cached drawing of the old "NightwatchWidget" on the iPad { NightwatchWidgetEntryView(entry: $0) }
+        // Renamed (18 Oct 2026): iOS had kept re-showing a cached drawing of the old "NightwatchWidget" on the iPad.
+        StaticConfiguration(kind: "NightwatchTonight", provider: NightProvider()) { NightwatchWidgetEntryView(entry: $0) }
             .configurationDisplayName("Tonight")
             .description("Whether tonight is worth setting up for, and when the sky is clear.")
             .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])   // the iPad's extra-large stayed a grey placeholder at every layout tried, so it is not offered
