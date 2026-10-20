@@ -44,6 +44,7 @@ nearby dark-sky sites if that feature is on). They go to:
   (and again if it moves) the ground's height at points up to 20 km around it, for the hills on its horizon. No name,
   account or device identifier goes with the coordinates.
 - **[7Timer!](https://www.7timer.info)**, for seeing and transparency. The same applies.
+- **[MET Norway](https://api.met.no)**, for cloud cover, only when Apple Weather and Open-Meteo cannot be read. The same applies.
 - **Apple Maps**, to find a dark car park near each computed dark spot and the name of its town or village, and a small
   map of each dark site on its card, if that feature is on; Open in Maps hands the site's position to the Maps app. In
   Add a site, the place name you type is sent to Apple Maps to suggest places, and the one you choose is drawn on a small

@@ -320,8 +320,8 @@ location prompt appearing, and five new screenshots. The reply in App Review's m
 read "Waiting for Review" at about 15:19 BST.*
 
 Paste this into App Review Information › **Notes** (plain ASCII: arrows and "›" did not survive the paste). Update it
-whenever an entitlement or a setup step changes. The field takes 4,000 characters; this text is 3,952, as saved for the
-1.6.4 resubmission on 13 October 2026, so any addition means cutting something.
+whenever an entitlement or a setup step changes. The field takes 4,000 characters; this text is 3,994, as prepared for
+1.7.0 on 20 October 2026 (it was 3,952 for the 1.6.4 resubmission on 13 October), so any addition means cutting something.
 
 ```
 Nightwatch is a menu-bar app for amateur astronomers: it forecasts whether tonight will be clear enough to observe or
@@ -345,7 +345,7 @@ just before the clear spell (the attached screenshot shows them).
 
 Privacy policy: in the Welcome window (step 2) and at the foot of Settings.
 
-Outside services (read only): Apple WeatherKit, Open-Meteo and 7Timer (forecasts; sent the site's coordinates),
+Outside services (read only): Apple WeatherKit, Open-Meteo (forecasts, air quality), 7Timer and MET Norway (forecasts), each sent the site's coordinates,
 Apple Maps (place search, sent what is typed; maps and place names, sent coordinates), AuroraWatch UK and the NOAA
 Space Weather Prediction Center (aurora), CDS hips2fits (sky-survey images), NASA SVS (Moon image), Minor Planet
 Center and CelesTrak (comets, space station). Nothing identifies the user.
