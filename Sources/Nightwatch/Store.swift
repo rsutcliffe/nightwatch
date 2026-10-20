@@ -323,12 +323,14 @@ final class Store: ObservableObject {
     /// Saved sites whose check failed in this launch; tried again at the next launch, or from "Try again".
     @Published var terrainFailed: Set<String> = []
     private var terrainBusy = false
+    /// The service refused a day's requests: no more sites are asked until the next launch or "Try again".
+    private var terrainRefused = false
 
     /// Fetches the hills once for each saved site that has none, one site at a time (owner, 1 October 2026: check once,
     /// keep it with the site, sync it). Called after every save and refresh, so a site added, kept or moved here or on
     /// another Mac is checked; a site with terrain is never asked about again until it moves.
     func checkTerrain() {
-        guard !terrainBusy, !configLoadFailed else { return }
+        guard !terrainBusy, !terrainRefused, !configLoadFailed else { return }
         guard let next = config.sites.first(where: { $0.terrain == nil && !terrainFailed.contains($0.name) }) else { return }
         terrainBusy = true
         terrainChecking = next.name
@@ -343,6 +345,7 @@ final class Store: ObservableObject {
                 }
             } catch {
                 terrainFailed.insert(next.name)
+                if (error as? HTTPFailure)?.isRateLimit == true { terrainRefused = true }
             }
             terrainChecking = nil
             try? await Task.sleep(for: .seconds(10))   // a breather between sites: Open-Meteo refuses quick runs
@@ -353,15 +356,23 @@ final class Store: ObservableObject {
 
     func retryTerrain(_ name: String) {
         terrainFailed.remove(name)
+        terrainRefused = false
         checkTerrain()
     }
 
     private var applePause = PrimaryPause()
+    /// After the forecast service refuses a day's requests, nothing is asked again for 30 minutes (unless forced).
+    private var forecastRetryAfter: Date?
+    private var darkFetchPausedUntil: Date?
+    /// True while the Dark sites page is showing: only then are dark-site forecasts fetched.
+    var darkSitesPageOpen = false {
+        didSet { if darkSitesPageOpen && !oldValue { Task { await refresh(force: false) } } }
+    }
 
     /// Every forecast goes through here, so one refusal from Apple Weather spares it the rest of the pass (`PrimaryPause`).
     private func fetchForecast(_ site: Site, now: Date, secondOpinion: Bool = true) async throws -> Forecast {
         let ask = !applePause.paused(now: now)
-        let fc = try await ForecastService.fetch(site: site, fetcher: fetcher, now: now, primary: ask ? WeatherKitSource.provider : nil, secondOpinion: secondOpinion)
+        let fc = try await ForecastChain.fetch(site: site, fetcher: fetcher, now: now, primary: ask ? WeatherKitSource.provider : nil, secondOpinion: secondOpinion)
         if ask { applePause.record(answered: fc.cloudSource == "Apple Weather", now: now) }
         if fc.cloudSource == "Apple Weather", let mark = fc.attributionMarkURL, let legal = fc.attributionLegalURL {
             await keepAppleAttribution(AppleAttribution(mark: mark, legal: legal))
@@ -406,12 +417,15 @@ final class Store: ObservableObject {
         refreshing = true
         checkTerrain()
         let now = Date()
-        if force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > applePause.maxAge(fromPrimary: forecast?.cloudSource == "Apple Weather") }) ?? true {
+        let refused = !force && (forecastRetryAfter.map { now < $0 } ?? false)
+        if !refused, force || !forecastMatches(site) || (forecast?.fetchedAt).map({ now.timeIntervalSince($0) > applePause.maxAge(fromPrimary: forecast?.cloudSource == "Apple Weather") }) ?? true {
             do {
                 forecast = try await fetchForecast(site, now: now)
                 Store.write(forecast, "forecast.json")
                 lastError = nil
+                forecastRetryAfter = nil
             } catch {
+                if (error as? HTTPFailure)?.isRateLimit == true { forecastRetryAfter = now.addingTimeInterval(30 * 60) }
                 lastError = "Forecast fetch failed: \(error.localizedDescription)"
             }
         }
@@ -604,7 +618,8 @@ final class Store: ObservableObject {
         if let n = r.notification { Notifier.post(n) }
     }
 
-    /// Sites within the radius; forecasts for the nearest eight (30-minute cache under sites/<id>.json); plans with the home rule.
+    /// Sites within the radius; forecasts for the nearest three, only while the Dark sites page is open (30-minute cache under
+    /// sites/<id>.json; any cache under 24 hours is still shown); plans with the home rule.
     /// Each run takes a generation number; after every await it checks it is still the newest run, so a run superseded by a
     /// settings change stops fetching and never publishes over the newer one.
     private func recomputeDarkSites(now: Date, site: Site, night: Night) async {
@@ -618,14 +633,14 @@ final class Store: ObservableObject {
         guard gen == darkSitesGeneration else { return }
         let sites = namedSpots(publicSpots(found, home: home, site: site, night: night), now: now)
         var plans: [SitePlan] = []
-        for s in sites.prefix(8) {
+        for (rank, s) in sites.prefix(8).enumerated() {
             let cacheURL = Store.siteCacheDir.appendingPathComponent("\(s.id).json")
             var fc: Forecast? = Store.readFile(cacheURL)
-            if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true {
+            if DarkSiteFetch.shouldFetch(pageOpen: darkSitesPageOpen, rank: rank, cachedAt: fc?.fetchedAt, pausedUntil: darkFetchPausedUntil, now: now) {
                 let siteAsSite = DarkSites.toSite(s, timeZoneID: site.timeZoneID)
                 let fresh = try? await fetchForecast(siteAsSite, now: now, secondOpinion: false)
                 guard gen == darkSitesGeneration else { return }
-                if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) }
+                if let fresh { fc = fresh; Store.writeFile(fresh, cacheURL) } else { darkFetchPausedUntil = now.addingTimeInterval(DarkSiteFetch.pause) }
             }
             // A cache over 24 h old that could not be refreshed no longer describes tonight: show "no forecast", not a plan.
             if let f = fc, now.timeIntervalSince(f.fetchedAt) > 24 * 3600 { fc = nil }
@@ -790,9 +805,10 @@ final class Store: ObservableObject {
         let url = Store.url("home-forecast.json")
         var fc: Forecast? = Store.readFile(url)
         if let f = fc, abs(f.latitude - home.latitude) > 0.01 || abs(f.longitude - home.longitude) > 0.01 { fc = nil }
-        if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, attemptDue("home-forecast", every: 10 * 60, now: now),
-           let fresh = try? await fetchForecast(home, now: now, secondOpinion: false) {
-            fc = fresh; Store.writeFile(fresh, url)
+        if fc.map({ now.timeIntervalSince($0.fetchedAt) > 30 * 60 }) ?? true, darkFetchPausedUntil.map({ now >= $0 }) ?? true,
+           attemptDue("home-forecast", every: 10 * 60, now: now) {
+            if let fresh = try? await fetchForecast(home, now: now, secondOpinion: false) { fc = fresh; Store.writeFile(fresh, url) }
+            else { darkFetchPausedUntil = now.addingTimeInterval(DarkSiteFetch.pause) }
         }
         guard let fc, now.timeIntervalSince(fc.fetchedAt) <= 24 * 3600,
               let night = try? Ephemeris.currentNight(now: now, site: home) else { homePlan = nil; return }

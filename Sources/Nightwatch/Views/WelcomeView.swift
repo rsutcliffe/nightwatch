@@ -32,7 +32,7 @@ struct WelcomeView: View {
                 step("Your earlier settings") {
                     Text("Nightwatch 0.6 kept your settings in a synced file, \(link.lastPathComponent) in \(link.deletingLastPathComponent().path). Choose it to keep your sites and choices.")
                         .font(Font.scaled(.caption)).foregroundStyle(Theme.dim).fixedSize(horizontal: false, vertical: true)
-                    Button("Import settings…") { importLinked(link) }.buttonStyle(ScaledButtonStyle(prominent: true))
+                    Button("Import settings…") { importLinked(link) }.buttonStyle(PillButtonStyle())
                     if state.importFailed {
                         Text("That file isn't Nightwatch settings. Choose config.json, or set up below.").font(Font.scaled(.caption)).foregroundStyle(Tokens.statusWarning)
                     }
@@ -57,7 +57,7 @@ struct WelcomeView: View {
                 Link("Privacy policy ↗", destination: AboutView.privacyPolicy).buttonStyle(.link).linkCursor().font(Font.scaled(.caption))
                 HStack(spacing: 8) {
                     Button(store.autoSite == nil ? "Use this Mac's location" : "Using this Mac's location ✓") { useThisMac() }
-                        .buttonStyle(ScaledButtonStyle(prominent: true)).disabled(state.locating || store.autoSite != nil)
+                        .buttonStyle(PillButtonStyle()).disabled(state.locating || store.autoSite != nil)
                     Button("Add a site…") {
                         sites.newSite = Site(name: "", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: TimeZone.current.identifier, bortle: 5)
                         sites.latText = ""; sites.lonText = ""; sites.addingSite = true
@@ -85,12 +85,12 @@ struct WelcomeView: View {
                     store.config.welcomed = true; store.saveConfig()
                     dismissWindow(id: "welcome")
                 }
-                .buttonStyle(ScaledButtonStyle(prominent: true)).keyboardShortcut(.defaultAction)
+                .buttonStyle(PillButtonStyle()).keyboardShortcut(.defaultAction)
             }
         }
         .padding(22)
         .frame(width: TextScale.pt(460))
-        .background(Theme.bg)
+        .background { NightBackdrop(calm: true) }
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .sheet(isPresented: $sites.addingSite) { AddSiteSheet(ui: sites).environmentObject(store).scaledText() }

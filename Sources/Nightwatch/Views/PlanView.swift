@@ -126,18 +126,18 @@ struct PlanView: View {
         return HStack(spacing: 16) {
             HStack(spacing: 16) {
                 PlanLineKey(index: index)
-                Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .semibold)).monospacedDigit().frame(width: 58, alignment: .leading)
+                Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .heavy)).monospacedDigit().frame(width: 58, alignment: .leading)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .semibold))
+                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .heavy))
                         if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(t.cardName).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
                     }
                     Text(Copy.planDetail(item, presetID: store.config.fovPresetID, site: site))
                         .font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     if let clash = Copy.planClash(item) {
-                        HStack(spacing: 6) {
-                            Circle().fill(Tokens.statusWarning).frame(width: 6, height: 6).accessibilityHidden(true)
-                            Text(clash).font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.statusWarning)
+                        HStack(spacing: 8) {
+                            WarningChip("Clash")
+                            Text(clash).font(.system(size: TextScale.pt(12))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
@@ -152,8 +152,7 @@ struct PlanView: View {
                 .accessibilityLabel("Take \(t.name) off the plan")
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
-        .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
-        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
+        .cardSurface(radius: 14)
     }
 
     /// A target that is not in the plan and keeps its place in the list: one suggested for a long gap, or one taken off
@@ -165,11 +164,11 @@ struct PlanView: View {
             HStack(spacing: 16) {
                 Image(systemName: symbol).font(.system(size: TextScale.pt(13), weight: .medium)).foregroundStyle(Tokens.textSecondary)
                     .frame(width: 26, height: 10).accessibilityHidden(true)
-                Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .semibold)).monospacedDigit()
+                Text(Copy.hhmm(t.peakTime, site: site)).font(.system(size: TextScale.pt(18), weight: .heavy)).monospacedDigit()
                     .foregroundStyle(Tokens.textSecondary).frame(width: 58, alignment: .leading)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .semibold))
+                        Text(t.catalogueID.isEmpty ? t.name : t.catalogueID).font(.system(size: TextScale.pt(14), weight: .heavy))
                         if !t.catalogueID.isEmpty, t.cardName != t.catalogueID { Text(t.cardName).font(.system(size: TextScale.pt(14))).foregroundStyle(Tokens.textSecondary) }
                     }
                     Text(Copy.planOffDetail(r, nightWords: isTomorrow ? "tomorrow night" : "tonight", presetID: store.config.fovPresetID, site: site) ?? "")
@@ -186,17 +185,16 @@ struct PlanView: View {
                 .accessibilityLabel(label)
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
-        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tokens.cardOutline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
     }
 
     private func group<C: View>(_ title: String, @ViewBuilder _ rows: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.system(size: TextScale.pt(11), weight: .semibold)).tracking(0.6).foregroundStyle(Tokens.textSecondary)
+            Text(title).capsLabel()
             VStack(alignment: .leading, spacing: 6) { rows() }
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 11))
-                .overlay(RoundedRectangle(cornerRadius: 11).stroke(Tokens.cardOutline, lineWidth: 1))
+                .cardSurface(radius: 14)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }

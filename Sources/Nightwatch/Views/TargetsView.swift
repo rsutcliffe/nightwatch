@@ -31,6 +31,17 @@ final class TargetsViewState: ObservableObject {
     @Published var planSuggestions = false
 }
 
+/// A sidebar row's icon in the lit colour. The native sidebar draws a Label's symbol in the system accent whatever its row is set
+/// to, so the icon is placed here by hand.
+private struct SidebarLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 8) {
+            configuration.icon.foregroundStyle(Tokens.lit).frame(width: TextScale.pt(18))
+            configuration.title
+        }
+    }
+}
+
 struct TargetsView: View {
     @EnvironmentObject var store: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -136,11 +147,36 @@ struct TargetsView: View {
                 sidebarRow(section).tag(section)
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(Tokens.targetsBackground)
             .safeAreaInset(edge: .bottom) { filters }
             // As wide as its longest name needs at the chosen Text size: at Extra large a fixed 232 cut "Eyes and binoculars"
             // to "Eyes and binocul…" (owner's screenshot, 6 October 2026).
             .navigationSplitViewColumnWidth(TextScale.pt(232))
         } detail: {
+            detailPage.background { NightBackdrop(calm: true) }
+        }
+        // No "What the numbers mean" button here: it made the title bar busy (owner's UAT, 29 September 2026). Settings
+        // and About open the guide.
+        .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
+        .preferredColorScheme(.dark)
+        .background(Theme.bg)
+        .onAppear {
+            if !sections.contains(ui.section) { ui.section = sections[0] }   // Tonight's plan is off: The week ahead
+            consumeRequest()
+            store.darkSitesPageOpen = ui.section == .darkSites
+        }
+        .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
+        .onChange(of: ui.section) { _, s in store.darkSitesPageOpen = s == .darkSites }
+        .onDisappear { store.darkSitesPageOpen = false }
+        // Here, not on the window: a change of Text size rebuilds what is above, and `ui` has to outlive that, or the
+        // sidebar went back to Nebulae and the search and open page were lost (owner, 6 October 2026).
+        .textSized(store.config.textSize)
+    }
+
+    /// The page the detail column shows: an event, a target, or the chosen section.
+    @ViewBuilder private var detailPage: some View {
+        Group {
             if let ev = ui.selectedEvent {
                 // The live copy, so a refresh updates the open page; the one clicked if the event has since gone.
                 EventDetailView(event: store.events.first { $0.id == ev.id } ?? ev) { ui.selectedEvent = nil }.id(ev.id)
@@ -157,19 +193,6 @@ struct TargetsView: View {
                 }
             }
         }
-        // No "What the numbers mean" button here: it made the title bar busy (owner's UAT, 29 September 2026). Settings
-        // and About open the guide.
-        .searchable(text: $ui.search, prompt: "M42, Orion, comet…")
-        .preferredColorScheme(.dark)
-        .background(Theme.bg)
-        .onAppear {
-            if !sections.contains(ui.section) { ui.section = sections[0] }   // Tonight's plan is off: The week ahead
-            consumeRequest()
-        }
-        .onChange(of: store.targetsRequest) { _, _ in consumeRequest() }
-        // Here, not on the window: a change of Text size rebuilds what is above, and `ui` has to outlive that, or the
-        // sidebar went back to Nebulae and the search and open page were lost (owner, 6 October 2026).
-        .textSized(store.config.textSize)
     }
 
     private func sidebarRow(_ section: BrowserSection) -> some View {
@@ -193,6 +216,8 @@ struct TargetsView: View {
             }
         }
         .font(.system(size: TextScale.pt(12)))
+        .foregroundStyle(Tokens.lit)
+        .labelStyle(SidebarLabelStyle())
     }
 
     /// Switches with the Moon line above them, so the Moon one has context (follow-on 5). Both read "Show …", so on always
@@ -209,12 +234,12 @@ struct TargetsView: View {
             }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
-                Text("SHOW").font(.system(size: TextScale.pt(9.5))).foregroundStyle(Tokens.textSecondary).padding(.top, 2)
+                Text("SHOW").capsLabel().padding(.top, 2)
                 Toggle("Doesn't fit my frame", isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
                 Toggle("Washed out by the Moon", isOn: $ui.includeMoonWashed)
             }
         }
-        .toggleStyle(.switch).controlSize(.mini).tint(Tokens.controlOn).font(.system(size: TextScale.pt(11))).padding(10)
+        .toggleStyle(WarmSwitchStyle(compact: true)).font(.system(size: TextScale.pt(11))).padding(10)
     }
 
     /// Applies a pending request from the popover once, then clears it.
@@ -453,8 +478,7 @@ struct TargetsView: View {
                     }
                     .opens { ui.selectedEvent = e }
                     .padding(.horizontal, 12).padding(.vertical, 8)
-                    .background(Tokens.targetsCard, in: RoundedRectangle(cornerRadius: 9))
-                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
+                    .cardSurface(radius: 14)
                 }
             }
             .padding(.horizontal, 20).padding(.bottom, 20)
@@ -531,7 +555,7 @@ struct TargetsView: View {
         let on = isFavourite(t)
         return Button { toggleFavourite(t) } label: {
             Image(systemName: on ? "heart.fill" : "heart").font(.system(size: TextScale.pt(12), weight: .semibold))
-                .foregroundStyle(on ? Theme.accent : Tokens.textPrimary).padding(5)
+                .foregroundStyle(on ? Tokens.ember : Tokens.textPrimary).padding(5)
                 .background(Circle().fill(.black.opacity(0.45)))
         }
         .buttonStyle(.plain).help(on ? "Remove from favourites" : "Add to favourites")
@@ -627,9 +651,9 @@ struct DarkSiteCard: View {
                     if nearestClear { Chip(text: "Nearest clear sky", icon: "mappin.and.ellipse").padding(6) }
                 }
             HStack(alignment: .firstTextBaseline) {
-                Text(s.name).font(Font.scaled(.callout).weight(.semibold)).lineLimit(2)
+                Text(s.name).font(Font.scaled(.callout).weight(.heavy)).lineLimit(2)
                 Spacer()
-                if !plan.forecastMissing { Text("\(plan.score)").font(Font.scaled(.title3).weight(.semibold)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
+                if !plan.forecastMissing { Text("\(plan.score)").font(Font.scaled(.title3).weight(.heavy)).foregroundStyle(plan.qualifies ? Theme.accent : Theme.dim) }
             }
             Text("\(Geo.format(km: s.distanceKm, unit: store.distanceUnit)) \(s.compass) · \(s.kind.capitalized)" + (s.bortle.map { " · Bortle \($0)" } ?? s.band.map { " · \($0.displayName)" } ?? ""))
                 .font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
@@ -650,7 +674,7 @@ struct DarkSiteCard: View {
             if let w = plan.primary, let home = store.site {
                 Text("Clear \(Copy.hhmm(w.start, site: home))–\(Copy.hhmm(w.end, site: home)) · \(String(format: "%.1f h", w.hours))").font(Font.scaled(.caption))
             } else if plan.forecastMissing {
-                Text("No forecast fetched (beyond the nearest eight, or offline)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
+                Text("No forecast fetched (only the nearest three are fetched, while this page is open)").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             } else {
                 Text(store.copy.noWindow).font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
@@ -659,14 +683,15 @@ struct DarkSiteCard: View {
             HStack {
                 if let src = s.source, let url = URL(string: src) { Link("Source", destination: url).linkCursor().font(Font.scaled(.caption)) }
                 Spacer()
-                Button("Open in Maps") { SiteMaps.open(s) }.buttonStyle(ScaledButtonStyle())
-                // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026).
-                Button("Observe from here") { store.visit(s) }.buttonStyle(ScaledButtonStyle())
+                Button("Open in Maps") { SiteMaps.open(s) }
+                    .buttonStyle(.plain).font(.system(size: TextScale.pt(12), weight: .heavy)).foregroundStyle(Tokens.lit).padding(.vertical, 4)
+                // Plain in both wording modes: "Use as beat" lost people (owner, 25 September 2026). The one warm action on the card.
+                Button("Observe from here") { store.visit(s) }
+                    .buttonStyle(.plain).font(.system(size: TextScale.pt(12), weight: .heavy)).foregroundStyle(Tokens.ember).padding(.vertical, 4).padding(.leading, 12)
             }
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Tokens.cardOutline, lineWidth: 1))
-        .nightwatchGlass(in: RoundedRectangle(cornerRadius: 9), fill: Tokens.targetsCard)
+        .cardSurface(radius: 16)
     }
 }
