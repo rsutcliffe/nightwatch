@@ -265,35 +265,6 @@ struct LargeView: View {
     }
 }
 
-/// The night-sky picture behind the widget under a scrim. The picture is small (360 px, about 15 KB) and lives in the widget's own
-/// asset catalogue: a large one left every new widget a grey skeleton (iPhone and iPad, 18 October 2026), as widgets have a small
-/// memory budget. In the see-through styles only lightness survives, so there it is the plain card.
-struct NightWidgetBackground: View {
-    @Environment(\.widgetRenderingMode) private var mode
-    var body: some View {
-        if mode == .fullColor {
-            ZStack {
-                Image("night-sky").resizable().scaledToFill()
-                Tokens.targetsBackground.opacity(0.58)
-            }
-        } else {
-            Tokens.targetsCard
-        }
-    }
-}
-
-/// On the desktop macOS draws widgets in its accented style, which removes the container background and tints content white, so the
-/// picture above never shows. There the picture is drawn as content instead, already darkened (no scrim to be tinted), and marked
-/// full colour so the system leaves it alone. In full colour (the gallery) the container background does the job and this draws nothing.
-struct DesktopPicture: View {
-    @Environment(\.widgetRenderingMode) private var mode
-    var body: some View {
-        if mode != .fullColor, #available(macOS 15, *) {
-            Image("night-sky-dim").resizable().widgetAccentedRenderingMode(.fullColor).scaledToFill()
-        }
-    }
-}
-
 struct NightwatchWidgetView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
@@ -325,8 +296,7 @@ struct NightwatchWidgetView: View {
         // The small widget and the empty state are centred, as on the canvas; medium and large read from the top left.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: entry.snapshot == nil || family == .systemSmall ? .center : .topLeading)
         .padding(padding)
-        .background { DesktopPicture() }
-        .containerBackground(for: .widget) { NightWidgetBackground() }
+        .containerBackground(for: .widget) { Tokens.targetsCard }
         .widgetURL(WidgetLink.targets.url)
     }
 }
