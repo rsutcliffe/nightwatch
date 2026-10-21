@@ -113,6 +113,12 @@ struct TonightView: View {
                             .font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
                     }
                     agreementLine(plan, site)
+                    if let haze = Copy.haze(plan) {
+                        Text(haze.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let rain = Copy.rain(plan, site: site) {
+                        Text(rain.plainDashes).font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 } else if !plan.night.hasDarkness && (plan.mode == .dark || !plan.night.hasNauticalDarkness) {
                     TwoWeight.headline("No astronomical darkness", size: TextScale.pt(16))
                     Text("Too far north or south for this date.").font(.system(size: TextScale.pt(10))).foregroundStyle(Tokens.textSecondary)
@@ -196,7 +202,7 @@ struct TonightView: View {
         let facts = [dark == window ? nil : Fact(label: "Dark", value: dark),
                      Fact(label: "Seeing", value: Copy.seeingText(plan.darkHours)),
                      Fact(label: "Wind", value: windText),
-                     Fact(label: "Transparency", value: Copy.transparencyText(plan.darkHours)),
+                     Fact(label: "Transparency", value: Copy.transparencyText(plan)),
                      Fact(label: frost ? "Frost likely" : "Dew risk", value: dew?.displayName, hint: dew == .high ? "Dew heater advised" : nil)].compactMap { $0 }
         // Three to a row; the last row is what is left of the facts with the Moon filling the rest of it, so no row has an orphan or a gap.
         let full = facts.count / 3 * 3
