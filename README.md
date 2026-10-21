@@ -66,6 +66,8 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 ## Download
 
+Nightwatch is available on the [Mac App Store](https://apps.apple.com/app/nightwatch-clear-sky-alerts/id6816390602) as "Nightwatch: Clear Sky Alerts". It is the same app: the App Store updates it, so it has no update check of its own. The disk image below is the other way to get it.
+
 **[Download Nightwatch.dmg](https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg)**, always the newest version, signed and notarised, for Apple silicon Macs on macOS 14 or later. Open it and drag Nightwatch to Applications. Each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases) also carries the same file as `Nightwatch-<version>.dmg`, with its SHA-256 checksum. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Nightwatch then asks what you image with and where you observe from; "Use this Mac's location" brings up macOS's location prompt, where you choose Allow. Nightwatch asks for location only when you press that button, or This Mac's location in Settings › Where you observe: it never asks by itself, and it works the same from a site you add by name. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md), and the Mac App Store build in [docs/app-store.md](docs/app-store.md).
 
 ## Build and install (macOS 14+, Xcode 26 or later)
