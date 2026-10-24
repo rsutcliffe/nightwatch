@@ -276,6 +276,7 @@ struct FirstRunScreen: View {
                 PrimaryButton(title: busy ? "Searching" : "Add this place", action: add)
             }
             .padding(20).frame(maxWidth: 520).frame(maxWidth: .infinity)
+            .background(theme.background)   // solid: place results scrolled under the buttons no longer show through them (seen on the iPhone Duo simulator)
         }
         .task { try? await Task.sleep(for: .milliseconds(600)); typing = true }
     }
