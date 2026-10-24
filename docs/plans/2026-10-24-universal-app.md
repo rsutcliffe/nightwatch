@@ -45,9 +45,10 @@ Mac 1.6.4 and 1.7.0 keep their bundle ID, SKU, ratings, reviews and update path.
 Apple unveiled it in September and it went on sale 23 October 2026 (apple.com newsroom; Wikipedia; GSMArena). A foldable: a 5.4-inch outer screen and a 7.6-inch inner screen; sources disagree on the inner resolution (most say 1878 × 2670; PhoneArena says 2460 × 2180), so read Apple's own specification before sizing anything. The owner has no device.
 
 - **It is a layout-adaptivity risk, not a signing or App Store risk.** The inner screen is closer to an iPad's shape and the screen changes size when the fold opens.
-- **To check, with no device:** whether Xcode's Simulator offers a Duo (not yet checked; the iOS 27.1 Simulator SDK is installed); if not, run the app at an iPad size in a resizable window or Split View and at the iPhone's size, and rotate. The phone app already runs on iPhone and iPad and uses adaptive layouts; confirm that, do not assume it.
+- **Checked on a simulated Duo (24 October 2026).** Xcode 27.1 has an "iPhone Duo" simulator, but it needs the iOS 27.1 Simulator runtime (the 27.0 runtime refuses it: "Incompatible device"), which was downloaded for this. Inner screen: 466 x 678 points, a portrait shape of about 0.70, matching the 1878 x 2670 pixels most sources gave. What was seen: the app launches and draws without clipping; the system reserves a column down the right-hand edge (time, wifi) and the app's own moon and settings buttons sit in it; the tab bar floats at the bottom right; the welcome screen fits. **One flaw seen:** on the welcome screen, the list of place results runs underneath the two pinned buttons ("Use this device's location", "Add this place"), so results are partly hidden behind them. It has not been checked whether the same happens on an iPhone or iPad.
+- **Not yet checked on the Duo:** the main screens (a place was not added in that session), the outer 5.4-inch display, and the screen changing size as the fold opens and closes (the Simulator may offer it in its device menu; not tried).
 - **Decided: do not wait for a physical Duo** (about £2,000, sold out until January). The first iOS release states in its review notes that it was tested on iPhone, iPad and the Simulator but not on a physical Duo, and a Duo owner's report is welcome afterwards.
-- Apple may publish layout rules for the Duo (safe areas, hinge). Not yet read; read them before step 4.
+- Apple may publish layout rules for the Duo (safe areas, hinge). Not yet read; read them before the main-screen checks.
 
 ## Decisions made (24 October 2026)
 
