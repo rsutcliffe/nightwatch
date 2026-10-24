@@ -86,7 +86,7 @@ struct PlanScreen: View {
                     Text("Best \(Copy.hhmm(t.peakTime, site: site)) at \(Copy.peakHeight(t, site: site))").font(.caption).monospacedDigit().foregroundStyle(theme.bestLine)
                     if !item.clashes.isEmpty {
                         HStack(alignment: .center, spacing: 8) {
-                            WarningChip(text: "Clash")
+                            WarningChip(text: "Clash").fixedSize()   // one short word: never wrap it, the text beside it gives way (it broke to "Cla / sh" on the iPhone Duo simulator)
                             Text("Same best time as \(item.clashes.map(\.catalogueID).joined(separator: ", "))").font(.caption).secondary().fixedSize(horizontal: false, vertical: true)
                         }.padding(.top, 4)
                     }
