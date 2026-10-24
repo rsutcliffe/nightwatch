@@ -10,11 +10,11 @@ Free macOS menu-bar app for astrophotography: finds tonight's clear window, rank
 
 *The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
 
-<img src="docs/images/screenshot-popover-clear-night.png" width="360" alt="The Nightwatch popover at the BocaTauce car park on Tenerife: tonight's sky score of 93, a clear window from 21:07 to 06:43, 9.6 hours, with Open-Meteo agreeing, clear sky by hour at 92% clear, darkness, the Moon 34% lit and rising at 02:39, seeing of 0.5 to 0.75 arcseconds, wind of 2 km/h, low dew risk and good transparency, and the three best targets">
+<img src="docs/images/screenshot-popover-clear-night.jpg" width="360" alt="The Nightwatch popover at Furnace Creek in Death Valley National Park: a sky score of 80, a clear window from 02:00 to 05:36, 3.6 hours, held back by a 96% Moon, with Open-Meteo agreeing, the night drawn as an arc with an amber dot at the present hour, darkness 19:27 to 05:36, seeing of 0.75 to 1 arcsecond, wind of 16 km/h, low dew risk, good transparency, the Moon 96% lit and setting at 05:24, and the three best targets, IC 417, NGC 1023 and Capella">
 
 ## Screenshots
 
-Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: the North York Moors International Dark Sky Reserve (the widgets and the week ahead), the Malham National Park car park in the Yorkshire Dales Dark Sky Reserve (most of the Targets window), the BocaTauce car park on Tenerife (the popover above) and Madrid (dark sites abroad).
+Taken with version 1.7 and a DWARF Mini, observing from Furnace Creek in Death Valley National Park, a public place (the popover, Tonight's plan, the week ahead, the Targets window, the dark sites and the widgets). The alerts and the horizon dial are from earlier versions.
 
 **Alerts:** a heads-up an hour before sunset when tonight looks clear, with your plan and what the second forecast thinks, and a nudge as the clear window opens.
 
@@ -22,31 +22,27 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 **Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames, and one altitude chart showing where each is through the night. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
-<img src="docs/images/screenshot-plan.png" width="728" alt="Tonight's plan, clear 22:00 to 03:00: an altitude chart with one patterned line per target, named at its best time, above the rows for the Iris Nebula at 22:00, Saturn at 01:00 and Capella at 03:00, and the Little Sombrero Galaxy taken off for the night">
+<img src="docs/images/screenshot-plan.jpg" width="728" alt="Tonight's plan at Furnace Creek, clear 02:00 to 05:36: an altitude chart with two lines, NGC 1491 at 02:30 and Capella at 04:00, above the rows for the plan, with Aries, the Pleiades and Uranus taken off for the night as dashed rows, each with Put back">
 
 **The week ahead:** up to ten nights in date order, each with its clear window or longest clear run, darkness and the Moon, so the best night of the week is easy to pick. Cloud from three days out is marked "Less certain".
 
-<img src="docs/images/screenshot-week-ahead.png" width="728" alt="The week ahead at the North York Moors: ten nights in date order, five with a clear window, tomorrow the longest at 7.4 hours, and nights from three days out marked Less certain">
+<img src="docs/images/screenshot-week-ahead.jpg" width="728" alt="The week ahead at Furnace Creek: ten nights in date order, five with a clear window, Monday the longest at 10.3 hours, and nights from three days out marked Less certain">
 
 **Tonight or tomorrow night:** the whole Targets window can show tomorrow night instead, so you can plan ahead. Each card says how much of your frame the target fills, and when it is up in the clear window.
 
-<img src="docs/images/screenshot-nebulae.jpg" width="728" alt="Nebulae for tomorrow night, clear 22:00 to 03:00: sky-survey cards for NGC 281, IC 59, the Bubble Nebula and others, each with how much of the frame it fills and its best time">
+<img src="docs/images/screenshot-nebulae.jpg" width="728" alt="Nebulae for tonight, clear 02:00 to 05:36: sky-survey cards for the Flaming Star Nebula, IC 2067, IC 410, IC 417, the California Nebula and others, each with how much of the frame it fills and its best time">
 
 **A target's page:** the survey photo fills the window at your field of view, and "How to shoot this" gives your telescope's filter, exposure and frames, sized to the clear window.
 
-<img src="docs/images/screenshot-target.jpg" width="728" alt="The NGC 281 page: a sky-survey photo of the nebula, How to shoot this for a DWARF Mini with the Duo-Band filter, 15 to 60 second frames at gain 60 to 80 and 600 frames to fill 5 hours, and the altitude through tomorrow night's clear window">
+<img src="docs/images/screenshot-target.jpg" width="728" alt="The California Nebula page: a sky-survey photo with the dashed box of a DWARF Mini's field of view, How to shoot this with the Duo-Band filter, 15 to 60 second frames at gain 60 to 80 and 200 to 400 frames, the best time of 02:30 at 88 degrees, and the altitude through tonight's clear window">
 
 **All 88 constellations:** each one drawn as a figure over its stars.
 
-<img src="docs/images/screenshot-constellation.jpg" width="728" alt="The Cygnus page: the swan drawn over its stars">
+<img src="docs/images/screenshot-constellation.jpg" width="728" alt="The Orion page: the hunter drawn over its stars, with its best time of 04:00 at 66 degrees, the Moon 77 degrees away, and the altitude through tonight's clear window">
 
-**Dark sites:** darker places nearby, scored for tonight against home, each with a map and Open in Maps.
+**Dark sites:** darker places nearby, scored for tonight against home, each with a map and Open in Maps. the light-pollution data covers the world, so the same page finds dark car parks near a site in any country.
 
-<img src="docs/images/screenshot-dark-sites.png" width="728" alt="Dark sites within 50 km of Malham: Gisburn Forest Hub, Slaidburn visitor car park, Euro Car Parks near Burnsall and Buckden National Park Car Park, each with a map, its score against home, distance, direction and darkness">
-
-**Dark sites anywhere:** the light-pollution data covers the world, so the same page finds dark car parks near a site in any country.
-
-<img src="docs/images/screenshot-dark-sites-madrid.png" width="728" alt="Dark sites within 50 km of Madrid: two car parks near Rascafría, 47 and 50 km to the north-north-west, each with a map, Very dark against home at Bortle 8, and a note that it was found from light-pollution data">
+<img src="docs/images/screenshot-dark-sites.jpg" width="728" alt="Dark sites within 50 km of Furnace Creek: Furnace Creek Airport Parking near Death Valley, Golden Canyon Parking near Shoshone and Zabriskie Point Parking near Shoshone, each with a map, its score of 80 against home, distance, direction and darkness, and the nearest clear sky marked">
 
 **Your horizon:** mark how high houses, trees or hills block the sky in each direction, or measure it from a phone photo, and every target, best time and plan follows it. The hills are found from terrain data.
 
@@ -54,15 +50,15 @@ Taken with versions 1.1 to 1.3 and a DWARF Mini, observing from public places: t
 
 **Events:** meteor showers, eclipses, close pairs, comets and space station passes, each with when and where to look, and Add to Calendar.
 
-<img src="docs/images/screenshot-event.png" width="728" alt="The Southern Taurids page: the bull of Taurus drawn over its stars, the peak night of 4 to 5 November with the radiant's best time, the rate and the Moon, and How to shoot this and Add to Calendar buttons">
+<img src="docs/images/screenshot-event.jpg" width="728" alt="The Southern Taurids page: the bull of Taurus drawn over its stars, the peak night of 4 to 5 November with the radiant's best time of 02:12, the rate of about 7 an hour and the Moon, and How to shoot this and Add to Calendar buttons">
 
 **The Moon covering a star or planet:** worked out a year ahead for your site, with each star's path behind the Moon, and when and at which edge it goes and comes back.
 
-<img src="docs/images/screenshot-occultation.png" width="728" alt="The Moon covers the Pleiades: the Moon, 95% lit, with the paths of Taygeta and Maia drawn behind it; Taygeta gone at 00:23 at the lit edge and back at 01:34 at the dark edge, Maia gone at 00:42 and back at 01:42, the Moon 58 degrees up, best watched with binoculars">
+<img src="docs/images/screenshot-occultation.jpg" width="728" alt="The Moon covers the Pleiades: the Moon, 100% lit, with the path of Taygeta drawn behind it; Taygeta gone at 04:07 at the dark edge and back at 04:53 at the dark edge, the Moon 28 degrees up in the west, best watched with binoculars">
 
 **Desktop widgets:** small, medium and large.
 
-<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 41, clear 22:00 to 02:00"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score 41, clear 22:00 to 02:00, the reason and the second forecast, and clear sky by hour"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score 41, the clear window, clear sky by hour with its clearest hour, and the three best targets">
+<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 80, clear 02:00 to 05:36, Furnace Creek"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score 80, clear 02:00 to 05:36, the reason and the second forecast, and clear sky by hour"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score 80, the clear window, the night drawn as an arc, and the three best targets">
 
 ## Download
 
