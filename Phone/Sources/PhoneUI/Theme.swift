@@ -35,7 +35,7 @@ public struct PhoneTheme: Equatable, Sendable {
     public var skyTop: Color
     public var tile: Color
     public var outline: Color
-    /// The "Best 03:43 · 87° up" line under a target.
+    /// The "Best 03:43 · 87° overhead" (or "· 75° in the SE") line under a target.
     public var bestLine: Color
     /// The horizon dial: what blocks the sky, and the hills the elevation data finds.
     public var blocked: Color
