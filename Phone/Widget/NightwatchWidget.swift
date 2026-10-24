@@ -24,21 +24,6 @@ struct NightProvider: TimelineProvider {
     }
 }
 
-/// The widget's background: the same night sky as the app, under a dark scrim; plain black in red mode.
-struct NightSky: View {
-    let red: Bool
-    var body: some View {
-        if red { Color.black } else {
-            ZStack {
-                NightwatchWidgetView.background(red: false)
-                // From the widget's asset catalogue, so it is found in the extension's own bundle. A dark scrim, so the dim lines (site name, update time) stay readable over the picture.
-                Image("widget-sky").resizable().scaledToFill()   // kept small (360 px): a 900 px picture here stopped the widgets loading at all
-                LinearGradient(colors: [Color.black.opacity(0.55), Color.black.opacity(0.86)], startPoint: .top, endPoint: .bottom)
-            }
-        }
-    }
-}
-
 struct NightwatchWidgetEntryView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
@@ -46,7 +31,7 @@ struct NightwatchWidgetEntryView: View {
         NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemLarge ? .large : family == .systemMedium ? .medium : .small,
                              red: entry.red, now: entry.date)
             .widgetURL(family == .systemMedium ? WidgetLink.plan.url : nil)   // small opens the app on Tonight, medium on Plan; large's rows are their own links
-            .containerBackground(for: .widget) { NightSky(red: entry.red) }
+            .containerBackground(for: .widget) { NightwatchWidgetView.background(red: entry.red) }   // a plain card, as on the Mac: no picture, so it looks the same on every device
     }
 }
 
