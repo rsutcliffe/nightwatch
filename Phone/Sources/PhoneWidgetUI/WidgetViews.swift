@@ -15,9 +15,10 @@ public struct NightwatchWidgetView: View {
 
     private var text: Color { red ? Color(red: 1, green: 0.16, blue: 0.1) : .white }
     private var dim: Color { red ? Color(red: 0.7, green: 0.1, blue: 0.06) : Color(white: 0.62) }
-    /// What is lit: warm white on the photograph, as in the app (red in red mode). The photograph supplies the colour.
+    /// What is lit: warm white, as in the app (red in red mode).
     private var accent: Color { red ? Color(red: 1, green: 0.16, blue: 0.1) : Color(red: 0.957, green: 0.945, blue: 0.918) }
-    public static func background(red: Bool) -> Color { red ? .black : Color(red: 0.078, green: 0.09, blue: 0.114) }
+    /// The widget's plain card: the Mac widget's colour (0x1C1F27), so a widget looks the same on every device. Black in red mode.
+    public static func background(red: Bool) -> Color { red ? .black : Color(red: 28 / 255, green: 31 / 255, blue: 39 / 255) }
 
     /// Plain hyphens only, never an en or em dash, whatever wording SkyCore supplies.
     private func plain(_ t: String) -> String { t.replacingOccurrences(of: "\u{2013}", with: "-").replacingOccurrences(of: "\u{2014}", with: "-") }
