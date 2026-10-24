@@ -42,3 +42,22 @@ import Foundation
     }
     #expect(found)
 }
+
+@Test func aWidgetRowKeepsTheHeightAndAPointOfTheCompassShort() {
+    #expect(Copy.compassPoint(azDeg: 100) == "E")
+    #expect(Copy.compassPoint(azDeg: 350) == "N")
+    let site = Site(name: "x", latitude: 54, longitude: 0, elevationM: 0, timeZoneID: "UTC", bortle: 4)
+    let when = utc(2026, 11, 20, 0, 0)
+    for step in 0..<96 {
+        let ra = Double(step) * 0.25
+        let p = Ephemeris.altAz(raHours: ra, decDeg: 20, at: when, site: site)
+        guard abs(p.az - 180) < 8, p.alt < 79 else { continue }
+        let t = RankedTarget(id: "x", name: "x", subtitle: "", group: .nebulae, raHours: ra, decDeg: 20, sizeArcmin: 10, magnitude: 8, fit: .fits,
+                             peakAltDeg: p.alt, peakTime: when, moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+        #expect(Copy.peakHeightShort(t, site: site) == "\(Int(p.alt.rounded()))° S")
+        var overhead = t; overhead.peakAltDeg = 88
+        #expect(Copy.peakHeightShort(overhead, site: site) == "88° up")
+        return
+    }
+    Issue.record("found no target due south to test with")
+}

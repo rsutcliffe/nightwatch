@@ -268,19 +268,32 @@ public struct Copy: Sendable {
     /// Which way to look when a target is at its best (owner, 24 October 2026): "overhead" from 80° up, where a direction means
     /// little, else "in the SE", one of the eight points on the horizon dial.
     public static func way(altDeg: Double, azDeg: Double) -> String {
-        if altDeg >= 80 { return "overhead" }
-        let i = Int(((azDeg.truncatingRemainder(dividingBy: 360) + 360) / 45).rounded()) % 8
-        return "in the \(Site.horizonDirections[i])"
+        altDeg >= 80 ? "overhead" : "in the \(compassPoint(azDeg: azDeg))"
+    }
+
+    /// The nearest of the eight points on the horizon dial: "N", "NE", ... "NW".
+    public static func compassPoint(azDeg: Double) -> String {
+        Site.horizonDirections[Int(((azDeg.truncatingRemainder(dividingBy: 360) + 360) / 45).rounded()) % 8]
+    }
+
+    private static func peakAzimuth(_ t: RankedTarget, site: Site) -> Double {
+        Ephemeris.altAz(raHours: t.raHours, decDeg: t.decDeg, at: t.peakTime, site: site).az
     }
 
     /// The way to look at a target's best moment, from its position then.
     public static func peakWay(_ t: RankedTarget, site: Site) -> String {
-        way(altDeg: t.peakAltDeg, azDeg: Ephemeris.altAz(raHours: t.raHours, decDeg: t.decDeg, at: t.peakTime, site: site).az)
+        way(altDeg: t.peakAltDeg, azDeg: peakAzimuth(t, site: site))
     }
 
     /// "88° overhead" or "75° in the SE": its height at its best moment and which way to look.
     public static func peakHeight(_ t: RankedTarget, site: Site) -> String {
         "\(Int(t.peakAltDeg.rounded()))° \(peakWay(t, site: site))"
+    }
+
+    /// The same, shortened for a widget row: "75° SE", or "88° up" from 80° up (a widget row has little room, and "up" is what it said before).
+    public static func peakHeightShort(_ t: RankedTarget, site: Site) -> String {
+        let deg = Int(t.peakAltDeg.rounded())
+        return t.peakAltDeg >= 80 ? "\(deg)° up" : "\(deg)° \(compassPoint(azDeg: peakAzimuth(t, site: site)))"
     }
 
     /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° in the SE · Duo-Band · 200 × 30 s", after "Added for this night" for
