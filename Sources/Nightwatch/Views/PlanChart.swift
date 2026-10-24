@@ -82,7 +82,7 @@ struct PlanChart: View {
         .cardSurface(radius: 14)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Altitude \(nightWords)")
-        .accessibilityValue(items.map { "\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees" }
+        .accessibilityValue(items.map { "\($0.target.name), best \(Copy.hhmm($0.target.peakTime, site: site)) at \(Int($0.target.peakAltDeg.rounded())) degrees, \(Copy.peakWay($0.target, site: site))" }
             .joined(separator: "; "))
     }
 

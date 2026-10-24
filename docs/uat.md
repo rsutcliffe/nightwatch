@@ -127,3 +127,5 @@ Run on each Mac after `scripts/build-app.sh`.
 123. Settings: section headers in capitals, switches in warm white, "Add a site…" an amber pill; the add-site, Horizon and Measure-from-a-photo sheets as before. → pass for the Where you observe list (20 October 2026: owner's screenshot); the rest not yet seen.
 124. Desktop widgets, small, medium and large, in the gallery and on the desktop: a plain dark card with no picture behind it in either place; a bold score in the bezel; the night arc on the medium and large, or the clear-sky bars where it does not fit; the large one with its best three targets. → not yet seen.
 125. Targets › The week ahead: still the clear-sky bars, one row per night, with the lit hours in warm white. → pass (20 October 2026: owner's screenshot).
+
+126. Targets, which way to look: every target's best time reads with its height and direction, for example "Best 02:30 · 75° in the N" or "88° overhead" from 80° up, on the cards, the detail page, the popover's best three, the plan rows and the widget rows. → plan page pass (24 October 2026: seen in a dev build at Furnace Creek); the rest not yet seen.

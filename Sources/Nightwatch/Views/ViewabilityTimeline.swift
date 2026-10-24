@@ -58,7 +58,7 @@ struct ViewabilityTimeline: View {
                 Text(caption).foregroundStyle(Tokens.textSecondary)
                 Spacer()
                 if target.viewable != nil {
-                    Text("\(lit ? "Best" : "Highest") \(Copy.hhmm(target.peakTime, site: site)) · \(Int(target.peakAltDeg.rounded()))°")
+                    Text("\(lit ? "Best" : "Highest") \(Copy.hhmm(target.peakTime, site: site)) · \(Copy.peakHeight(target, site: site))")
                         .fontWeight(.medium).foregroundStyle(lit ? Tokens.textPrimary : Tokens.textSecondary)
                 }
             }

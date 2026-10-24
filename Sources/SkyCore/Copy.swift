@@ -132,11 +132,11 @@ public struct Copy: Sendable {
         if !lit {
             // No clear window: when it is up in darkness anyway, as the card now shows (owner, 28 September 2026).
             if let v = t.viewable {
-                parts.append("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
+                parts.append("no clear window, up in darkness from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), highest at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up, \(peakWay(t, site: site))")
             } else { parts.append("no clear window, too low in darkness tonight") }
         }
         else if let v = t.viewable {
-            parts.append("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up")
+            parts.append("viewable from \(hhmm(v.start, site: site)) to \(hhmm(v.end, site: site)), best at \(hhmm(t.peakTime, site: site)), \(Int(t.peakAltDeg.rounded())) degrees up, \(peakWay(t, site: site))")
         } else { parts.append("viewable outside the clear window") }
         return parts.joined(separator: ", ")
     }
@@ -265,13 +265,31 @@ public struct Copy: Sendable {
         return "\(lead) · \(rest)"
     }
 
-    /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° · Duo-Band · 200 × 30 s", after "Added for this night" for
+    /// Which way to look when a target is at its best (owner, 24 October 2026): "overhead" from 80° up, where a direction means
+    /// little, else "in the SE", one of the eight points on the horizon dial.
+    public static func way(altDeg: Double, azDeg: Double) -> String {
+        if altDeg >= 80 { return "overhead" }
+        let i = Int(((azDeg.truncatingRemainder(dividingBy: 360) + 360) / 45).rounded()) % 8
+        return "in the \(Site.horizonDirections[i])"
+    }
+
+    /// The way to look at a target's best moment, from its position then.
+    public static func peakWay(_ t: RankedTarget, site: Site) -> String {
+        way(altDeg: t.peakAltDeg, azDeg: Ephemeris.altAz(raHours: t.raHours, decDeg: t.decDeg, at: t.peakTime, site: site).az)
+    }
+
+    /// "88° overhead" or "75° in the SE": its height at its best moment and which way to look.
+    public static func peakHeight(_ t: RankedTarget, site: Site) -> String {
+        "\(Int(t.peakAltDeg.rounded()))° \(peakWay(t, site: site))"
+    }
+
+    /// A plan row's detail: "Up 21:40–02:10 · best 21:50 at 79° in the SE · Duo-Band · 200 × 30 s", after "Added for this night" for
     /// a target that is not a favourite.
     public static func planDetail(_ item: PlanItem, presetID: String?, site: Site) -> String {
         let t = item.target
         var parts = item.added ? ["Added for this night"] : []
         if let v = t.viewable { parts.append("\(site.horizon == nil ? "Up" : "Clear of your horizon") \(span(v.start, v.end, site: site))") }
-        parts.append("best \(hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°")
+        parts.append("best \(hhmm(t.peakTime, site: site)) at \(peakHeight(t, site: site))")
         if let kit = ShootingTips.planKit(t, presetID: presetID) { parts.append(kit) }
         let text = parts.joined(separator: " · ")
         return text.prefix(1).uppercased() + text.dropFirst()

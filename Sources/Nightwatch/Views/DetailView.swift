@@ -173,7 +173,7 @@ struct DetailView: View {
         if let s = store.site, let plan, let w = plan.primary {
             VStack(alignment: .leading, spacing: 8) {
                 TileRow(spacing: 6) {
-                    StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Int(target.peakAltDeg.rounded()))°")
+                    StatTile(label: "Best", value: "\(Copy.hhmm(target.peakTime, site: s)) · \(Copy.peakHeight(target, site: s))")
                     StatTile(label: s.horizon == nil ? "Above \(Int(floor))°" : "Clear of your horizon", value: "\(Int(target.visibleFraction * 100))% of window")
                     // The Moon's own page has no separation to give: it says how much of it is lit instead.
                     if target.id == "moon" { StatTile(label: "Illuminated", value: target.typeName.components(separatedBy: " ").first) }
@@ -276,7 +276,7 @@ struct AltitudeChart: View {
             .font(.system(size: TextScale.pt(9.5))).foregroundStyle(Theme.dim)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Altitude \(nightWords). Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees.")
+        .accessibilityLabel("Altitude \(nightWords). Best \(Copy.hhmm(target.peakTime, site: site)) at \(Int(target.peakAltDeg.rounded())) degrees, \(Copy.peakWay(target, site: site)).")
     }
 }
 
