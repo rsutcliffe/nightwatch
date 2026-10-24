@@ -96,7 +96,7 @@ struct NightwatchPhoneApp: App {
                 let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC"); f.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
                 return Data("<current_status><updated><datetime>\(f.string(from: clock()))</datetime></updated><site_status project_id=\"project:AWN\" site_id=\"site:AWN\" status_id=\"\(level)\"/></current_status>".utf8)
             }
-            return try await PhoneFetcher().get(url)
+            return try await URLSessionFetcher().get(url)
         }
         var sink: (@Sendable (WidgetSnapshot) -> Void)?
         if !demo { sink = { snapshot in WidgetShare.save(snapshot); WidgetCenter.shared.reloadAllTimelines(); TonightIndex.update(snapshot) } }
@@ -105,7 +105,7 @@ struct NightwatchPhoneApp: App {
             if args.contains("-demoOffline") { throw URLError(.notConnectedToInternet) }
             // `-demoLive` keeps the demo site but reads real forecasts, to see the fallback sources answer.
             if demo, !args.contains("-demoLive") { return DemoData.forecast(fetchedAt: now, from: Calendar.current.startOfDay(for: now), cloud: cloud, site: site) }
-            return try await ForecastChain.fetch(site: site, fetcher: PhoneFetcher(), now: now,
+            return try await ForecastChain.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
            feeds: feeds, widgetSink: sink)

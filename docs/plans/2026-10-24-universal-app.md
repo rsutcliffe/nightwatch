@@ -1,10 +1,10 @@
 # Universal Nightwatch: iPhone and iPad joining the Mac App Store record
 
-Written 24 October 2026. **Decided by the owner on 24 October 2026: universal purchase; the phone widgets lose their background picture, so the widgets look the same on every device; the first iOS release does not wait for a physical Duo.** The bundle-ID test in step 2 is part of this plan, so the separate phone handover (HANDOVER-to-phone-20-october.md) is dropped and was never committed.
+Written 24 October 2026, revised the same day. **Decided by the owner on 24 October 2026: universal purchase; the phone widgets lose their background picture, so the widgets look the same on every device; the first iOS release does not wait for a physical iPhone Duo; and the iPhone and iPad app lives in this repository, not its own.**
 
 ## The one rule
 
-**Nothing in this plan touches the live Mac listing, the Mac repository's release code, the Mac App ID's capabilities or the Mac's signing profiles until the step that says so, and every step before that is reversible.** The live version is 1.6.4; 1.7.0 (49) is Waiting for Review.
+**Nothing in this plan touches the live Mac listing, the Mac App ID's capabilities or the Mac's signing profiles until the step that says so, and every step before that is reversible.** The live version is 1.6.4; 1.7.0 (build 49) is Waiting for Review. The 1.7.0 build was made from the `v1.7.0` tag, so nothing merged to `main` afterwards can change it.
 
 ## What Apple's pages say (read 20 October, developer.apple.com/help/app-store-connect/create-an-app-record/add-platforms)
 
@@ -13,30 +13,28 @@ Written 24 October 2026. **Decided by the owner on 24 October 2026: universal pu
 - Once Apple approves two platform versions in one record it is a universal purchase for good.
 - A platform added by mistake can be deleted only if no build was ever uploaded for it.
 
-## What the code already looks like (read-only look at ~/Code/NightwatchPhone, main 23aa444)
+## One repository (decided 24 October 2026)
 
-- The phone app is its own repository, about 5,400 lines in three packages (PhoneCore, PhoneUI, PhoneWidgetUI) plus a widget. It takes the Mac's SkyCore as a package pinned to a revision (bc78d2c, Mac PR 191), so the Mac repository cannot break it by accident.
-- Its entitlements already use the Mac's iCloud key-value store (`$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch`), so sites already sync.
-- Its IDs today: app `io.github.rsutcliffe.nightwatch.phone`, widget `.phone.widget`, group `group.io.github.rsutcliffe.nightwatch.phone`, background task `.phone.refresh`.
-- The Mac's: app `io.github.rsutcliffe.nightwatch`, widget `.widget`, group `$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch`.
+Universal purchase needs one bundle ID and one record, not one repository. The first version of this plan kept two repositories and passed notes between them; the owner rejected that, and the code agrees: the phone repository carried its own copies of Mac files (`RequestTally`, `Dashes`, `FallbackForecast`, `HTTPFailure` and a fetcher), and one of them was stale, so the phone was missing the 16 October forecast-limit fix.
 
-## Recommendation: two repositories, one App Store record
+What was done on the branch `one-repo`:
 
-Universal purchase needs one bundle ID and one record, not one Xcode project. Keep the repositories as they are and change only the phone project's identifiers. Merging the code into the Mac repository would put the live Mac build's release scripts, CI and tests in the path of every phone change, and buys nothing the record needs. It can still be done later.
-
-Consequence: **the Mac repository changes nothing for this plan** (apart from its own compass and 1.7.x work). That is the strongest protection for the live version.
+- The phone repository's history (50 commits, one author) was imported under `Phone/`, without its 61 MB of old phone screenshots (`docs/shots`), so the public repository grew by about 9 MB. The original repository (`~/Code/NightwatchPhone`, which has no remote) is left untouched as the archive, and a full backup bundle is in `~/Downloads/Nightwatch-phone-repo-backup/`.
+- `PhoneCore`, `PhoneUI`, `PhoneWidgetUI` and `PhoneCoreTests` are targets of the root `Package.swift`. There is no pin: SkyCore is the code next to them.
+- Five duplicate files were deleted from the phone (the four above plus the fetcher) and the phone now uses SkyCore's. The constellation and light-pollution data are no longer copied (`Phone/project.yml` points at `Resources/`). The phone's `Events` pictures (three, all identical to the Mac's) and its icon are still its own: the Mac has more event pictures, which would change what the phone shows, and the Mac's `icon.json` says "macOS only" where the phone's says "shared".
+- `scripts/test.sh` runs 441 Mac tests and 111 phone tests together (all passed). The phone and its widget build for the iOS Simulator (`xcodegen generate --spec Phone/project.yml`). CI has a new `phone-build` job for that.
+- **Mac impact, checked:** `Sources`, `Resources`, `Widget`, `Helper`, `project.yml`, `scripts` and the existing CI job are byte-for-byte as on `main`; the only Mac-side file that changed is `Package.swift`, which gained the phone's libraries. `scripts/build-app.sh` still builds and signs the Mac app.
+- The phone keeps its own bundle IDs (`io.github.rsutcliffe.nightwatch.phone` and so on) until step 3 below.
 
 ## Steps, in order, each with its gate and its way back
 
-1. **Wait for Mac 1.7.0 to be approved** (my precaution, not an Apple rule). Until then nothing below touches App Store Connect. *Way back: none needed.*
-2. **Bundle-ID test in the phone repository, on a branch** (the handover HANDOVER-to-phone-20-october.md; not yet confirmed pasted into the phone session). App `io.github.rsutcliffe.nightwatch`, widget `io.github.rsutcliffe.nightwatch.widget`; leave the app group and the key-value store as they are. Run on the iPhone 15 Pro and the iPad Air only; no TestFlight, no upload. *Way back: drop the branch, delete the test app.*
-3. **Before and after: record the Mac App ID's capabilities** (WeatherKit and anything else ticked, for the app and widget IDs) in the developer portal, then compare after the test build. Automatic signing can change an App ID's capabilities, and a changed App ID can invalidate the Mac's profiles (the Mac widget's profile had to be regenerated by hand earlier in October; cause not established). If anything changed, stop and tell the owner. Only the owner can restore a capability in the portal. *This is the one step with a path to the live app, which is why it is a gate.*
-4. **Move the phone's SkyCore pin to the released 1.7.x revision** (not before; the compass direction ships in the next Mac version and would arrive with it). Run the phone's tests.
-5. **Phone-side changes**: take the widget picture out, as on the Mac, so a widget looks the same on every device (decided); the Photographic look is already there; investigate the stale widget (the likely cause is the iPhone's widget shown on the Mac through iPhone Mirroring; check the snapshot time on the phone's own home screen first).
-6. **Duo checks** (below).
-7. **Add the iOS platform to record 6816390602** (App Store Connect, the owner's hand or mine on their word). Create the iOS version 1.0 page. From here the record has an iOS side, but the Mac version is untouched. *Way back: delete the platform, allowed only while no iOS build has been uploaded.* Check what the record shares and what is per platform (name, subtitle, description, screenshots, App Privacy answers, age rating, price) before typing anything; I have not verified that split.
-8. **Upload the iOS build with Transporter** (this is the point after which deleting the platform is no longer allowed), submit for review. iOS review is its own submission; it does not touch the live Mac version.
-9. **When both versions are approved the record becomes universal for good.**
+1. **Merge the `one-repo` pull request** once CI is green (it changes no Mac code, and the 1.7.0 build is from a tag). *Way back: revert the merge; the phone archive is untouched.*
+2. **Phone-side changes, in this repository**: take the widget picture out of the phone widgets (decided); look into the stale phone widget (the likely cause is the iPhone's widget shown on the Mac through iPhone Mirroring; check the snapshot time on the phone's own home screen first); remaining duplicates (the Mac has more event pictures, the icon definitions) as needed.
+3. **After Mac 1.7.0 is approved: the bundle-ID test.** The phone app and widget take the Mac's IDs (`io.github.rsutcliffe.nightwatch`, `.widget`); the app group and the key-value store stay as they are. Run on the iPhone 15 Pro and the iPad Air; no TestFlight, no upload. **Before and after, record the Mac App ID's capabilities** (WeatherKit and anything else ticked, for the app and the widget IDs) in the developer portal. Automatic signing can change an App ID's capabilities, and a changed App ID can invalidate the Mac's signing profiles (the Mac widget's profile had to be regenerated by hand earlier in October; cause not established). If anything changed, stop and tell the owner; only the owner can restore a capability. This is the one step with a path to the live app, and the reason it waits for 1.7.0: a rejected 1.7.0 would have to be rebuilt with whatever profiles exist then. *Way back: revert the identifier change.*
+4. **Duo checks** (below).
+5. **Add the iOS platform to record 6816390602** (App Store Connect, the owner's hand or mine on their word), after the search case (Apple case 103007210525) is settled; that wait is my caution, not an Apple rule, because the case concerns this record. Create the iOS version 1.0 page. *Way back: delete the platform, allowed only while no iOS build has been uploaded.* Check what the record shares and what is per platform (name, subtitle, description, screenshots, App Privacy answers, age rating, price) before typing anything; not yet verified.
+6. **Upload the iOS build with Transporter** (after which deleting the platform is no longer allowed) and submit for review. iOS review is its own submission; it does not touch the live Mac version.
+7. **When both versions are approved the record becomes universal for good.**
 
 ## What does not change for current Mac users
 
@@ -47,16 +45,17 @@ Mac 1.6.4 and 1.7.0 keep their bundle ID, SKU, ratings, reviews and update path.
 Apple unveiled it in September and it went on sale 23 October 2026 (apple.com newsroom; Wikipedia; GSMArena). A foldable: a 5.4-inch outer screen and a 7.6-inch inner screen; sources disagree on the inner resolution (most say 1878 × 2670; PhoneArena says 2460 × 2180), so read Apple's own specification before sizing anything. The owner has no device.
 
 - **It is a layout-adaptivity risk, not a signing or App Store risk.** The inner screen is closer to an iPad's shape and the screen changes size when the fold opens.
-- **To check, with no device:** whether Xcode's Simulator offers a Duo (not yet checked); if not, run the app at an iPad size in a resizable window or Split View and at the iPhone's size, and rotate. The phone app already runs on iPhone and iPad and uses adaptive layouts, so a size change should not break it; confirm that, do not assume it.
+- **To check, with no device:** whether Xcode's Simulator offers a Duo (not yet checked; the iOS 27.1 Simulator SDK is installed); if not, run the app at an iPad size in a resizable window or Split View and at the iPhone's size, and rotate. The phone app already runs on iPhone and iPad and uses adaptive layouts; confirm that, do not assume it.
 - **Decided: do not wait for a physical Duo** (about £2,000, sold out until January). The first iOS release states in its review notes that it was tested on iPhone, iPad and the Simulator but not on a physical Duo, and a Duo owner's report is welcome afterwards.
-- Apple may publish layout rules for the Duo (safe areas, hinge). Not yet read; read them before step 6.
+- Apple may publish layout rules for the Duo (safe areas, hinge). Not yet read; read them before step 4.
 
 ## Decisions made (24 October 2026)
 
 1. Universal purchase.
 2. Phone widgets lose their picture.
 3. No wait for a physical Duo.
+4. One repository.
 
 ## Not done by this plan
 
-No App Store Connect change, no edit to the phone repository, no TestFlight, no change to any App ID, and nothing uploaded. The phone project's own session does the phone-side steps (2, 4, 5, 6); the Mac session writes no code in that repository.
+No App Store Connect change, no TestFlight, no change to any App ID, and nothing uploaded. Step 1 and step 2 are code changes in this repository only.
