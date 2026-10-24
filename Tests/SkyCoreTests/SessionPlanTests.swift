@@ -85,7 +85,8 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
     s = try #require(make(p, favourites: ["NGC7000"], choices: c))
     #expect(s.items.map(\.id) == ["NGC7000", "M33"] && s.items[1].added && !s.items[0].added)
     #expect(Copy.planDetail(s.items[1], presetID: nil, site: sheffield).hasPrefix("Added for this night · Up "))
-    #expect(Copy.planDetail(s.items[0], presetID: "dwarf-mini", site: sheffield).hasSuffix("at 70° · Duo-Band · 200 × 30 s"))
+    #expect(Copy.planDetail(s.items[0], presetID: "dwarf-mini", site: sheffield).hasSuffix(" · Duo-Band · 200 × 30 s"))
+    #expect(Copy.planDetail(s.items[0], presetID: "dwarf-mini", site: sheffield).contains("at 70° in the "))
     // Taken off again, a target added for the night just leaves the plan: only a favourite keeps a taken-off row.
     c = SessionPlanner.choose("M33", on: false, isFavourite: false, in: c)
     #expect(c == PlanChoices())

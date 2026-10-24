@@ -69,7 +69,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             bars: Planner.clearSkyBars(plan: plan, site: site), barsLabel: Copy.barsLabel(plan: plan, site: site),
             targets: picks.prefix(3).map { t in
                 WidgetTarget(id: t.id, catalogueID: t.catalogueID, name: t.commonName ?? t.typeName,
-                             best: "Best \(hm(t.peakTime)) · \(Int(t.peakAltDeg.rounded()))° up", group: t.group)
+                             best: "Best \(hm(t.peakTime)) · \(Copy.peakHeight(t, site: site))", group: t.group)
             },
             tomorrow: w == nil && !noDarkness ? tomorrow?.primary.map { "Tomorrow \(hm($0.start))–\(hm($0.end))" } : nil,
             notifyShort: Copy.notifyTime(plan, site: site, settings: alerts).map { "notify \($0)" },

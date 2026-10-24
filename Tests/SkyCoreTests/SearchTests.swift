@@ -89,7 +89,7 @@ private let c43 = target("NGC7814", name: "NGC 7814 · C43", group: .galaxies, f
     t.viewable = ClearWindow(start: utc(2026, 11, 20, 20, 0), end: utc(2026, 11, 21, 3, 0))
     // The fixture peaks at 50° at 00:00 UTC.
     #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: site)
-            .hasSuffix("no clear window, up in darkness from 20:00 to 03:00, highest at 00:00, 50 degrees up"))
+            .hasSuffix("no clear window, up in darkness from 20:00 to 03:00, highest at 00:00, 50 degrees up, \(Copy.peakWay(t, site: site))"))
     t.viewable = nil
     #expect(Copy.cardLabel(t, lit: false, nearMoon: false, site: site).hasSuffix("no clear window, too low in darkness tonight"))
 }
