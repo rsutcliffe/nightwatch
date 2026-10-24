@@ -29,6 +29,14 @@ import SkyCore
     for p in model.picks { #expect(p.best.hasPrefix("Best ")) }
 }
 
+@Test func aPicksBestLineSaysWhichWayToLookAsTheMacDoes() throws {
+    let p = try plans(cloud: 5)
+    let t = try #require(p.tonight.targets.first)
+    let pick = TargetPick.make(t, site: sheffield, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2))
+    #expect(pick.best == "Best \(Copy.hhmm(t.peakTime, site: sheffield)) · \(Copy.peakHeight(t, site: sheffield))")
+    #expect(pick.best.hasSuffix("overhead") || pick.best.contains("° in the "))
+}
+
 @Test func theSharpPictureIsTheMacsRequestAtSixteenHundredAndOnlyForDeepSkyTargets() throws {
     let p = try plans(cloud: 5)
     let fov = FieldOfView(widthDeg: 2.1, heightDeg: 1.2)

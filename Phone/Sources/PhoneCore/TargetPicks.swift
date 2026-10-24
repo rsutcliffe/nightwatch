@@ -24,7 +24,7 @@ public struct TargetPick: Equatable, Sendable, Identifiable {
 
     public static func make(_ t: RankedTarget, site: Site, fov: FieldOfView) -> TargetPick {
         TargetPick(id: t.id, title: t.catalogueID.plainDashes, line: (t.commonName ?? t.typeName).plainDashes,
-                   best: "Best \(Copy.hhmm(t.peakTime, site: site)) · \(Int(t.peakAltDeg.rounded()))° up", group: t.group,
+                   best: "Best \(Copy.hhmm(t.peakTime, site: site)) · \(Copy.peakHeight(t, site: site))", group: t.group,
                    picture: picture(for: t, fov: fov))
     }
 

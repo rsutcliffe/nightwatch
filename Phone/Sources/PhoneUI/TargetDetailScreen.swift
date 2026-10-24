@@ -33,7 +33,7 @@ struct TargetDetailScreen: View {
                 HStack(spacing: 10) {
                     if let site {
                         stat("Best", "\(Copy.hhmm(target.peakTime, site: site))")
-                        stat("Up to", "\(Int(target.peakAltDeg.rounded()))°")
+                        stat("Up to", Copy.peakHeight(target, site: site))
                     }
                     if let m = target.magnitude { stat("Magnitude", String(format: "%.1f", m)) }
                     stat("Moon", "\(Int(target.moonSepDeg.rounded()))° away")

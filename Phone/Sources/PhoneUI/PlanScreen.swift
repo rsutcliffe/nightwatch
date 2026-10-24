@@ -83,7 +83,7 @@ struct PlanScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) { Text(t.catalogueID).font(.headline.weight(.heavy)); if item.added { Text("added").font(.caption).secondary() } }
                     Text((t.commonName ?? t.typeName).uppercased()).font(.caption2).tracking(1.2).secondary()
-                    Text("Best \(Copy.hhmm(t.peakTime, site: site)) at \(Int(t.peakAltDeg.rounded()))°").font(.caption).monospacedDigit().foregroundStyle(theme.bestLine)
+                    Text("Best \(Copy.hhmm(t.peakTime, site: site)) at \(Copy.peakHeight(t, site: site))").font(.caption).monospacedDigit().foregroundStyle(theme.bestLine)
                     if !item.clashes.isEmpty {
                         HStack(alignment: .center, spacing: 8) {
                             WarningChip(text: "Clash")
