@@ -109,7 +109,7 @@ struct NightwatchPhoneApp: App {
             return try await ForecastChain.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
-           feeds: feeds, widgetSink: sink, liveActivities: demo ? nil : LiveActivityScheduler())
+           feeds: feeds, widgetSink: sink, liveActivities: demo || args.contains("-testLiveActivity") ? nil : LiveActivityScheduler())   // a test card is left alone by the real reconcile
         if demoAurora != nil { s.config.aurora.enabled = true; s.config.aurora.threshold = .yellow }
         if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
         if demo, args.contains("-demoHorizon") {   // a site with trees to the north-east and hills to the west, and the hills already looked up
