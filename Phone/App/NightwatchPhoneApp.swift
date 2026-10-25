@@ -48,6 +48,8 @@ struct NightwatchPhoneApp: App {
         //   -demoNow 17:05   the app's clock starts at that time today, then runs
         //   -demoCloud 90    cloud cover for every hour (default 5)
         UNUserNotificationCenter.current().delegate = AlertPresenter.shared
+        if CommandLine.arguments.contains("-spikeLiveActivity") { LiveActivitySpike.schedule() }   // spike, 25 October 2026
+        if CommandLine.arguments.contains("-spikeReport") { LiveActivitySpike.report() }
         if CommandLine.arguments.contains("-testAlert") {   // one notification 20 s from launch, to see delivery on a real device
             UNUserNotificationCenter.current().getNotificationSettings { st in
                 NSLog("Nightwatch notification settings: auth=\(st.authorizationStatus.rawValue) alert=\(st.alertSetting.rawValue) lock=\(st.lockScreenSetting.rawValue) center=\(st.notificationCenterSetting.rawValue) sound=\(st.soundSetting.rawValue) summary=\(st.scheduledDeliverySetting.rawValue) timeSensitive=\(st.timeSensitiveSetting.rawValue) style=\(st.alertStyle.rawValue)")
