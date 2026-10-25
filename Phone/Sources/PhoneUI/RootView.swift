@@ -365,6 +365,7 @@ struct SitesScreen: View {
 }
 
 struct SettingsScreen: View {
+    @AppStorage("liveActivityOn") private var liveCard = true   // per device, not synced; read by the app's Live Activity scheduler
     @ObservedObject var store: PhoneStore
     @Environment(\.phoneTheme) private var theme
     @Binding var red: Bool
@@ -434,6 +435,9 @@ struct SettingsScreen: View {
                 Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
                 choiceRow("Nudge before the window opens", store.config.alerts.preWindowMinutes, Array(stride(from: 0, through: 120, by: 15)),
                           { v in store.setAlerts { $0.preWindowMinutes = v } }) { $0 == 0 ? "When it opens" : "\($0) min" }
+                Toggle("Clear-window card on the Lock Screen", isOn: $liveCard).onChange(of: liveCard) { _ in store.replan() }
+                Text("A countdown to the end of the clear window. iOS asks to allow Live Activities the first time one appears. It cannot update itself, so it shows the time of the forecast it came from.")
+                    .font(.footnote).secondary()
                 Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
                 // A switch that is on can always be turned off; one that is off needs Apple Weather, which supplies the forecast being checked.
                 Toggle("Alert only when Open-Meteo agrees", isOn: binding(\.requireAgreement))

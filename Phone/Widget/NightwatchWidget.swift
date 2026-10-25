@@ -1,4 +1,5 @@
 import WidgetKit
+import ActivityKit
 import SwiftUI
 import SkyCore
 import PhoneWidgetUI
@@ -45,7 +46,42 @@ struct NightwatchWidget: Widget {
     }
 }
 
+/// The clear window as a Live Activity (Lock Screen, StandBy, Dynamic Island).
+struct ClearWindowLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: ClearWindowAttributes.self) { context in
+            ClearWindowLockView(attributes: context.attributes, state: context.state, isStale: context.isStale)
+                .activityBackgroundTint(NightwatchWidgetView.background(red: false)).activitySystemActionForegroundColor(.white)
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) { Text("\(context.state.score)").font(.title.weight(.bold)).monospacedDigit() }
+                DynamicIslandExpandedRegion(.center) {
+                    Text(context.isStale ? "Clear window over" : context.state.headline).font(.subheadline.weight(.heavy)).lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    if !context.isStale {
+                        Text(timerInterval: context.attributes.windowStart...context.attributes.windowEnd, countsDown: true)
+                            .font(.caption.weight(.medium)).monospacedDigit().frame(maxWidth: 70)
+                    }
+                }
+            } compactLeading: {
+                Text("\(context.state.score)").monospacedDigit()
+            } compactTrailing: {
+                if !context.isStale {
+                    Text(timerInterval: context.attributes.windowStart...context.attributes.windowEnd, countsDown: true)
+                        .monospacedDigit().frame(maxWidth: 44)
+                }
+            } minimal: {
+                Text("\(context.state.score)").monospacedDigit()
+            }
+        }
+    }
+}
+
 @main
 struct NightwatchWidgetBundle: WidgetBundle {
-    var body: some Widget { NightwatchWidget() }
+    var body: some Widget {
+        NightwatchWidget()
+        ClearWindowLiveActivity()
+    }
 }

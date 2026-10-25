@@ -59,6 +59,7 @@ public final class PhoneStore: ObservableObject {
     private let directory: URL
     private let provider: ForecastProvider
     private let scheduler: NotificationScheduling
+    private let liveActivities: LiveActivityScheduling?
     private let clock: @Sendable () -> Date
     private let fetchData: @Sendable (URL) async throws -> Data
     private let markStore: AppleMarkStore
@@ -134,8 +135,10 @@ public final class PhoneStore: ObservableObject {
                 feeds: @escaping @Sendable (URL) async throws -> Data = { try await URLSessionFetcher().get($0) },
                 occultations: Bool = true,
                 darkLookups: DarkLookups? = .live,
-                widgetSink: (@Sendable (WidgetSnapshot) -> Void)? = nil) {
+                widgetSink: (@Sendable (WidgetSnapshot) -> Void)? = nil,
+                liveActivities: LiveActivityScheduling? = nil) {
         self.widgetSink = widgetSink
+        self.liveActivities = liveActivities
         self.darkLookups = darkLookups
         certified = (try? DarkSites.bundledCertified()) ?? []
         self.feeds = feeds
@@ -746,6 +749,11 @@ public final class PhoneStore: ObservableObject {
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: config.goRule.maxCloudPct)
         phase = .ready
         if let snap = tonight?.snapshot { widgetSink?(snap) }
+        if let liveActivities {   // the Lock Screen card follows tonight's plan: a new forecast corrects it, a worse one removes it
+            let headline = (tonight?.snapshot.headline ?? "").plainDashes
+            await liveActivities.reconcile(ClearWindowCardPlanner.card(now: now, plan: plan, headline: headline.hasSuffix(".") ? String(headline.dropLast()) : headline,
+                                                                       siteName: site.name, forecastAt: fc.fetchedAt))
+        }
 
         guard config.notifyEnabled else { await scheduler.replaceScheduled([]); return }   // switched off: what was queued goes too
         guard await scheduler.isAuthorised() else { return }
