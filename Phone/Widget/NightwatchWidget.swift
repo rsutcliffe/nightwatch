@@ -1,4 +1,5 @@
 import WidgetKit
+import ActivityKit
 import SwiftUI
 import SkyCore
 import PhoneWidgetUI
@@ -45,7 +46,50 @@ struct NightwatchWidget: Widget {
     }
 }
 
+/// The clear window as a Live Activity (Lock Screen, StandBy, Dynamic Island).
+struct ClearWindowLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: ClearWindowAttributes.self) { context in
+            ClearWindowLockView(attributes: context.attributes, state: context.state, isStale: context.isStale)
+                .activityBackgroundTint(NightwatchWidgetView.background(red: false)).activitySystemActionForegroundColor(.white)
+        } dynamicIsland: { context in
+            // Active: the score and when the window closes. Stale: nothing, so the pill disappears into the hardware island instead of
+            // holding a bare score for hours (the app cannot end the card while it is closed). The Lock Screen card says "over".
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) { Text("\(context.state.score)").font(.title.weight(.bold)).monospacedDigit() }
+                DynamicIslandExpandedRegion(.center) {
+                    Text(context.isStale ? "Clear window over" : context.state.headline).font(.subheadline.weight(.heavy)).lineLimit(1)
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    if !context.isStale {
+                        Text(timerInterval: context.attributes.windowStart...context.attributes.windowEnd, countsDown: true)
+                            .font(.caption.weight(.medium)).monospacedDigit().frame(maxWidth: 80, alignment: .trailing)
+                    }
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    if !context.isStale {
+                        HStack(spacing: 4) {
+                            Text("Clear until"); Text(context.attributes.windowEnd, style: .time)
+                            Text("· forecast").foregroundStyle(.secondary); Text(context.state.forecastAt, style: .time).foregroundStyle(.secondary)
+                        }.font(.caption).monospacedDigit()
+                    }
+                }
+            } compactLeading: {
+                if !context.isStale { Text("\(context.state.score)").monospacedDigit() }
+            } compactTrailing: {
+                // The closing time, not a ticking timer: a timer takes the width of its widest form (hours, minutes, seconds) and is cut off.
+                if !context.isStale { Text(context.attributes.windowEnd, style: .time).monospacedDigit().frame(maxWidth: 52) }
+            } minimal: {
+                if !context.isStale { Text("\(context.state.score)").monospacedDigit() }
+            }
+        }
+    }
+}
+
 @main
 struct NightwatchWidgetBundle: WidgetBundle {
-    var body: some Widget { NightwatchWidget() }
+    var body: some Widget {
+        NightwatchWidget()
+        ClearWindowLiveActivity()
+    }
 }

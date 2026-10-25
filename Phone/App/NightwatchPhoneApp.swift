@@ -48,6 +48,7 @@ struct NightwatchPhoneApp: App {
         //   -demoNow 17:05   the app's clock starts at that time today, then runs
         //   -demoCloud 90    cloud cover for every hour (default 5)
         UNUserNotificationCenter.current().delegate = AlertPresenter.shared
+        if CommandLine.arguments.contains("-testLiveActivity") { Task { await LiveActivityScheduler.test() } }   // a card in 30 s, for 60 s
         if CommandLine.arguments.contains("-testAlert") {   // one notification 20 s from launch, to see delivery on a real device
             UNUserNotificationCenter.current().getNotificationSettings { st in
                 NSLog("Nightwatch notification settings: auth=\(st.authorizationStatus.rawValue) alert=\(st.alertSetting.rawValue) lock=\(st.lockScreenSetting.rawValue) center=\(st.notificationCenterSetting.rawValue) sound=\(st.soundSetting.rawValue) summary=\(st.scheduledDeliverySetting.rawValue) timeSensitive=\(st.timeSensitiveSetting.rawValue) style=\(st.alertStyle.rawValue)")
@@ -108,7 +109,7 @@ struct NightwatchPhoneApp: App {
             return try await ForecastChain.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
-           feeds: feeds, widgetSink: sink)
+           feeds: feeds, widgetSink: sink, liveActivities: demo || args.contains("-testLiveActivity") ? nil : LiveActivityScheduler())   // a test card is left alone by the real reconcile
         if demoAurora != nil { s.config.aurora.enabled = true; s.config.aurora.threshold = .yellow }
         if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
         if demo, args.contains("-demoHorizon") {   // a site with trees to the north-east and hills to the west, and the hills already looked up

@@ -13,6 +13,7 @@ final class Calls: @unchecked Sendable {
     var askedPrimary: [Bool] = []
     var failing = false
     var source: String? = "Apple Weather"
+    var cloud = 5
 }
 
 final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
@@ -26,14 +27,14 @@ final class FakeScheduler: NotificationScheduling, @unchecked Sendable {
 
 struct Failure: Error {}
 
-@MainActor func makeStore(clock: Clock, calls: Calls, scheduler: FakeScheduler = FakeScheduler(), withSite: Bool = true,
+@MainActor func makeStore(clock: Clock, calls: Calls, scheduler: FakeScheduler = FakeScheduler(), live: LiveActivityScheduling? = nil, withSite: Bool = true,
                                   directory: URL = FileManager.default.temporaryDirectory.appendingPathComponent("phonestore-\(UUID().uuidString)")) -> PhoneStore {
     let store = PhoneStore(directory: directory, provider: { site, now, ask in
         calls.fetches += 1
         calls.askedPrimary.append(ask)
         if calls.failing { throw Failure() }
-        return forecast(fetchedAt: now, source: calls.source, site: site)
-    }, scheduler: scheduler, clock: { clock.now }, occultations: false, darkLookups: nil)
+        return forecast(fetchedAt: now, cloud: calls.cloud, source: calls.source, site: site)
+    }, scheduler: scheduler, clock: { clock.now }, occultations: false, darkLookups: nil, liveActivities: live)
     if withSite {
         store.config.sites = [sheffield]
         store.config.activeSiteName = "Sheffield"
