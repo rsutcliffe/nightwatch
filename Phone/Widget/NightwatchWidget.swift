@@ -53,6 +53,8 @@ struct ClearWindowLiveActivity: Widget {
             ClearWindowLockView(attributes: context.attributes, state: context.state, isStale: context.isStale)
                 .activityBackgroundTint(NightwatchWidgetView.background(red: false)).activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
+            // Active: the score and when the window closes. Stale: nothing, so the pill disappears into the hardware island instead of
+            // holding a bare score for hours (the app cannot end the card while it is closed). The Lock Screen card says "over".
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) { Text("\(context.state.score)").font(.title.weight(.bold)).monospacedDigit() }
                 DynamicIslandExpandedRegion(.center) {
@@ -61,18 +63,24 @@ struct ClearWindowLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     if !context.isStale {
                         Text(timerInterval: context.attributes.windowStart...context.attributes.windowEnd, countsDown: true)
-                            .font(.caption.weight(.medium)).monospacedDigit().frame(maxWidth: 70)
+                            .font(.caption.weight(.medium)).monospacedDigit().frame(maxWidth: 80, alignment: .trailing)
+                    }
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    if !context.isStale {
+                        HStack(spacing: 4) {
+                            Text("Clear until"); Text(context.attributes.windowEnd, style: .time)
+                            Text("· forecast").foregroundStyle(.secondary); Text(context.state.forecastAt, style: .time).foregroundStyle(.secondary)
+                        }.font(.caption).monospacedDigit()
                     }
                 }
             } compactLeading: {
-                Text("\(context.state.score)").monospacedDigit()
+                if !context.isStale { Text("\(context.state.score)").monospacedDigit() }
             } compactTrailing: {
-                if !context.isStale {
-                    Text(timerInterval: context.attributes.windowStart...context.attributes.windowEnd, countsDown: true)
-                        .monospacedDigit().frame(maxWidth: 44)
-                }
+                // The closing time, not a ticking timer: a timer takes the width of its widest form (hours, minutes, seconds) and is cut off.
+                if !context.isStale { Text(context.attributes.windowEnd, style: .time).monospacedDigit().frame(maxWidth: 52) }
             } minimal: {
-                Text("\(context.state.score)").monospacedDigit()
+                if !context.isStale { Text("\(context.state.score)").monospacedDigit() }
             }
         }
     }
