@@ -24,7 +24,7 @@ What was done on the branch `one-repo`:
 - Five duplicate files were deleted from the phone (the four above plus the fetcher) and the phone now uses SkyCore's. The constellation and light-pollution data are no longer copied (`Phone/project.yml` points at `Resources/`). The phone's `Events` pictures (three, all identical to the Mac's) and its icon are still its own: the Mac has more event pictures, which would change what the phone shows, and the Mac's `icon.json` says "macOS only" where the phone's says "shared".
 - `scripts/test.sh` runs 441 Mac tests and 111 phone tests together (all passed). The phone and its widget build for the iOS Simulator (`xcodegen generate --spec Phone/project.yml`). CI has a new `phone-build` job for that.
 - **Mac impact, checked:** `Sources`, `Resources`, `Widget`, `Helper`, `project.yml`, `scripts` and the existing CI job are byte-for-byte as on `main`; the only Mac-side file that changed is `Package.swift`, which gained the phone's libraries. `scripts/build-app.sh` still builds and signs the Mac app.
-- The phone keeps its own bundle IDs (`io.github.rsutcliffe.nightwatch.phone` and so on) until step 3 below.
+- The phone kept its own bundle IDs (`io.github.rsutcliffe.nightwatch.phone` and so on) until step 3 below; since 26 Oct 2026 `Phone/project.yml` carries the Mac's (version 1.0.0, build 3).
 
 ## Steps, in order, each with its gate and its way back
 

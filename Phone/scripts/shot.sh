@@ -8,8 +8,8 @@ xcodebuild -project NightwatchPhone.xcodeproj -scheme NightwatchPhone -destinati
 xcrun simctl boot $UDID 2>/dev/null || true
 xcrun simctl bootstatus $UDID -b >/dev/null
 xcrun simctl install $UDID "$(find build/dd -name Nightwatch.app -path '*iphonesimulator*' | head -1)"
-xcrun simctl terminate $UDID io.github.rsutcliffe.nightwatch.phone 2>/dev/null || true
+xcrun simctl terminate $UDID io.github.rsutcliffe.nightwatch 2>/dev/null || true
 ARGS=(-demo ${=EXTRA}); [[ -n $RED ]] && ARGS+=(-redNightMode YES) || ARGS+=(-redNightMode NO)
-xcrun simctl launch $UDID io.github.rsutcliffe.nightwatch.phone $ARGS >/dev/null
+xcrun simctl launch $UDID io.github.rsutcliffe.nightwatch $ARGS >/dev/null
 sleep ${SHOT_WAIT:-10}
 xcrun simctl io $UDID screenshot "$OUT" >/dev/null
