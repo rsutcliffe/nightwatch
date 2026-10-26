@@ -36,6 +36,14 @@ What was done on the branch `one-repo`:
 6. **Upload the iOS build with Transporter** (after which deleting the platform is no longer allowed) and submit for review. iOS review is its own submission; it does not touch the live Mac version.
 7. **When both versions are approved the record becomes universal for good.**
 
+## Known duplication: the widget views (recorded 26 Oct 2026)
+
+The Mac's widget and the phone's draw the same things from separate copies: `NightArcCanvas` (`Sources/NightwatchUI` and
+`Phone/Sources/PhoneWidgetUI`), the score bezel (`ScoreBezel` and `ScoreBezelView`), and the Apple Weather attribution footer
+(`WeatherAttribution` and `WeatherMark` in `Widget/Sources/NightwatchWidget.swift`, `WeatherMarkView` in `WidgetViews.swift`). They are kept in step
+by hand, as the Apple mark change of 26 Oct 2026 was (the phone's footers copy the Mac's line for line). A shared widget module is a separate job,
+not started; until then a change to one is a change to the other.
+
 ## What does not change for current Mac users
 
 Mac 1.6.4 and 1.7.0 keep their bundle ID, SKU, ratings, reviews and update path. Nobody has to re-buy: the app is free.

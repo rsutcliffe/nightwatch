@@ -1,6 +1,8 @@
 # Nightwatch for iPhone and iPad: product requirements
 
-Working name. The store name must differ from the Mac app's and is decided later.
+*Status, 26 October 2026: built and under test, not yet submitted. This document began as the plan for version 1 and has been brought up to date; the original smaller scope is recorded under "Not in version 1" as it was decided then, and what shipped instead is listed in "What the app does now".*
+
+The app is the iPhone and iPad version of the one "Nightwatch: Clear Sky Alerts" App Store record (universal purchase, record 6816390602), in this repository under `Phone/`.
 
 ## One line
 
@@ -42,19 +44,26 @@ person can get lost in.
    latest forecast by SkyCore's alert engine, rebuilt at every refresh. Background refresh is best-effort; nothing is queued
    from a forecast more than six hours old at the moment it would fire.
 
-## Not in version 1, on purpose
+## What the app does now
 
-Targets list and detail, Tonight's plan, the week ahead, favourites, dark sites, events, horizon editing, Siri and Shortcuts,
-widgets (likeliest v1.1), Apple Watch (decided: no). Order after v1: week ahead, then favourites and Tonight's plan once the
-Mac's 1.7.0 ships, then dark sites and events.
+Beyond the closed loop above, the app has Tonight, Plan (tonight and tomorrow night, with favourites), Targets (by type, with target pages and "how to shoot
+this"), the week ahead, dark sites with small maps, events (meteor showers, space station passes, eclipses and occultations), horizon editing, a red night
+mode, small, medium and large widgets, a Lock Screen card for the clear window, Siri, Spotlight and Shortcuts, aurora alerts, and settings sync with the
+Mac through iCloud. It is free, with no account and no tracking, as decided.
+
+## Not in version 1, on purpose (the original decision, since superseded)
+
+Targets list and detail, Tonight's plan, the week ahead, favourites, dark sites, events, horizon editing, Siri and Shortcuts, widgets, Apple Watch. All but
+Apple Watch (decided: no) were built after this was written, once the Mac's 1.7.0 shipped.
 
 ## Decisions made
 
-Own repository and App Store record; SkyCore pinned by revision; iOS 17 and later; build now, submit only after Apple
-approves the Mac app; no change to the Mac repository except the two-line change that lets SkyCore build for iOS.
+One repository (the phone app lives under `Phone/` here, since PR 208) and one App Store record with the Mac app; SkyCore is shared, not copied; iOS 17 and
+later; the Mac's bundle IDs (`io.github.rsutcliffe.nightwatch` and `.widget`), version 1.0.0; no community features and no user-research gate; submit
+after the search case Apple opened on the Mac record is settled.
 
 ## Open, to settle before release
 
-The store name; the iCloud key-value sharing with the Mac app, to be proved on real devices; Apple's attribution wording for
-the mark in red mode; the background-refresh cadence in practice; privacy text, drafted in this repository and not in the
-Mac repository's PRIVACY.md until the Mac app is approved.
+The search case (Apple case 103007210525); screenshots recaptured on a moonless night (6 to 12 November 2026) and a widgets image from a real Home
+Screen; Apple's attribution wording for the mark in red mode; the background-refresh cadence in practice. The privacy text is in the Mac repository's
+`PRIVACY.md`, with the phone's section held in a draft PR until submission.

@@ -1,5 +1,7 @@
 # Handover for the Nightwatch Mac project: apply the "Photographic" design language
 
+> **Status, 26 October 2026:** applied. The Mac app took this design language in 1.7.0 (live in the App Store since 26 October 2026). The file is kept as the design reference. Its paths into `~/Code/NightwatchPhone` are out of date: that repository is only an archive now, and the phone code is under `Phone/` in this repository.
+
 Written 18 October 2026 from the phone project's session. The owner has now asked for the Mac app to take the design language the iPad and
 iPhone apps adopted today. Nothing here has been applied to `~/Code/Astronomy`. Apply it in the Mac project's own session. The phone code is
 the working reference: `~/Code/NightwatchPhone` on `main` (commit a5c1c62), mainly `Sources/PhoneUI`, `Sources/PhoneWidgetUI` and `docs/brand.md`.
