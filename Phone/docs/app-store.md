@@ -32,6 +32,21 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
   requested. The chosen photo is read on the device and not kept.
 - **To see the app working:** open it, choose any place on the welcome screen, and Tonight's answer appears.
 
+## App Privacy answers
+
+The record is one for all platforms, so there is one set of App Privacy answers and the Mac's already stand
+(`docs/app-store.md`, "App privacy answers"): nothing changes in App Store Connect when the iOS version is added, but check
+that the page still shows them before submitting.
+
+- **Data types:** Location › **Precise Location** (the forecast services receive a saved site's coordinates, to four decimal places).
+- **Purpose:** App Functionality only. **Linked to the user:** No. **Used for tracking:** No.
+- Nothing else is collected. What the iPhone and iPad app adds is not collection by the developer: iCloud key-value storage and Apple Maps
+  (typed place names, car parks, small maps) are Apple's services, and the aurora, comet, space-station, sky-picture and Moon downloads carry no location.
+- **Privacy policy URL:** the same `PRIVACY.md` as the Mac app, which now covers the iPhone and iPad (the record has one URL).
+- **Privacy manifests:** `Phone/App/PrivacyInfo.xcprivacy` (the app) and `Phone/Widget/PrivacyInfo.xcprivacy` (the widget), checked against the code
+  by `PrivacyManifestTests`. iOS asks for these, with a reason for each of certain system APIs: user defaults (own, `CA92.1`; the App Group's, `1C8F.1`) and
+  file timestamps (own container or group, `C617.1`). Change a manifest and the answers above together.
+
 ## Guideline pre-flight
 
 Re-run the Mac app's table in `docs/app-store.md` of the Mac repository before submitting; it records each guideline
