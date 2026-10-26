@@ -1,6 +1,6 @@
 # App Store submission notes (draft)
 
-Submission waits for Apple's approval of the Mac app. Nothing here is entered anywhere yet.
+The Mac app (1.7.0) is approved and live. The iPhone and iPad version joins the same App Store record (6816390602) as a second platform, once Apple case 103007210525 is settled. Nothing here is entered anywhere yet.
 
 ## App Review notes (write these first, not after a rejection)
 
@@ -18,7 +18,7 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
 - **Red night mode** is a display palette for use at a telescope.
 - **Maps and Apple Maps search** find a place when one is typed, suggest car parks and towns for the dark sites list, and draw a
   small map of each dark site.
-- **Home-screen widget** (small and medium) shows tonight's answer. The app and the widget share it through an App Group
+- **Home-screen widgets** (small, medium and large) show tonight's answer. The app and the widget share it through an App Group
   (`group.io.github.rsutcliffe.nightwatch.phone`); the widget fetches nothing. When Apple Weather supplied the forecast, Apple's mark is on
   the small, medium and large widgets and on the Shortcuts answer cards (the app keeps the image in the App Group, as the Mac does); the mark
   links to Apple's legal page except on the small widget. Otherwise the service's name is shown.
@@ -54,7 +54,7 @@ the Mac app was rejected on (including 5.2.5, the Apple Weather attribution).
 
 ## Still to decide or provide
 
-- Store name (must differ from the Mac app's).
+- Store name: none to choose. The record's name, "Nightwatch: Clear Sky Alerts", is shared by both platforms.
 - App icon: the Mac app's Icon Composer file, copied to `App/Nightwatch.icon` and set to "shared" so iOS uses it (decided 13 Oct 2026). Check how it looks on the iPad home screen and in the store's 1024 size.
-- Screenshots: iPhone 6.9-inch and iPad 13-inch sets, without the home location.
-- App Store Connect record, App ID with WeatherKit and iCloud (created at first signed build).
+- Screenshots: iPhone 6.9-inch (1320 x 2868) and iPad 13-inch (2064 x 2752) sets are captured from the demo launch (site Malham Tarn, never the home), raw and framed, in the Mac checkout's `build/appstore/ios/`. Recapture on a moonless night (6 to 12 November 2026) and add a widgets image from a real Home Screen. The footer shows the words, not Apple's mark, because the demo cannot fetch it.
+- App Store Connect: add the iOS platform to the record after the search case is settled, then upload with Transporter.
