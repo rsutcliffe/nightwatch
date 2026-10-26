@@ -2,6 +2,7 @@ import AppIntents
 import SwiftUI
 import SkyCore
 import PhoneCore
+import PhoneWidgetUI
 
 // Siri, Spotlight and Shortcuts, as the Mac app has them. Every answer comes from the forecast already kept: nothing is fetched at ask time except
 // by Refresh. Phrases carry no parameters: a September 2026 trial on the Mac whose phrases did made the Shortcuts app crash. Siri on the newest
@@ -18,7 +19,7 @@ struct TonightIntent: AppIntent {
     static let description = IntentDescription("Tonight's sky score and clear window at your site, and tomorrow's outlook.")
     @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog & ShowsSnippetView {
         let snap = await IntentHost.store?.snapshotForAnswer(), text = Copy.siriTonight(snap)
-        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, source: snap?.source))
+        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap))
     }
 }
 
@@ -38,7 +39,7 @@ struct BestTargetsIntent: AppIntent {
     @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog & ShowsSnippetView {
         let store = IntentHost.store, snap = await store?.snapshotForAnswer()
         let text = Copy.siriBest(snap, session: store?.session(), site: store?.site)
-        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, source: snap?.source))
+        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap))
     }
 }
 
@@ -48,7 +49,7 @@ struct EventsTonightIntent: AppIntent {
     @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog & ShowsSnippetView {
         let store = IntentHost.store, snap = await store?.snapshotForAnswer()   // events arrive with the first plan
         let text = Copy.siriEvents(store?.events ?? [])
-        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, source: snap?.source))
+        return .result(value: text, dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap))
     }
 }
 
@@ -94,7 +95,7 @@ struct RefreshIntent: AppIntent {
     static let title: LocalizedStringResource = "Refresh Forecast"
     static let description = IntentDescription("Fetches the forecast now and works out tonight again.")
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        guard let store = IntentHost.store else { return .result(dialog: noStore, view: AnswerCard(text: "No site yet.", source: nil)) }
+        guard let store = IntentHost.store else { return .result(dialog: noStore, view: AnswerCard(text: "No site yet.", snapshot: nil)) }
         _ = await store.snapshotForAnswer()
         let before = store.forecast?.fetchedAt
         await store.refresh(force: true)
@@ -103,7 +104,7 @@ struct RefreshIntent: AppIntent {
         let lead = store.forecast?.fetchedAt != before && store.forecast != nil ? "Refreshed. "
             : "Could not refresh just now\(store.forecast.map { ", so this is the forecast from \(Copy.clockTime($0.fetchedAt))" } ?? ""). "
         let text = lead + Copy.siriTonight(snap)
-        return .result(dialog: "\(text)", view: AnswerCard(text: text, source: snap?.source))
+        return .result(dialog: "\(text)", view: AnswerCard(text: text, snapshot: snap))
     }
 }
 
@@ -144,14 +145,15 @@ struct NightwatchShortcuts: AppShortcutsProvider {
     }
 }
 
-/// An answer as a card: the sentence, and the forecast's source at its foot (Spotlight runs an action without showing its sentence).
+/// An answer as a card: the sentence, and the forecast's source at its foot, Apple's mark when Apple Weather supplied it, as the Mac's
+/// cards have it (Spotlight runs an action without showing its sentence).
 struct AnswerCard: View {
     let text: String
-    let source: String?
+    let snapshot: WidgetSnapshot?
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(text.plainDashes).font(.body).fixedSize(horizontal: false, vertical: true)
-            if let source { Text(source).font(.caption).foregroundStyle(.secondary) }
+            if let snapshot { WeatherMarkView(snapshot: snapshot, height: 11).font(.caption).foregroundStyle(.secondary) }
         }
         .padding().frame(maxWidth: .infinity, alignment: .leading)
     }
