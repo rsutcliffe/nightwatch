@@ -178,6 +178,32 @@ struct Failure: Error {}
     #expect(store.appleMarkData == nil)
 }
 
+/// What `markSink` was given by one refresh of a store whose forecast came from `source`. (A helper at file scope: the same checks written with
+/// a class declared inside a loop in the test crashed the Swift runtime on CI, "freed pointer was not the last allocation".)
+final class GivenMarks: @unchecked Sendable { var list: [String] = [] }
+
+@MainActor func marksGiven(source: String) async -> [String] {
+    let given = GivenMarks(), calls = Calls()
+    calls.source = source
+    let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("phonestore-\(UUID().uuidString)"),
+                           provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
+                           scheduler: FakeScheduler(), clock: { utc(2026, 9, 23, 12) }, fetchData: { _ in Data([1, 2, 3]) },
+                           feeds: { _ in throw Failure() },   // no network: the comet and space-station feeds are not what this checks
+                           occultations: false, darkLookups: nil, markSink: { data, address in given.list.append("\(address) \(data.count)") })
+    store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
+    await store.refresh()
+    return given.list
+}
+
+/// The widget cannot fetch Apple's mark, so the store hands it to the app just before each snapshot, only when Apple Weather supplied the forecast.
+@MainActor @Test func theWidgetIsGivenAppleMarkForAnAppleWeatherForecast() async {
+    #expect(await marksGiven(source: "Apple Weather") == ["https://example.invalid/mark.png 3"])
+}
+
+@MainActor @Test func theWidgetIsGivenNoMarkWhenOpenMeteoSuppliedTheForecast() async {
+    #expect(await marksGiven(source: "Open-Meteo").isEmpty)
+}
+
 @MainActor @Test func theLoadStageIsClearedOnceThePageIsReady() async {
     let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: Calls())
     await store.refresh()

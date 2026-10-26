@@ -19,7 +19,9 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
 - **Maps and Apple Maps search** find a place when one is typed, suggest car parks and towns for the dark sites list, and draw a
   small map of each dark site.
 - **Home-screen widget** (small and medium) shows tonight's answer. The app and the widget share it through an App Group
-  (`group.io.github.rsutcliffe.nightwatch.phone`); the widget fetches nothing.
+  (`group.io.github.rsutcliffe.nightwatch.phone`); the widget fetches nothing. When Apple Weather supplied the forecast, Apple's mark is on
+  the small, medium and large widgets and on the Shortcuts answer cards (the app keeps the image in the App Group, as the Mac does); the mark
+  links to Apple's legal page except on the small widget. Otherwise the service's name is shown.
 - **Forecast sources** are tried in order: Apple Weather, Open-Meteo, MET Norway, 7Timer. The footer on Tonight names the one that answered, and the
   Apple Weather mark is shown only when Apple Weather did.
 - **Shortcuts and Spotlight** (App Intents) read the forecast the app already holds; only Refresh fetches. The `nightwatch://` link scheme opens a target or the
