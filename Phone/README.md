@@ -27,7 +27,8 @@ Not yet released.
 
 ## Credits
 
-- Milky Way photograph behind the Tonight screen: [William Zhang](https://unsplash.com/@cyclens_) on [Unsplash](https://unsplash.com/photos/blue-and-white-starry-night-sky-hqKPgEVEc-8), under the Unsplash License.
+- Night-sky backdrop pictures behind the screens: created by Richard Sutcliffe in Google Stitch, as on the Mac.
+- Milky Way photograph (the fallback backdrop if those pictures are missing): [William Zhang](https://unsplash.com/@cyclens_) on [Unsplash](https://unsplash.com/photos/blue-and-white-starry-night-sky-hqKPgEVEc-8), under the Unsplash License.
 - Constellation and Milky Way line art: the Nightwatch Mac app's artwork, by its author.
 - Moon pictures: NASA Scientific Visualization Studio. Sky photographs: DSS2 through CDS Strasbourg. Weather: Apple Weather, Open-Meteo, [MET Norway](https://api.met.no/) (CC BY 4.0, used when the earlier sources cannot be read) and 7Timer! (the last resort, and seeing).
 - Light-pollution grids: made using VIIRS Nighttime Lights data (Earth Observation Group, Colorado School of Mines), as in the Nightwatch Mac app.
