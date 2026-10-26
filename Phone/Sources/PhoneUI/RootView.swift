@@ -124,23 +124,30 @@ public struct RootView: View {
     private func tabName(_ i: SidebarItem) -> String { i == .tonight ? "Tonight" : i == .plan ? "Plan" : i == .targets ? "Targets" : "Week" }
     private func tabSymbol(_ i: SidebarItem) -> String { i == .tonight ? "moon.stars" : i == .plan ? "list.bullet.rectangle" : i == .targets ? "sparkles" : "calendar" }
 
+    /// The selected row is drawn in the tint (a pale pill in the normal theme, red in the red one), so its label goes dark: the primary text
+    /// colour is close to both and would vanish into it.
+    private func labelColour(_ item: SidebarItem, _ theme: PhoneTheme) -> Color { selection == item ? theme.background : theme.textPrimary }
+    private func row(_ title: String, _ symbol: String, _ item: SidebarItem, _ theme: PhoneTheme) -> some View {
+        Label(title, systemImage: symbol).tag(item).foregroundStyle(labelColour(item, theme))
+    }
+
     /// iPad: a sidebar with Tonight, the sites and Settings, and the page beside it.
     private func split(_ theme: PhoneTheme) -> some View {
         NavigationSplitView(columnVisibility: $columns) {
             List(selection: $selection) {
                 Section {
-                    Label("Tonight", systemImage: "moon.stars").tag(SidebarItem.tonight)
-                    Label("Plan", systemImage: "list.bullet.rectangle").tag(SidebarItem.plan)
-                    Label("Targets", systemImage: "sparkles").tag(SidebarItem.targets)
-                    Label("The week ahead", systemImage: "calendar").tag(SidebarItem.week)
-                    Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
+                    row("Tonight", "moon.stars", .tonight, theme)
+                    row("Plan", "list.bullet.rectangle", .plan, theme)
+                    row("Targets", "sparkles", .targets, theme)
+                    row("The week ahead", "calendar", .week, theme)
+                    row("Settings", "gearshape", .settings, theme)
                 }
                 Section {
                     HStack {
                         Label("Sites", systemImage: "mappin.and.ellipse")
                         Spacer()
                         Text(store.site?.name ?? "").font(.callout).secondary().lineLimit(1)
-                    }.tag(SidebarItem.sites)
+                    }.tag(SidebarItem.sites).foregroundStyle(labelColour(.sites, theme))
                     Toggle(isOn: $red) { Label("Red night mode", systemImage: "moon.fill") }
                         .toggleStyle(PhoneToggleStyle())
                 }
