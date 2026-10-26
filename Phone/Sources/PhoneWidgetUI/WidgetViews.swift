@@ -73,6 +73,12 @@ public struct NightwatchWidgetView: View {
 
     private func stale(_ s: WidgetSnapshot) -> String? { s.staleText(now: now) }
 
+    /// Where the forecast came from, as on the Mac's widget: Apple's mark (the link to its legal page, except on the small widget, which is one
+    /// tap target), drawn as supplied in either palette; the service's name when Apple Weather did not supply the forecast.
+    private func attribution(_ s: WidgetSnapshot, link: Bool) -> some View {
+        WeatherMarkView(snapshot: s, link: link).font(.caption2).foregroundStyle(dim).lineLimit(1)
+    }
+
     /// "Aurora amber" in the level's own colour (one hue in red mode), while the status is under an hour old.
     @ViewBuilder private func auroraLine(_ s: WidgetSnapshot) -> some View {
         if let l = s.auroraLine(now: now) {
@@ -93,6 +99,7 @@ public struct NightwatchWidgetView: View {
             if let w = s.windowShort ?? s.window { Text(plain(w)).font(.caption.weight(.light)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7) }
             if s.auroraLine(now: now) != nil { auroraLine(s) }
             else { Text(plain(stale(s) ?? s.notifyShort ?? s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1) }
+            attribution(s, link: false)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
@@ -111,7 +118,11 @@ public struct NightwatchWidgetView: View {
                 if !s.targets.isEmpty {
                     Text(plain(s.targets.prefix(2).map { "\($0.catalogueID) \($0.best)" }.joined(separator: " · "))).font(.caption).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
                 }
-                Text(plain(stale(s) ?? s.updated ?? "")).font(.caption2).foregroundStyle(dim).lineLimit(1)
+                HStack(spacing: 0) {
+                    Text(plain(stale(s) ?? s.updated ?? "")).font(.caption2).foregroundStyle(dim).lineLimit(1)
+                    Spacer(minLength: 8)
+                    attribution(s, link: true)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -160,7 +171,45 @@ public struct NightwatchWidgetView: View {
                 auroraLine(s)
                 if let t = s.tomorrow { Text(plain(t)).font(.caption).foregroundStyle(dim).lineLimit(1) }
             }
-            Text(plain(stale(s) ?? [s.source, s.updated].compactMap { $0 }.joined(separator: " · "))).font(.caption2).foregroundStyle(dim).lineLimit(1)
+            // Updated on the left, Apple's mark on the right, on one centre line, as the Mac's large widget has it.
+            HStack(alignment: .center, spacing: 0) {
+                Text(plain(stale(s) ?? s.updated ?? "")).font(.caption2).foregroundStyle(dim).lineLimit(1)
+                Spacer(minLength: 8)
+                attribution(s, link: true)
+            }
+        }
+    }
+}
+
+/// Apple's Weather mark where Apple Weather supplied the forecast, else the source's name. The image is the file the app kept in the
+/// App Group (a widget cannot fetch it). Never tinted: the mark is drawn as Apple supplies it, in red night mode too.
+public struct WeatherMarkView: View {
+    let snapshot: WidgetSnapshot
+    let link: Bool
+    let height: CGFloat
+
+    public init(snapshot: WidgetSnapshot, link: Bool = true, height: CGFloat = 9) {
+        self.snapshot = snapshot; self.link = link; self.height = height
+    }
+
+    private static func image(_ data: Data) -> Image? {
+        #if canImport(UIKit)
+        UIImage(data: data).map(Image.init(uiImage:))
+        #else
+        NSImage(data: data).map(Image.init(nsImage:))
+        #endif
+    }
+
+    public var body: some View {
+        if snapshot.weatherMarkFile != nil, let data = WidgetShare.loadMark(), let image = Self.image(data) {
+            let mark = image.resizable().scaledToFit().frame(height: height)
+            if link, let legal = snapshot.weatherLegalURL.flatMap(URL.init(string:)) {
+                Link(destination: legal) { mark }.accessibilityLabel("Apple Weather, legal attribution and data sources")
+            } else {
+                mark.accessibilityLabel("Apple Weather")
+            }
+        } else if let source = snapshot.source {
+            Text(source)
         }
     }
 }

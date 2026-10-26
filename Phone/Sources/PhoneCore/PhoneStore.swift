@@ -103,6 +103,8 @@ public final class PhoneStore: ObservableObject {
     private let darkLookups: DarkLookups?
     /// Told after each plan is built, with what the home-screen widget should draw (the app writes it to the shared App Group).
     private let widgetSink: (@Sendable (WidgetSnapshot) -> Void)?
+    /// Given Apple's mark and the address it came from, just before the snapshot, so the widget can draw the mark (it cannot fetch it).
+    private let markSink: (@Sendable (Data, String) -> Void)?
     private let certified: [CertifiedSite]
     private var grids: [LPGrid] { Self.lightPollution }
     /// Britain's grid from SkyCore, and the world's from the app's own resources, as the Mac does: SkyCore carries only Britain's.
@@ -136,8 +138,10 @@ public final class PhoneStore: ObservableObject {
                 occultations: Bool = true,
                 darkLookups: DarkLookups? = .live,
                 widgetSink: (@Sendable (WidgetSnapshot) -> Void)? = nil,
+                markSink: (@Sendable (Data, String) -> Void)? = nil,
                 liveActivities: LiveActivityScheduling? = nil) {
         self.widgetSink = widgetSink
+        self.markSink = markSink
         self.liveActivities = liveActivities
         self.darkLookups = darkLookups
         certified = (try? DarkSites.bundledCertified()) ?? []
@@ -748,6 +752,7 @@ public final class PhoneStore: ObservableObject {
                                                rule: config.goRule, bright: config.brightNights))
         events = Events.markClear(buildEvents(night: night, site: site, now: now), hours: fc.hours, maxCloudPct: config.goRule.maxCloudPct)
         phase = .ready
+        if let mark = appleMarkData, let address = fc.attributionMarkURL { markSink?(mark, address) }   // before the snapshot, which looks for the file
         if let snap = tonight?.snapshot { widgetSink?(snap) }
         if let liveActivities {   // the Lock Screen card follows tonight's plan: a new forecast corrects it, a worse one removes it
             let headline = (tonight?.snapshot.headline ?? "").plainDashes

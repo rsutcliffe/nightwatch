@@ -178,6 +178,22 @@ struct Failure: Error {}
     #expect(store.appleMarkData == nil)
 }
 
+/// The widget cannot fetch Apple's mark, so the store hands it to the app just before each snapshot, only when Apple Weather supplied the forecast.
+@MainActor @Test func theWidgetIsGivenAppleMarkOnlyForAnAppleWeatherForecast() async {
+    final class Given: @unchecked Sendable { var calls: [(Data, String)] = [] }
+    for source in ["Apple Weather", "Open-Meteo"] {
+        let given = Given(), calls = Calls(); calls.source = source
+        let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("phonestore-\(UUID().uuidString)"),
+                               provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
+                               scheduler: FakeScheduler(), clock: { utc(2026, 9, 23, 12) }, fetchData: { _ in Data([1, 2, 3]) },
+                               occultations: false, darkLookups: nil, markSink: { given.calls.append(($0, $1)) })
+        store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
+        await store.refresh()
+        if source == "Apple Weather" { #expect(given.calls.count == 1 && given.calls[0].0 == Data([1, 2, 3]) && given.calls[0].1 == "https://example.invalid/mark.png") }
+        else { #expect(given.calls.isEmpty) }
+    }
+}
+
 @MainActor @Test func theLoadStageIsClearedOnceThePageIsReady() async {
     let store = makeStore(clock: Clock(utc(2026, 9, 23, 12)), calls: Calls())
     await store.refresh()
