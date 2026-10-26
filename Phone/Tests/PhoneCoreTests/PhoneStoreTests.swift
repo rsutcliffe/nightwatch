@@ -186,11 +186,13 @@ struct Failure: Error {}
         let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("phonestore-\(UUID().uuidString)"),
                                provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
                                scheduler: FakeScheduler(), clock: { utc(2026, 9, 23, 12) }, fetchData: { _ in Data([1, 2, 3]) },
+                               feeds: { _ in throw Failure() },   // no network: the comet and space-station feeds are not what this checks
                                occultations: false, darkLookups: nil, markSink: { given.calls.append(($0, $1)) })
         store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
         await store.refresh()
-        if source == "Apple Weather" { #expect(given.calls.count == 1 && given.calls[0].0 == Data([1, 2, 3]) && given.calls[0].1 == "https://example.invalid/mark.png") }
-        else { #expect(given.calls.isEmpty) }
+        let expected = source == "Apple Weather" ? ["https://example.invalid/mark.png"] : []
+        #expect(given.calls.map(\.1) == expected)
+        #expect(given.calls.map(\.0) == expected.map { _ in Data([1, 2, 3]) })
     }
 }
 
