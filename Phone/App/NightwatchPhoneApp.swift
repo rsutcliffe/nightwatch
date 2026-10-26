@@ -101,6 +101,8 @@ struct NightwatchPhoneApp: App {
         }
         var sink: (@Sendable (WidgetSnapshot) -> Void)?
         if !demo { sink = { snapshot in WidgetShare.save(snapshot); WidgetCenter.shared.reloadAllTimelines(); TonightIndex.update(snapshot) } }
+        var marks: (@Sendable (Data, String) -> Void)?   // Apple's mark for the widget, which cannot fetch it
+        if !demo { marks = { mark, address in WidgetShare.saveMark(mark, for: address) } }
         let s = PhoneStore(directory: demo ? FileManager.default.temporaryDirectory.appendingPathComponent("nightwatch-demo") : dir, provider: { site, now, ask in
             if demo, let wait = value("-demoSlow").flatMap(Double.init) { try await Task.sleep(for: .seconds(wait)) }   // hold the loading screen
             if args.contains("-demoOffline") { throw URLError(.notConnectedToInternet) }
@@ -109,7 +111,7 @@ struct NightwatchPhoneApp: App {
             return try await ForecastChain.fetch(site: site, fetcher: URLSessionFetcher(), now: now,
                                                    primary: ask ? WeatherKitSource.provider : nil)
         }, scheduler: UserNotificationScheduler(now: clock), clock: clock,
-           feeds: feeds, widgetSink: sink, liveActivities: demo || args.contains("-testLiveActivity") ? nil : LiveActivityScheduler())   // a test card is left alone by the real reconcile
+           feeds: feeds, widgetSink: sink, markSink: marks, liveActivities: demo || args.contains("-testLiveActivity") ? nil : LiveActivityScheduler())   // a test card is left alone by the real reconcile
         if demoAurora != nil { s.config.aurora.enabled = true; s.config.aurora.threshold = .yellow }
         if demo, !args.contains("-demoEmpty") { s.addSite(DemoData.site) }
         if demo, args.contains("-demoHorizon") {   // a site with trees to the north-east and hills to the west, and the hills already looked up
