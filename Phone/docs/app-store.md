@@ -30,6 +30,15 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
   while it is open and when iOS grants a background refresh, and posts a local notification. No server is involved.
 - **Photos:** "Measure from a photo" (in a site's Horizon) uses the system photo picker, so no photo-library permission is
   requested. The chosen photo is read on the device and not kept.
+- **Lock Screen card.** When a clear window opens, the app starts a Live Activity (a local ActivityKit card; no push service and no server) with the sky score and a
+  countdown to the end of the window, and the system marks it over when the window closes. It is switched off with Settings › "Clear-window card on the Lock Screen".
+- **Siri search (iOS 27).** "Find the Crescent Nebula in Nightwatch" runs the app's in-app search (`.system.searchInApp`) and opens the Targets group of the best
+  match; words that ask for tonight open the plan. The app does not claim to answer other spoken questions: Siri answers those itself.
+- **Devices tested.** iPhone 15 Pro, iPad Air (M3) and the Simulator, including the simulated iPhone Duo (inner display). It was not tested on a physical iPhone
+  Duo; a report from an owner is welcome.
+- **Entitlements and capabilities in the build:** WeatherKit; iCloud key-value storage (`$(TeamIdentifierPrefix)io.github.rsutcliffe.nightwatch`); one App Group
+  (`group.io.github.rsutcliffe.nightwatch.phone`, shared with the widget); location when in use; local notifications; Live Activities; background fetch (a
+  best-effort forecast refresh). The same bundle ID, name and record as the Mac app (universal purchase).
 - **To see the app working:** open it, choose any place on the welcome screen, and Tonight's answer appears.
 
 ## App Privacy answers
@@ -47,10 +56,87 @@ that the page still shows them before submitting.
   by `PrivacyManifestTests`. iOS asks for these, with a reason for each of certain system APIs: user defaults (own, `CA92.1`; the App Group's, `1C8F.1`) and
   file timestamps (own container or group, `C617.1`). Change a manifest and the answers above together.
 
-## Guideline pre-flight
+## Signing and upload
 
-Re-run the Mac app's table in `docs/app-store.md` of the Mac repository before submitting; it records each guideline
-the Mac app was rejected on (including 5.2.5, the Apple Weather attribution).
+The app and widget use the Mac's bundle IDs, so a signed build made with `-allowProvisioningUpdates` can add a capability to the Mac's App ID and invalidate
+the Mac's profiles (it did on 26 October 2026). Use `Phone/scripts/appstore.sh`, which never lets Xcode touch the account.
+
+1. **One-off, in the developer portal:** Profiles › **+** › **App Store Connect** (iOS) › the App ID `io.github.rsutcliffe.nightwatch` › the Apple Distribution
+   certificate › name it "Nightwatch iOS App Store"; then the same for `io.github.rsutcliffe.nightwatch.widget`, named "Nightwatch Widget iOS App Store". Creating a profile
+   changes no App ID. Download both and copy each to `~/Library/Developer/Xcode/UserData/Provisioning Profiles/<uuid>.mobileprovision` (the UUID is inside the profile).
+   Record the App ID's capabilities and the Mac profiles' status before and after: nothing should change.
+2. `Phone/scripts/appstore.sh --check` confirms the certificate and both profiles; without `--check` it archives, exports, and checks the entitlements, the privacy
+   manifests, the version and build, the encryption flag and quarantine, then writes `build/appstore-ios/Nightwatch-<version>-<build>.ipa`.
+3. `open -a Transporter build/appstore-ios/Nightwatch-<version>-<build>.ipa` and **Deliver**. A build that fails processing does not use up its build number.
+4. Every upload needs a build number above the last (`CURRENT_PROJECT_VERSION` in `Phone/project.yml`, in two places with the widget's `CFBundleVersion`).
+
+## Listing text (iPhone and iPad version page)
+
+Subtitle, category, price, age rating, privacy policy URL and App Privacy are the record's and are already set for the Mac. This version's own fields, written to the
+same rules (no Pratchett or Discworld names, 5.2.1; no web address or other marketplace in the text, 2.3.10):
+
+- **Support URL:** https://github.com/rsutcliffe/nightwatch/discussions
+- **Marketing URL:** https://delphi-dolphin.com/nightwatch
+- **Copyright:** `2026 Richard Sutcliffe`
+- **Keywords** (93 of 100 characters): `astronomy,astrophotography,telescope,stars,forecast,seeing,dark sky,aurora,moon,nebula,widget`
+- **Promotional text** (125 of 170): Know when tonight is clear: the sky score, the clear window and the best targets for your telescope, on your iPhone and iPad.
+- **What's New:** not asked for a first version.
+
+**Description:**
+
+> Nightwatch tells you whether tonight is worth setting up the telescope, and speaks up when it is. When tonight looks clear for long enough, it sends a
+> heads-up before sunset, then a nudge just before the clear spell begins. If the forecast turns, it tells you.
+>
+> Open it to see a sky score, the clear window, cloud by hour, darkness, the Moon, seeing, wind, dew risk and transparency, and the best targets for your
+> telescope's field of view tonight.
+>
+> • Two forecasts compared: Apple Weather, with Open-Meteo as a second opinion, and 7Timer for seeing
+> • Targets chosen for your telescope, with "How to shoot this" on every target: filter, exposure and frames
+> • Tonight's plan: your favourites in the order of their best time
+> • Darker skies nearby, scored for tonight
+> • Your own horizon: mark what blocks your sky, or measure it from a photo
+> • Aurora alerts for your site, wherever you observe from
+> • Tonight's events: the Moon passing in front of a star, comets and the space station
+> • Small, medium and large Home Screen widgets, and a Lock Screen card when a clear window opens
+> • Spotlight and Shortcuts actions, and on iOS 27 Siri search for any target
+> • A red night mode that keeps your eyes dark-adapted
+> • Shares your sites and settings with the Nightwatch Mac app through iCloud
+>
+> No accounts, no advertising and no tracking. Nightwatch is open source.
+
+Check every line against the build before pasting (Siri search needs iOS 27; the Lock Screen card needs Live Activities switched on).
+
+## Before pressing Submit
+
+- The Notes above are current and list every entitlement the build carries (the `appstore.sh` check prints them).
+- A screen recording per device family is in App Review Information › **Attachment**, not only in a reply. One continuous take each, owner's hand (iPhone and iPad):
+  launch and Welcome with "Use this device's location" and its system prompt; Tonight, with **the Apple Weather mark close up and its legal page opening from it (5.2.5)**;
+  the footer after switching to red night mode (the mark stays white); the Targets list and a target page with "How to shoot this"; Plan; Settings, with the "Clear-window
+  card on the Lock Screen" switch; the small, medium and large widgets on the Home Screen; the Lock Screen card; a Shortcuts Sky Score answer showing the mark; the photo picker
+  in Horizon › Measure from a photo; and, on iOS 27, "Find the Crescent Nebula in Nightwatch" to Siri. Not on screen: the owner's home location (use a public site).
+- After **Submit** the status reads **Waiting for Review** ("Ready for Review" means not submitted). Version Release is automatic (owner, 27 October 2026), so approval puts it on sale.
+
+## Guideline pre-flight (27 October 2026)
+
+The Mac's table (`docs/app-store.md`) written after the 5.2.5 rejection, rerun for the phone. For each guideline a reviewer could use to ask "where do I see this?", the answer is in the Notes AND on the recording.
+
+| Guideline | A reviewer could ask | Evidence today | Status |
+|---|---|---|---|
+| 2.1 completeness | How do I use it? Any login? | No sign-in; Notes give the set-up and every entitlement; "choose any place" shows Tonight | OK; recording |
+| 2.3.3, 2.3.10 metadata | Screenshots of the app in use? Other platform named? | Real captures (demo site, not the owner's home); description names no web address or other marketplace | OK |
+| 2.4.1 iPad | Does it work on iPad? | Sidebar layout, tested on iPad Air; selected-row legibility fixed (PR 223) | OK |
+| 2.5.4 background | Why background fetch? | Best-effort forecast refresh, re-queues alerts; named in Notes | OK |
+| 2.5.11 Siri and Shortcuts | Do the actions fit the app? | Actions about the forecast and targets; Siri search for targets; the Notes say spoken answers are Siri's | OK; show one on the recording |
+| 2.5.16 widgets, Live Activities | Related to the app? | Sky score widgets; the Lock Screen card is a local Live Activity with a Settings switch | OK; show both |
+| 4.0 design, 4.2 minimum functionality | Is it more than a web page? | Native forecast, planner, charts, widgets, Shortcuts, red night mode | OK |
+| 5.1.1(i) privacy policy | Link in metadata and in the app? | `PRIVACY.md` (PR 222 adds the iPhone section, merged at submission); in the app at the foot of Settings | OK once PR 222 is merged |
+| 5.1.1(ii), (iv) consent | Asks before location? Works without? | From a button only; "add a place by name" works without it | OK; recording shows the prompt |
+| 5.1.2 data sharing, privacy labels | Do the labels match? | Precise Location, app functionality, not linked, no tracking; manifests match (PR 221) | OK |
+| 5.2.2 third-party services | Permission for the data? | As the Mac: Open-Meteo, 7Timer, MET Norway, NOAA, AuroraWatch UK, CDS, NASA, MPC, CelesTrak, credited in `NOTICE` and the README | OK while the app stays free with no ads |
+| **5.2.5 Apple products** | **Is the Apple Weather mark and legal link shown?** | Tonight footer, widgets (small without the link) and Shortcuts cards show Apple's mark, unmodified, with the legal link; Apple's published pages require the mark and the link and say nothing about colour; the API supplies light and dark versions | OK; **recording must show it close up and open the legal page** |
+| Export compliance | Encryption? | `ITSAppUsesNonExemptEncryption` false; `appstore.sh` checks it | OK |
+| Privacy manifest | Required-reason APIs declared? | App and widget manifests, checked by a test and by `appstore.sh` | OK |
+| Duo | Works on the foldable? | Inner display checked in the Simulator (27 October); the code uses size classes and no `UIScreen.main`; not tested on the outer display or the fold, or on a physical Duo | Stated in the Notes |
 
 ## Still to decide or provide
 
