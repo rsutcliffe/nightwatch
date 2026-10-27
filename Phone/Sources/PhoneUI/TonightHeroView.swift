@@ -43,7 +43,7 @@ struct TonightHeroView: View {
         VStack(alignment: .leading, spacing: 6) {
             headline.dynamicTypeSize(...DynamicTypeSize.accessibility2).fixedSize(horizontal: false, vertical: true)
             if let t = hero.times {
-                Text(t).font(.system(size: timesSize, weight: .thin)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                Text(snap.windowZone.map { t + " " + $0 } ?? t).font(.system(size: timesSize, weight: .thin)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
             }
             if let line = hoursLine {
                 Text(line).font(.callout).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)

@@ -73,6 +73,14 @@ public struct NightwatchWidgetView: View {
 
     private func stale(_ s: WidgetSnapshot) -> String? { s.staleText(now: now) }
 
+    /// The window in the site's time, with the site's time zone named when it is not the viewer's: "19:23-05:39 PDT · 10.3 h", "Clear 19:23-05:39 PDT".
+    private func zoned(_ window: String, _ s: WidgetSnapshot) -> String {
+        guard let zone = s.windowZone else { return window }
+        var parts = window.components(separatedBy: " · ")
+        parts[0] += " " + zone
+        return parts.joined(separator: " · ")
+    }
+
     /// Where the forecast came from, as on the Mac's widget: Apple's mark (the link to its legal page, except on the small widget, which is one
     /// tap target), drawn as supplied in either palette; the service's name when Apple Weather did not supply the forecast.
     private func attribution(_ s: WidgetSnapshot, link: Bool) -> some View {
@@ -96,7 +104,7 @@ public struct NightwatchWidgetView: View {
                 Spacer(minLength: 0)
             }
             TwoWeight.headline(plain(s.headline), size: 15).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.7)
-            if let w = s.windowShort ?? s.window { Text(plain(w)).font(.caption.weight(.light)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7) }
+            if let w = s.windowShort ?? s.window { Text(plain(zoned(w, s))).font(.caption.weight(.light)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7) }
             if s.auroraLine(now: now) != nil { auroraLine(s) }
             else { Text(plain(stale(s) ?? s.notifyShort ?? s.siteName)).font(.caption2).foregroundStyle(dim).lineLimit(1) }
             attribution(s, link: false)
@@ -112,7 +120,7 @@ public struct NightwatchWidgetView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 TwoWeight.headline(plain(s.headline), size: 17).foregroundStyle(text).lineLimit(2).minimumScaleFactor(0.7)
-                if let w = s.window { Text(plain(w)).font(.system(size: 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
+                if let w = s.window { Text(plain(zoned(w, s))).font(.system(size: 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
                 if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, labels: false, height: 34, lineWidth: 3) }
                 auroraLine(s)
                 if !s.targets.isEmpty {
@@ -150,7 +158,7 @@ public struct NightwatchWidgetView: View {
                 VStack(alignment: .leading, spacing: full ? 4 : 2) {
                     Text(s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
                     TwoWeight.headline(plain(s.headline), size: full ? 20 : 17).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
-                    if let w = s.window { Text(plain(w)).font(.system(size: full ? 17 : 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
+                    if let w = s.window { Text(plain(zoned(w, s))).font(.system(size: full ? 17 : 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
                     if full, let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
                 }
             }

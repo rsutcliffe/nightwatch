@@ -222,3 +222,22 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(Copy.menuBarLabel(s, now: november.addingTimeInterval(7 * 3600 + 1200)).hasSuffix(", Forecast 7 h old"))
 }
 
+
+/// The window is drawn in the site's time; the zone is named only when that is not the clock the snapshot is read on.
+@Test func theWindowZoneIsNamedOnlyWhenTheClocksDiffer() throws {
+    let (p, t) = try plans(november, clearMiddle)
+    #expect(snap(p, t).windowZone == nil)   // a London site read on a London clock
+    #expect(snap(p, t, clock: TimeZone(identifier: "America/Los_Angeles")!).windowZone == "GMT")
+    #expect(snap(p, t, clock: TimeZone(identifier: "Europe/London")!).window == snap(p, t, clock: TimeZone(identifier: "America/Los_Angeles")!).window)   // the wording itself is unchanged
+}
+
+@Test func zoneNamesAreAbbreviationsWhereThereAreAndOffsetsWhereThereAreNot() {
+    func site(_ id: String) -> Site { Site(name: "S", latitude: 0, longitude: 0, elevationM: 0, timeZoneID: id, bortle: 3) }
+    let uk = TimeZone(identifier: "Europe/London")!
+    let july = utc(2026, 7, 1, 12, 0), november = utc(2026, 11, 20, 12, 0)
+    #expect(Copy.zoneName(at: july, site: site("America/Los_Angeles"), clock: uk) == "PDT")
+    #expect(Copy.zoneName(at: november, site: site("America/Los_Angeles"), clock: uk) == "PST")
+    #expect(Copy.zoneName(at: july, site: site("Europe/London"), clock: TimeZone(identifier: "America/Los_Angeles")!) == "BST")
+    #expect(Copy.zoneName(at: july, site: site("Europe/London"), clock: uk) == nil)
+    #expect(Copy.zoneName(at: november, site: site("Asia/Kathmandu"), clock: uk) == "UTC+5:45")
+}
