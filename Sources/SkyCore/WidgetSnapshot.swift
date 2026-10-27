@@ -42,6 +42,9 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     /// cannot fetch it), and the legal page of other data sources. Nil unless Apple Weather supplied the forecast.
     public var weatherMarkFile: String? = nil
     public var weatherLegalURL: String? = nil
+    /// The site's time zone when its clock differs from the clock the snapshot is read on ("PDT", "UTC+2"), so a window drawn in the site's
+    /// time is never mistaken for the reader's own. Nil when they agree, and for snapshots written before it existed. Only the phone's views draw it.
+    public var windowZone: String? = nil
     /// The aurora level for this site when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
     /// from `aurora.updated`, the popover's rule.
     public var aurora: AuroraStatus?
@@ -57,7 +60,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         let reason: String? = w != nil ? Copy.heldBack(plan.limiting)
             : (noDarkness ? "Too far north or south for this date." : Planner.noWindowReasonText(plan: plan, rule: rule, bright: bright, site: site))
         let picks = plan.mode == .bright ? plan.brightTargets : plan.best
-        return WidgetSnapshot(
+        var snapshot = WidgetSnapshot(
             siteName: site.name, fetchedAt: fetchedAt, score: plan.score, mode: plan.mode, headline: headline,
             window: w.map { "\(hm($0.start))–\(hm($0.end)) · \(String(format: "%.1f h", $0.hours))" },
             windowShort: w.map { (plan.mode == .bright ? "Bright " : "Clear ") + "\(hm($0.start))–\(hm($0.end))" },
@@ -76,6 +79,8 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
             brightList: plan.mode == .bright && !plan.brightTargets.isEmpty ? Copy.brightList(plan.brightTargets) : nil,
             source: source, updated: "Updated \(Copy.clockTime(fetchedAt, timeZone: clock))",
             aurora: aurora.flatMap { a in auroraSettings?.shows(a) == true ? a : nil })
+        snapshot.windowZone = w.flatMap { Copy.zoneName(at: $0.start, site: site, clock: clock) }
+        return snapshot
     }
 
     /// "Aurora amber" in the level's colour (AuroraWatch UK's), or nil when there is none or it is over an hour old at `now`.

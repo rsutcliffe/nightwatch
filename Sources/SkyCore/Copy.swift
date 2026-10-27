@@ -217,6 +217,19 @@ public struct Copy: Sendable {
         return f.string(from: date)
     }
 
+    /// The site's time zone, named, when its clock differs from `clock` at `date` ("PDT"; "UTC+2" when the zone has no abbreviation of its
+    /// own in English): a window drawn in the site's time can then be told from the reader's. Nil when the two clocks agree.
+    public static func zoneName(at date: Date, site: Site, clock: TimeZone) -> String? {
+        let z = site.timeZone, offset = z.secondsFromGMT(for: date)
+        guard offset != clock.secondsFromGMT(for: date) else { return nil }
+        let style: NSTimeZone.NameStyle = z.isDaylightSavingTime(for: date) ? .shortDaylightSaving : .shortStandard
+        for locale in ["en_US", "en_GB"] {   // en_US names the American zones, en_GB the European ones; neither names the rest
+            if let name = z.localizedName(for: style, locale: Locale(identifier: locale)), name == "GMT" || !(name.hasPrefix("GMT") || name.hasPrefix("UTC")) { return name }
+        }
+        let minutes = abs(offset) / 60 % 60
+        return "UTC" + (offset < 0 ? "-" : "+") + "\(abs(offset) / 3600)" + (minutes > 0 ? String(format: ":%02d", minutes) : "")
+    }
+
     public static func hhmm(_ date: Date, site: Site) -> String {
         let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "HH:mm"; f.locale = Locale(identifier: "en_GB")
         return f.string(from: date)
