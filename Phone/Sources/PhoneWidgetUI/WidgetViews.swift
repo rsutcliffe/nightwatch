@@ -138,6 +138,11 @@ public struct NightwatchWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
+    /// Under "BEST TONIGHT" the rows need not say "Best" again, which is what truncated the target's type name ("EMISSION…") on an iPad's narrow widget.
+    private func rowTime(_ t: WidgetTarget, _ s: WidgetSnapshot) -> String {
+        s.mode == .bright || !t.best.hasPrefix("Best ") ? t.best : String(t.best.dropFirst(5))
+    }
+
     private func largeLayout(_ s: WidgetSnapshot, full: Bool) -> some View {
         VStack(alignment: .leading, spacing: full ? 12 : 6) {
             HStack(alignment: .top, spacing: 14) {
@@ -157,9 +162,9 @@ public struct NightwatchWidgetView: View {
                         Link(destination: WidgetLink.target(t.id).url) {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text).lineLimit(1).fixedSize().layoutPriority(2)
-                                Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1)
+                                Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1).minimumScaleFactor(0.75)
                                 Spacer(minLength: 4)
-                                Text(plain(t.best)).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
+                                Text(plain(rowTime(t, s))).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
                             }
                             .frame(minHeight: full ? 28 : 22)
                         }
