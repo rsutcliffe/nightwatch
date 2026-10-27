@@ -20,6 +20,9 @@ public struct NightwatchWidgetView: View {
     /// The widget's plain card: the Mac widget's colour (0x1C1F27), so a widget looks the same on every device. Black in red mode.
     public static func background(red: Bool) -> Color { red ? .black : Color(red: 28 / 255, green: 31 / 255, blue: 39 / 255) }
 
+    /// How much of the card shows the Home Screen through it (owner, 27 October 2026: as the Mac's widget does). The Live Activity card stays solid.
+    public static let cardOpacity = 0.72
+
     /// Plain hyphens only, never an en or em dash, whatever wording SkyCore supplies.
     private func plain(_ t: String) -> String { t.replacingOccurrences(of: "\u{2013}", with: "-").replacingOccurrences(of: "\u{2014}", with: "-") }
 
@@ -128,40 +131,57 @@ public struct NightwatchWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    /// The large widget. The full layout when the widget is tall enough (an iPhone's); otherwise a shorter one, so nothing is ever clipped: an
-    /// iPad's large widget is much shorter. The shorter layout drops the reason, the aurora line and tomorrow, and shrinks the dial and arc.
+    /// The large widget, as tall as the widget allows so nothing is ever clipped: the full layout; then one that keeps the reason but shrinks the
+    /// dial, arc and gaps (an iPhone's, now that each target has two lines); then one without the reason, aurora line and tomorrow.
     private func large(_ s: WidgetSnapshot) -> some View {
         ViewThatFits(in: .vertical) {
-            largeLayout(s, full: true)
-            largeLayout(s, full: false)
+            largeLayout(s, tier: 0)
+            largeLayout(s, tier: 1)
+            largeLayout(s, tier: 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    private func largeLayout(_ s: WidgetSnapshot, full: Bool) -> some View {
-        VStack(alignment: .leading, spacing: full ? 12 : 6) {
+    private func largeLayout(_ s: WidgetSnapshot, tier: Int) -> some View {
+        let full = tier == 0, showsReason = tier <= 1
+        return VStack(alignment: .leading, spacing: [12, 8, 6][tier]) {
             HStack(alignment: .top, spacing: 14) {
-                bezel(s, full ? 82 : 60)
+                bezel(s, [82, 72, 60][tier])
                 VStack(alignment: .leading, spacing: full ? 4 : 2) {
-                    Text(s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
+                    Text("TONIGHT · " + s.siteName.uppercased()).font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim).lineLimit(1)
                     TwoWeight.headline(plain(s.headline), size: full ? 20 : 17).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
                     if let w = s.window { Text(plain(s.zoned(w))).font(.system(size: full ? 17 : 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
-                    if full, let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(2) }
+                    if showsReason, let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(full ? 3 : 2) }
+                    if showsReason, let a = s.agreement {
+                        HStack(spacing: 5) {
+                            if s.agreementWarns { Circle().fill(dim).frame(width: 5, height: 5) } else { Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)) }
+                            Text(plain(a)).lineLimit(1)
+                        }.font(.caption).foregroundStyle(dim)
+                    }
                 }
             }
-            if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: full ? 78 : 56, lineWidth: 3.5) }
+            if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: [70, 54, 52][tier], lineWidth: 3.5) }
+            // The rule between the night and the targets, as on the Mac's large widget: it balances the card (owner, 27 October 2026).
+            Rectangle().fill(Color.white.opacity(0.14)).frame(height: 1)
             if !s.targets.isEmpty {
                 VStack(alignment: .leading, spacing: full ? 4 : 2) {
                     Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
                     ForEach(s.targets, id: \.id) { t in
                         Link(destination: WidgetLink.target(t.id).url) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(plain(t.catalogueID)).font(.callout.weight(.heavy)).foregroundStyle(text).lineLimit(1).fixedSize().layoutPriority(2)
-                                Text(plain(t.name).uppercased()).font(.caption2).tracking(1.0).foregroundStyle(dim).lineLimit(1).minimumScaleFactor(0.75)
-                                Spacer(minLength: 4)
-                                Text(plain(s.rowTime(t))).font(.caption).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
+                            // As the Mac's rows: the group's icon on a faint tile, the id and type, the time beneath (owner, 27 October 2026).
+                            HStack(spacing: 10) {
+                                Image(systemName: t.group.symbolName).font(.system(size: full ? 14 : 12)).foregroundStyle(dim)
+                                    .frame(width: full ? 28 : 24, height: full ? 28 : 24)
+                                    .background(Color.white.opacity(red ? 0.06 : 0.1), in: RoundedRectangle(cornerRadius: 7))
+                                    .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    (Text(plain(t.catalogueID)).fontWeight(.heavy).foregroundColor(text) + Text("  " + plain(t.name)).foregroundColor(dim))
+                                        .font(.footnote).lineLimit(1).minimumScaleFactor(0.75)
+                                    Text(plain(s.rowTime(t))).font(.caption2.weight(.medium)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.7)
+                                }
+                                Spacer(minLength: 0)
                             }
-                            .frame(minHeight: full ? 28 : 22)
+                            .frame(minHeight: [30, 28, 24][tier])
                         }
                     }
                 }
