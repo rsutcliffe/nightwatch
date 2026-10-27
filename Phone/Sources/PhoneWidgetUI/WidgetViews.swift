@@ -152,9 +152,17 @@ public struct NightwatchWidgetView: View {
                     TwoWeight.headline(plain(s.headline), size: full ? 20 : 17).foregroundStyle(text).lineLimit(1).minimumScaleFactor(0.7)
                     if let w = s.window { Text(plain(s.zoned(w))).font(.system(size: full ? 17 : 15, weight: .thin)).monospacedDigit().foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.6) }
                     if showsReason, let r = s.reason { Text(plain(r)).font(.caption).foregroundStyle(dim).lineLimit(full ? 3 : 2) }
+                    if showsReason, let a = s.agreement {
+                        HStack(spacing: 5) {
+                            if s.agreementWarns { Circle().fill(dim).frame(width: 5, height: 5) } else { Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)) }
+                            Text(plain(a)).lineLimit(1)
+                        }.font(.caption).foregroundStyle(dim)
+                    }
                 }
             }
             if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: [70, 54, 52][tier], lineWidth: 3.5) }
+            // The rule between the night and the targets, as on the Mac's large widget: it balances the card (owner, 27 October 2026).
+            Rectangle().fill(Color.white.opacity(0.14)).frame(height: 1)
             if !s.targets.isEmpty {
                 VStack(alignment: .leading, spacing: full ? 4 : 2) {
                     Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
