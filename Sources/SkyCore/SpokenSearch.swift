@@ -16,6 +16,12 @@ public enum SpokenSearch {
         text.lowercased().split { !$0.isLetter && $0 != "'" && $0 != "’" }.contains { ["tonight", "tonight's", "tonight’s", "plan"].contains(String($0)) }
     }
 
+    /// The group a spoken search opens: the first match among tonight's targets, else the first in the catalogue (a target that is not up tonight
+    /// still has a group, where the search hint says so). Nil when nothing matches anywhere.
+    public static func group(for text: String, planned: [RankedTarget], catalogue: Catalog) -> TargetGroup? {
+        planned.first { $0.matches(text) }?.group ?? catalogue.objects(matching: text).first?.group
+    }
+
     public static func normalise(_ text: String) -> String {
         let words = text.split(whereSeparator: \.isWhitespace).map(String.init)
         func bare(_ i: Int) -> String { words[i].trimmingCharacters(in: .punctuationCharacters).lowercased() }

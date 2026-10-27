@@ -24,7 +24,7 @@ Nightwatch tells you whether tonight is worth observing the night sky, and alert
   links to Apple's legal page except on the small widget. Otherwise the service's name is shown.
 - **Forecast sources** are tried in order: Apple Weather, Open-Meteo, MET Norway, 7Timer. The footer on Tonight names the one that answered, and the
   Apple Weather mark is shown only when Apple Weather did.
-- **Shortcuts and Spotlight** (App Intents) read the forecast the app already holds; only Refresh fetches. The `nightwatch://` link scheme opens a target or the
+- **Shortcuts and Spotlight** (App Intents) read the forecast the app already holds; only Refresh fetches. On iOS 27 Siri's "find X in Nightwatch" goes to the app's in-app search (a target page's group, with the search words in its box); questions about tonight open the plan. A spoken tonight question is still answered by Siri from its own sources. The `nightwatch://` link scheme opens a target or the
   plan from the widget and from Shortcuts.
 - **Aurora alerts** are off by default. When on, the app reads AuroraWatch UK's status (UK and Ireland) or NOAA's aurora forecast (elsewhere)
   while it is open and when iOS grants a background refresh, and posts a local notification. No server is involved.

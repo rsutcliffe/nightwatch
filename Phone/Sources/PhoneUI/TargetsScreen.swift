@@ -9,6 +9,9 @@ struct TargetsScreen: View {
     // `-demoOpen eyes` / `events` opens that page at launch, for screenshots in the Simulator.
     @State private var linkedTarget: RankedTarget?
     @State private var showLinked = false
+    @State private var showSearched = false
+    @State private var searchedGroup = TargetGroup.nebulae
+    @State private var searchedText = ""
     @State private var demoEyes = UserDefaults.standard.string(forKey: "demoOpen") == "eyes"
     @State private var demoDark = UserDefaults.standard.string(forKey: "demoOpen") == "dark"
     @State private var demoEvents = ["events", "event"].contains(UserDefaults.standard.string(forKey: "demoOpen"))
@@ -35,6 +38,7 @@ struct TargetsScreen: View {
         .background { StarField(seed: "targets", calm: true).ignoresSafeArea() }
         .navigationDestination(isPresented: $demoEyes) { EyesScreen(store: store) }
         .navigationDestination(isPresented: $showLinked) { if let t = linkedTarget { TargetDetailScreen(store: store, target: t) } }
+        .navigationDestination(isPresented: $showSearched) { TargetGroupScreen(store: store, group: searchedGroup, initialQuery: searchedText) }
         .onAppear(perform: consumeLink)
         .onChange(of: store.pendingLink) { _, _ in consumeLink() }
         .navigationDestination(isPresented: $demoDark) { DarkSitesScreen(store: store) }
@@ -46,6 +50,8 @@ struct TargetsScreen: View {
         guard let link = store.pendingLink else { return }
         store.pendingLink = nil
         if case .target(let id) = link, let t = store.target(withID: id) { linkedTarget = t; showLinked = true }
+        // Siri's "find X in Nightwatch" (#72): the group holding the best match, with the words in its search box and the hint that says what was found.
+        if case .search(let text) = link, let g = store.groupForSearch(text) { searchedGroup = g; searchedText = text; showSearched = true }
     }
 
     private func row<D: View>(title: String, symbol: String, count: Int, @ViewBuilder dest: @escaping () -> D) -> some View {
@@ -69,7 +75,10 @@ struct TargetsScreen: View {
 struct TargetGroupScreen: View {
     @ObservedObject var store: PhoneStore
     let group: TargetGroup
-    @State private var query = ""
+    @State private var query: String
+    init(store: PhoneStore, group: TargetGroup, initialQuery: String = "") {
+        self.store = store; self.group = group; _query = State(initialValue: initialQuery)
+    }
     @State private var sort = TargetSort.bestNow
     @AppStorage("fitsOnly") private var fitsOnly = false
     @AppStorage("includeMoonWashed") private var includeMoonWashed = false
@@ -92,8 +101,10 @@ struct TargetGroupScreen: View {
                 }
                 Toggle("Only those that fit my telescope", isOn: $fitsOnly).font(.callout)
                 Toggle("Include those the Moon washes out", isOn: $includeMoonWashed).font(.callout)
-                if shown.isEmpty {
-                    Text(query.isEmpty ? "Nothing in this group is up tonight." : "No match.").font(.callout).secondary().padding(.top, 20)
+                if let hint = searchHint(all) {   // what the search found, as the Mac's Targets window says it
+                    Text(hint).font(.callout).foregroundStyle(theme.warning).fixedSize(horizontal: false, vertical: true)
+                } else if shown.isEmpty {
+                    Text("Nothing in this group is up tonight.").font(.callout).secondary().padding(.top, 20)
                 }
                 ForEach(Array(shown.enumerated()), id: \.element.id) { i, t in
                     NavigationLink { TargetDetailScreen(store: store, target: t) } label: {
@@ -109,6 +120,13 @@ struct TargetGroupScreen: View {
         .searchable(text: $query, prompt: "M42, Orion, comet")
         .navigationTitle(group.displayName)
         .navigationBarTitleDisplayModeInline()
+    }
+
+    /// The Mac's search hint: matches here, the two switches' hidden ones, matches in other groups, and a target the catalogue has but tonight's
+    /// list leaves out. Nil with no search.
+    private func searchHint(_ all: [RankedTarget]) -> String? {
+        let notPlanned = all.contains { $0.matches(query) } ? [] : store.catalogueMatches(query)
+        return Copy.searchHint(query: query, targets: all, group: group, fitsOnly: fitsOnly, includeMoonWashed: includeMoonWashed, notPlanned: notPlanned)
     }
 }
 
