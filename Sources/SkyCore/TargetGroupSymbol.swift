@@ -1,7 +1,5 @@
-import SkyCore
-
 extension TargetGroup {
-    /// The SF Symbol for a target group, shared by the Targets sidebar, the thumbnails and the widget.
+    /// The SF Symbol for a target group, shared by the Targets sidebar, the thumbnails and both widgets (Mac and phone).
     public var symbolName: String {
         switch self {
         case .nebulae: "cloud.fill"

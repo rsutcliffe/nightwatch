@@ -96,7 +96,7 @@ struct Headline: View {
             }
             TwoWeight.headline(s.headline.plainDashes, size: 15).foregroundStyle(Tokens.lit)
                 .lineLimit(compact ? 1 : 2).minimumScaleFactor(compact ? 0.7 : 0.8)
-            if let w = s.window { Text(w.plainDashes).font(.system(size: compact ? 17 : 20, weight: .thin)).foregroundStyle(Tokens.lit).lineLimit(1).minimumScaleFactor(0.7) }
+            if let w = s.window { Text(s.zoned(w).plainDashes).font(.system(size: compact ? 17 : 20, weight: .thin)).foregroundStyle(Tokens.lit).lineLimit(1).minimumScaleFactor(0.7) }
             // No dot on the reason line, as in the popover (owner, 28 September 2026).
             if let r = s.reason { NoteLine(text: r, warns: false, lines: noteLines).fixedSize(horizontal: false, vertical: true) }
             // A disagreement is the popover's plain line; agreement keeps its tick (owner, 28 September 2026).
@@ -180,25 +180,24 @@ struct SmallView: View {
 struct MediumView: View {
     let s: WidgetSnapshot
     let now: Date
-    /// The night arc under the headline, in a smaller dial; where the widget is too short for it (a long reason and an aurora line),
-    /// the earlier layout with the bars, so nothing is ever cut off.
+    /// The night arc under the headline, in a smaller dial: the same arc as the iPhone and iPad, never the bars (owner, 27 October 2026).
+    /// A shorter arc where the widget is too short for the full one (a long reason and an aurora line), so nothing is ever cut off.
     var body: some View {
         ViewThatFits(in: .vertical) {
-            layout(arc: true)
-            layout(arc: false)
+            layout(arcHeight: 30)
+            layout(arcHeight: 22)
         }
     }
 
-    private func layout(arc: Bool) -> some View {
-        VStack(alignment: .leading, spacing: arc ? 6 : 8) {
-            HStack(alignment: .top, spacing: arc ? 12 : 14) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: arc ? 76 : 91)
+    private func layout(arcHeight: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 12) {
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: 76)
                 Headline(s: s, now: now, compact: true)
                 Spacer(minLength: 0)
             }
             Spacer(minLength: 0)
-            if arc { NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: false, height: 30, lineWidth: 3) }
-            else { ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 14, labels: false) }
+            NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: false, height: arcHeight, lineWidth: 3)
             HStack { Spacer(minLength: 0); WeatherAttribution(s: s) }
         }
     }
@@ -210,25 +209,26 @@ struct LargeView: View {
     /// In macOS's see-through style (another app in front, or Monochrome) only lightness survives: the dark tile drew as a
     /// solid white square hiding its symbol, so it becomes a faint tint there (0.7.0).
     @Environment(\.widgetRenderingMode) private var renderingMode
-    /// The night arc and a smaller dial where they fit; the earlier layout with the bars where they do not, so nothing is ever cut off.
+    /// The same night arc as the iPhone and iPad, never the bars (owner, 27 October 2026): the full arc where it fits, then shorter ones, the
+    /// last without hour labels, so nothing is ever cut off.
     var body: some View {
         ViewThatFits(in: .vertical) {
-            layout(arc: true)
-            layout(arc: false)
+            layout(arcHeight: 58, labels: true)
+            layout(arcHeight: 50, labels: true)
+            layout(arcHeight: 36, labels: false)
         }
     }
 
-    private func layout(arc: Bool) -> some View {
+    private func layout(arcHeight: CGFloat, labels: Bool) -> some View {
         // Measured at the real 344 × 344 pt size, content about 312 pt: 9 pt gaps, 28 pt bars and 34 pt icons ran to 348 pt on
         // a clear night with three targets and cut off the footer (25 September 2026).
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 14) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: arc ? 76 : 91)
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: 76)
                 Headline(s: s, now: now, showStale: false)
                 Spacer(minLength: 0)
             }
-            if arc { NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: true, height: 58, lineWidth: 3.5) }
-            else { ClearSkyBars(bars: s.bars, label: s.barsLabel, trackHeight: 20, labels: true, caption: false) }
+            NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: labels, height: arcHeight, lineWidth: 3.5)
             Rectangle().fill(Color.white.opacity(0.14)).frame(height: 1)
             Text(s.targets.isEmpty ? "UP TONIGHT" : "BEST TONIGHT").capsLabel()
             if s.targets.isEmpty {
@@ -245,7 +245,7 @@ struct LargeView: View {
                         VStack(alignment: .leading, spacing: 1) {
                             (Text(t.catalogueID).fontWeight(.heavy) + Text("  " + t.name).foregroundColor(Tokens.textSecondary))
                                 .font(.system(size: 11)).foregroundStyle(Tokens.lit).lineLimit(1)
-                            Text(t.best.plainDashes).font(.system(size: 9.5, weight: .medium)).foregroundStyle(Tokens.lit)
+                            Text(s.rowTime(t).plainDashes).font(.system(size: 9.5, weight: .medium)).foregroundStyle(Tokens.lit)
                         }
                     }
                 }

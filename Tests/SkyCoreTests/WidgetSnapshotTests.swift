@@ -241,3 +241,21 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(Copy.zoneName(at: july, site: site("Europe/London"), clock: uk) == nil)
     #expect(Copy.zoneName(at: november, site: site("Asia/Kathmandu"), clock: uk) == "UTC+5:45")
 }
+
+/// Both widgets draw the window and the target rows through these, so the Mac and the phone cannot word them differently.
+@Test func theZoneIsNamedAfterTheWindowTimesAndBeforeTheLength() {
+    var s = WidgetSnapshot.sample
+    #expect(s.zoned("23:00–05:32 · 6.5 h") == "23:00–05:32 · 6.5 h")   // no zone: unchanged
+    s.windowZone = "UTC+1"
+    #expect(s.zoned("23:00–05:32 · 6.5 h") == "23:00–05:32 UTC+1 · 6.5 h")
+    #expect(s.zoned("Clear 23:00–05:32") == "Clear 23:00–05:32 UTC+1")   // the small widget's short form
+}
+
+@Test func rowsUnderBestTonightDoNotRepeatBest() {
+    var s = WidgetSnapshot.sample
+    let t = WidgetTarget(id: "M74", catalogueID: "M74", name: "Galaxy", best: "Best 00:00 · 88° up", group: .galaxies)
+    s.mode = .dark
+    #expect(s.rowTime(t) == "00:00 · 88° up")
+    s.mode = .bright   // the Moon and planets list has no "Best tonight" heading
+    #expect(s.rowTime(t) == "Best 00:00 · 88° up")
+}

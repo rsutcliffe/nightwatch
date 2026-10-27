@@ -43,7 +43,7 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     public var weatherMarkFile: String? = nil
     public var weatherLegalURL: String? = nil
     /// The site's time zone when its clock differs from the clock the snapshot is read on ("PDT", "UTC+2"), so a window drawn in the site's
-    /// time is never mistaken for the reader's own. Nil when they agree, and for snapshots written before it existed. Only the phone's views draw it.
+    /// time is never mistaken for the reader's own. Nil when they agree, and for snapshots written before it existed. Drawn through `zoned(_:)` by both widgets.
     public var windowZone: String? = nil
     /// The aurora level for this site when aurora alerts are on and it is at or above the chosen level (v0.6.6); shown for an hour
     /// from `aurora.updated`, the popover's rule.
@@ -90,6 +90,21 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
     }
     /// When the aurora line stops showing, so the widget can redraw then.
     public var auroraExpires: Date? { aurora.map { $0.updated.addingTimeInterval(AuroraSettings.freshFor) } }
+
+    /// The window in the site's time with its zone named when it is not the reader's: "23:00–05:32 UTC+1 · 6.5 h", "Clear 19:23–05:39 PDT".
+    /// One rule for the Mac's and the phone's widgets.
+    public func zoned(_ window: String) -> String {
+        guard let windowZone else { return window }
+        var parts = window.components(separatedBy: " · ")
+        parts[0] += " " + windowZone
+        return parts.joined(separator: " · ")
+    }
+
+    /// A target's time under "BEST TONIGHT": the heading already says "Best", and repeating it is what truncated the type name on an iPad.
+    /// The Moon and planets list has no such heading, so it keeps its wording.
+    public func rowTime(_ t: WidgetTarget) -> String {
+        mode == .bright || !t.best.hasPrefix("Best ") ? t.best : String(t.best.dropFirst(5))
+    }
 
     /// The gallery's preview: a made-up clear night at a made-up site, so the widget picker shows the real layout.
     public static let sample = WidgetSnapshot(
