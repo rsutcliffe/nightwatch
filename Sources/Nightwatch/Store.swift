@@ -66,6 +66,8 @@ final class Store: ObservableObject {
     static let siteCacheDir = cacheDir.appendingPathComponent("sites", isDirectory: true)
     private let fetcher: Fetcher = URLSessionFetcher()
     private let catalog: Catalog
+    /// The catalogue objects a search matches, up tonight or not (Siri's search, #72).
+    func catalogueMatches(_ query: String) -> [DeepSkyObject] { catalog.objects(matching: query) }
     let constellations: [Constellation]
     private let stars: [BrightStar]
     private let showers: [MeteorShower]

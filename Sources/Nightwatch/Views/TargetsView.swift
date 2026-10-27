@@ -58,6 +58,12 @@ struct TargetsView: View {
     /// On a bright night only the Moon and planets are suggested, so they stand in for the ranked list.
     private var targets: [RankedTarget] { plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
 
+    /// What the search matches in the catalogue when tonight's list has nothing, so the hint can say it is not up tonight.
+    private var notPlanned: [DeepSkyObject] {
+        guard !ui.search.allSatisfy(\.isWhitespace), !targets.contains(where: { $0.matches(ui.search) }) else { return [] }
+        return store.catalogueMatches(ui.search)
+    }
+
     private func count(_ g: TargetGroup) -> Int {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count
     }
@@ -248,6 +254,7 @@ struct TargetsView: View {
         if let section = r.section {
             ui.tomorrow = false   // a request from the popover or widget is about tonight
             ui.section = section
+            if section == .plan { ui.search = "" }   // the plan has no search, so an earlier one is not left in the box
             ui.pendingScrollID = r.siteID
             ui.selected = r.targetID.flatMap { id in (targets + favourites.map(\.target)).first { $0.id == id } }
             ui.selectedEvent = nil   // an open event page would hide the requested target
@@ -261,6 +268,8 @@ struct TargetsView: View {
             let found = (targets + favourites.map(\.target)).filter { $0.matches(text) }
             if case .group(let g) = ui.section, found.contains(where: { $0.group == g }) {} else if let first = found.first {
                 ui.section = .group(first.group)
+            } else if let known = store.catalogueMatches(text).first {
+                ui.section = .group(known.group)   // not up tonight: still open its group, where the hint says so, not Tonight's plan with nothing in it (#72)
             }
         }
         store.targetsRequest = nil
@@ -375,7 +384,7 @@ struct TargetsView: View {
                 // line and chips: in grey caption text it went unseen while typing (owner, 27 September 2026).
                 if ui.section != .favourites, ui.section != .eyes, !isEvents,
                    let hint = Copy.searchHint(query: ui.search, targets: targets, group: selectedGroup, fitsOnly: ui.fitsOnly,
-                                              includeMoonWashed: ui.includeMoonWashed) {
+                                              includeMoonWashed: ui.includeMoonWashed, notPlanned: notPlanned) {
                     Text(hint).font(Font.scaled(.callout)).foregroundStyle(Tokens.statusWarning).padding(.top, 2)
                 }
                 if ui.section == .eyes {

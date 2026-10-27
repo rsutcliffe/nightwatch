@@ -101,7 +101,8 @@ public struct Copy: Sendable {
     /// What a Targets search found, leading the header so it is plain the search ran: the count in this group, the matches
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the
     /// group on screen). Nil with no search.
-    public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool) -> String? {
+    public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool,
+                                    notPlanned: [DeepSkyObject] = []) -> String? {
         guard !query.allSatisfy(\.isWhitespace) else { return nil }   // the grid's test for "no search", newlines included
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let found = targets.filter { $0.matches(query) }
@@ -118,6 +119,10 @@ public struct Copy: Sendable {
             return n == 0 ? nil : "\(g.displayName) (\(n))"
         }
         if !elsewhere.isEmpty { parts.append("Also in \(elsewhere.joined(separator: ", ")).") }
+        // In the catalogue but not in tonight's list: it is below the horizon, or too close to the Moon, all through the dark.
+        if found.isEmpty, !notPlanned.isEmpty {
+            parts.append("In the catalogue but not up during tonight's darkness: \(notPlanned.prefix(3).map(\.displayName).joined(separator: "; ")).")
+        }
         return parts.joined(separator: " ")
     }
 
