@@ -211,3 +211,19 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     #expect(SpokenSearch.asksForTonight("plan"))
     #expect(!SpokenSearch.asksForTonight("Crescent Nebula") && !SpokenSearch.asksForTonight("M31") && !SpokenSearch.asksForTonight("Seven Sisters"))
 }
+
+@Test func aSpokenSearchOpensTheGroupOfItsBestMatch() throws {
+    let catalog = try Catalog.bundled()
+    func planned(_ id: String) throws -> RankedTarget {
+        let o = try #require(catalog.objects.first { $0.id == id })
+        var r = RankedTarget(id: o.id, name: o.displayName, subtitle: "\(o.typeCode) in \(o.constellation)", group: o.group, raHours: o.raHours, decDeg: o.decDeg,
+                             sizeArcmin: o.majAxisArcmin, magnitude: o.magnitude, fit: .fits, peakAltDeg: 60, peakTime: Date(), moonSepDeg: 90, moonWashed: false, visibleFraction: 1)
+        r.typeName = Catalog.typeNames[o.typeCode] ?? o.typeCode
+        return r
+    }
+    // Up tonight: its group from the plan. Not up tonight: its group from the catalogue. Neither: nil.
+    #expect(SpokenSearch.group(for: "Crescent Nebula", planned: [try planned("NGC6888")], catalogue: catalog) == .nebulae)
+    #expect(SpokenSearch.group(for: "Crescent Nebula", planned: [], catalogue: catalog) == .nebulae)
+    #expect(SpokenSearch.group(for: "M31", planned: [], catalogue: catalog) == .galaxies)
+    #expect(SpokenSearch.group(for: "zzzz nothing", planned: [], catalogue: catalog) == nil)
+}

@@ -126,6 +126,25 @@ struct NotificationsOffIntent: AppIntent {
     }
 }
 
+// `.system.searchInApp` is in the iOS 27 SDK (Xcode 27, Swift 6.4); CI's Xcode 26 builds without it.
+#if compiler(>=6.4)
+/// "Find the Crescent Nebula in Nightwatch" (#72), as on the Mac. Siri on iOS 27 sends "... in <app>" to an app's in-app search; this takes its words to
+/// the Targets group that holds the match (a target that is not up tonight too, with the hint saying so). Words that ask for tonight, such as
+/// "What's worth imaging tonight", open the plan instead, since no target is named by them.
+@available(iOS 27, *)
+@AppIntent(schema: .system.searchInApp)
+struct SearchTargetsIntent {
+    static let searchScopes: [StringSearchScope] = [.general]
+    static let supportedModes: IntentModes = .foreground   // the results are shown in the app
+    var criteria: StringSearchCriteria
+    @MainActor func perform() async throws -> some IntentResult {
+        let term = SpokenSearch.normalise(criteria.term)
+        IntentHost.store?.pendingLink = SpokenSearch.asksForTonight(term) ? .plan : .search(term)
+        return .result()
+    }
+}
+#endif
+
 struct NightwatchShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: TonightIntent(), phrases: ["\(.applicationName) sky score", "What's the sky score in \(.applicationName)"],

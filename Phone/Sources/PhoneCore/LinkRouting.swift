@@ -19,6 +19,18 @@ public extension PhoneStore {
 }
 
 public extension PhoneStore {
+    /// What a spoken search matches in the whole catalogue, up tonight or not, and the group it opens (the Mac's Siri search, #72).
+    func catalogueMatches(_ query: String) -> [DeepSkyObject] { Self.bundledCatalogue.objects(matching: query) }
+    func groupForSearch(_ text: String) -> TargetGroup? {
+        let plan = planning?.tonight
+        return SpokenSearch.group(for: text, planned: (plan?.mode == .bright ? plan?.brightTargets : plan?.targets).map { $0 + (plan?.favourites.map(\.target) ?? []) } ?? [],
+                                  catalogue: Self.bundledCatalogue)
+    }
+    /// Read once: the catalogue is a large CSV, and a search can come several times in a session.
+    private static let bundledCatalogue = (try? Catalog.bundled()) ?? Catalog(objects: [])
+}
+
+public extension PhoneStore {
     /// Tonight's snapshot for a Siri or Shortcuts answer. An action can run as the app is launched in the background, before the first page is
     /// built, so it works the page out from what is saved (a forecast that is still fresh is not fetched again). Nil with no site or no forecast.
     func snapshotForAnswer() async -> WidgetSnapshot? {
