@@ -153,24 +153,24 @@ struct AuroraMark: View {
     }
 }
 
+/// The small and medium widgets lay out as the iPhone and iPad's do (owner, 27 October 2026): the dial at the left, the headline, the window,
+/// then the line and the Weather mark.
 struct SmallView: View {
     let s: WidgetSnapshot
     let now: Date
     var body: some View {
-        VStack(spacing: 6) {
-            ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel)
-            // The small size has room for one short line: the first sentence of the headline ("Nothing to see here").
-            Text((s.windowShort ?? (s.headline.components(separatedBy: ". ").first ?? s.headline).trimmingCharacters(in: CharacterSet(charactersIn: "."))).plainDashes)
-                .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Tokens.lit)
-                .lineLimit(1).minimumScaleFactor(0.7).multilineTextAlignment(.center)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack { ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: 62); Spacer(minLength: 0) }
+            TwoWeight.headline(s.headline.plainDashes, size: 15).foregroundStyle(Tokens.lit).lineLimit(2).minimumScaleFactor(0.7)
+            if let w = s.windowShort ?? s.window {
+                Text(s.zoned(w).plainDashes).font(.system(size: 11, weight: .light)).monospacedDigit().foregroundStyle(Tokens.lit).lineLimit(1).minimumScaleFactor(0.7)
+            }
             if let a = s.auroraLine(now: now) {
                 AuroraMark(text: a.text, hex: a.hex, size: 10)
             } else if let stale = s.staleText(now: now) {
                 NoteLine(text: stale, warns: true)
             } else {
-                Text(s.windowShort == nil ? (s.tomorrow ?? s.siteName)
-                     : s.brightList ?? [s.siteName, s.notifyShort].compactMap { $0 }.joined(separator: " · "))
-                    .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+                Text((s.notifyShort ?? s.siteName).plainDashes).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
             }
             WeatherAttribution(s: s, link: false)
         }
@@ -180,25 +180,28 @@ struct SmallView: View {
 struct MediumView: View {
     let s: WidgetSnapshot
     let now: Date
-    /// The night arc under the headline, in a smaller dial: the same arc as the iPhone and iPad, never the bars (owner, 27 October 2026).
-    /// A shorter arc where the widget is too short for the full one (a long reason and an aurora line), so nothing is ever cut off.
     var body: some View {
-        ViewThatFits(in: .vertical) {
-            layout(arcHeight: 30)
-            layout(arcHeight: 22)
-        }
-    }
-
-    private func layout(arcHeight: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 12) {
-                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: 76)
-                Headline(s: s, now: now, compact: true)
-                Spacer(minLength: 0)
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                ScoreBezel(score: s.score, slots: s.slots, label: s.bezelLabel, diameter: 82)
+                Text(s.siteName.plainDashes).font(.system(size: 10)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
             }
-            Spacer(minLength: 0)
-            NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: false, height: arcHeight, lineWidth: 3)
-            HStack { Spacer(minLength: 0); WeatherAttribution(s: s) }
+            VStack(alignment: .leading, spacing: 4) {
+                TwoWeight.headline(s.headline.plainDashes, size: 17).foregroundStyle(Tokens.lit).lineLimit(2).minimumScaleFactor(0.7)
+                if let w = s.window { Text(s.zoned(w).plainDashes).font(.system(size: 15, weight: .thin)).monospacedDigit().foregroundStyle(Tokens.lit).lineLimit(1).minimumScaleFactor(0.6) }
+                if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, label: s.barsLabel, ember: nil, labels: false, height: 34, lineWidth: 3) }
+                if let a = s.auroraLine(now: now) { AuroraMark(text: a.text, hex: a.hex, size: 10) }
+                if !s.targets.isEmpty {
+                    Text(s.targets.prefix(2).map { "\($0.catalogueID) \($0.best)" }.joined(separator: " · ").plainDashes)
+                        .font(.system(size: 11)).foregroundStyle(Tokens.lit).lineLimit(1).minimumScaleFactor(0.7)
+                }
+                HStack(spacing: 0) {
+                    if let stale = s.staleText(now: now) { NoteLine(text: stale, warns: true, lines: 1) } else { Text((s.updated ?? "").plainDashes) }
+                    Spacer(minLength: 8)
+                    WeatherAttribution(s: s)
+                }
+                .font(.system(size: 9.5)).foregroundStyle(Tokens.textSecondary).lineLimit(1)
+            }
         }
     }
 }
@@ -294,7 +297,7 @@ struct NightwatchWidgetView: View {
             }
         }
         // The small widget and the empty state are centred, as on the canvas; medium and large read from the top left.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: entry.snapshot == nil || family == .systemSmall ? .center : .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: entry.snapshot == nil ? .center : family == .systemSmall ? .leading : .topLeading)
         .padding(padding)
         .containerBackground(for: .widget) { Tokens.targetsCard }
         .widgetURL(WidgetLink.targets.url)
