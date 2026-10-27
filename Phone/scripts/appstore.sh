@@ -22,7 +22,7 @@ BUNDLE_ID=$(awk '/PRODUCT_BUNDLE_IDENTIFIER:/{print $2; exit}' $SPEC)
 WIDGET_ID=$(awk '/PRODUCT_BUNDLE_IDENTIFIER:/{n++; if (n==2) {print $2; exit}}' $SPEC)
 VERSION=$(awk '/MARKETING_VERSION:/{gsub(/"/,"",$2); print $2; exit}' $SPEC)
 BUILD=$(awk '/CURRENT_PROJECT_VERSION:/{gsub(/"/,"",$2); print $2; exit}' $SPEC)
-GROUP=$(plutil -extract com.apple.security.application-groups.0 raw Phone/App/Nightwatch.entitlements)
+GROUP=$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' Phone/App/Nightwatch.entitlements)
 [[ "$BUNDLE_ID" == io.github.rsutcliffe.nightwatch && "$WIDGET_ID" == "$BUNDLE_ID.widget" ]] || fail "Phone/project.yml does not carry the Mac's bundle IDs (read '$BUNDLE_ID' and '$WIDGET_ID')"
 [[ -n "$VERSION" && -n "$BUILD" && -n "$GROUP" ]] || fail "could not read the version, build or App Group"
 WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
