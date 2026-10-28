@@ -1,8 +1,10 @@
 # App Store submission notes (draft)
 
-The Mac app (1.7.0) is approved and live. The iPhone and iPad version joins the same App Store record (6816390602) as a second platform, once Apple case 103007210525 is settled. Nothing here is entered anywhere yet.
+The Mac app (1.7.0) is approved and live. The iPhone and iPad version is a second platform on the same App Store record (6816390602), added on 27 October 2026 without waiting for Apple case 103007210525. Its listing text, screenshots and review notes are entered; the build is attached and Add for Review is pressed only by the owner (28 October 2026: iPhone and iPad 1.0.0 build 6, the Mac 1.7.1 build 51 as its own later submission).
 
 ## App Review notes (write these first, not after a rejection)
+
+App Store Connect holds a condensed form of the notes below (3,456 of 4,000 characters, read from the page on 28 October 2026): the same facts, shortened, with an opening line saying this version joins the Mac app's record and bundle ID (universal purchase), and a closing line on how to see the app working. The longer wording here is the reference; change both together.
 
 Nightwatch tells you whether tonight is worth observing the night sky, and alerts you. No account or sign-in is needed.
 
@@ -114,6 +116,7 @@ Check every line against the build before pasting (Siri search needs iOS 27; the
   the footer after switching to red night mode (the mark stays white); the Targets list and a target page with "How to shoot this"; Plan; Settings, with the "Clear-window
   card on the Lock Screen" switch; the small, medium and large widgets on the Home Screen; the Lock Screen card; a Shortcuts Sky Score answer showing the mark; the photo picker
   in Horizon › Measure from a photo; and, on iOS 27, "Find the Crescent Nebula in Nightwatch" to Siri. Not on screen: the owner's home location (use a public site).
+  The widgets are the same on every device now (the Mac's large layout, solid card on iOS): show the large widget on a night with no clear window too.
 - After **Submit** the status reads **Waiting for Review** ("Ready for Review" means not submitted). Version Release is automatic (owner, 27 October 2026), so approval puts it on sale.
 
 ## Guideline pre-flight (27 October 2026)
