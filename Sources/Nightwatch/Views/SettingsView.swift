@@ -142,17 +142,6 @@ struct SettingsView: View {
                 }
                 Text("Certified places plus the darkest spots on the bundled light-pollution grid. Tonight's forecast is fetched for the nearest three, while the Dark sites page is open.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
-            Section(header: Text("Network use today".uppercased()).capsLabel()) {
-                let tally = RequestTally.today()
-                if tally.requests.isEmpty {
-                    Text("No requests yet today.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-                } else {
-                    ForEach(tally.requests.sorted { $0.key < $1.key }, id: \.key) { k, n in
-                        LabeledContent(k) { Text("\(n)").monospacedDigit() }.font(Font.scaled(.caption))
-                    }
-                }
-                Text("Counted on this Mac only, from midnight UTC. The free forecast service refuses a connection after a fixed number of requests a day; this shows where they went.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
-            }
             Section(header: Text("Bright nights".uppercased()).capsLabel()) {
                 Toggle("Moon and planets when there is no proper darkness", isOn: bind(\.brightNights.enabled))
                 choiceRow("Minimum clear run", bind(\.brightNights.minHours), Array(stride(from: 1.0, through: 6, by: 0.5))) { String(format: "%.1f h", $0) }

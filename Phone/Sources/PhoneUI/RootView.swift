@@ -503,17 +503,6 @@ struct SettingsScreen: View {
                 Text("In the UK and Ireland, status from AuroraWatch UK (Lancaster University). Elsewhere, NOAA's 30-minute aurora forecast for your site: yellow from \(Ovation.yellowFrom)%, amber from \(Ovation.amberFrom)%, red from \(Ovation.redFrom)%. An alert needs the Sun 12° down and this hour's forecast cloud under your limit, and quiet hours apply. With no server behind it, the phone checks while Nightwatch is open, and when iOS lets it refresh in the background, so an alert can come late, or not at all, when the app is closed. The Mac app, left running, is the dependable one.")
             }.listRowBackground(theme.card)
             Section {
-                let tally = RequestTally.today()
-                if tally.requests.isEmpty { Text("No requests yet today.").font(.callout).secondary() }
-                ForEach(tally.requests.sorted { $0.key < $1.key }, id: \.key) { k, n in
-                    LabeledContent(k.replacingOccurrences(of: "api.open-meteo.com", with: "open-meteo")) {
-                        Text(tally.points[k].map { "\(n) requests, \($0) points" } ?? "\(n) requests").monospacedDigit()
-                    }.font(.footnote)
-                }
-            } header: { Text("Network use today (this device)").capsLabel() } footer: {
-                Text("The free forecast service allows 10,000 calls a day and 5,000 an hour, and refuses more until it resets (UTC midnight, about 01:00 British Summer Time). If it refuses, Nightwatch says so on Tonight and keeps the forecast it has.")
-            }.listRowBackground(theme.card)
-            Section {
                 NavigationLink { NumbersScreen() } label: { Label("What the numbers mean", systemImage: "questionmark.circle") }
             }.listRowBackground(theme.card)
             Section {
