@@ -65,6 +65,18 @@ Apple unveiled it in September and it went on sale 23 October 2026 (apple.com ne
 3. No wait for a physical Duo.
 4. One repository.
 
+## Same on every device (28 October 2026)
+
+A parity audit of the Mac and the phone found the apps already matched on features. The wording and the widgets were the differences, and are now one thing:
+
+- The widgets: the Mac's large layout (rule between the night and the targets, icon tiles, agreement line) on every device; the iPhone's small and medium layouts on the Mac; the night arc everywhere; Apple's Weather mark by default with the source's name as the fallback.
+- Strings both apps print live in `Sources/SkyCore/SharedCopy.swift` (Alerts labels, the Targets filters, Events "Coming up", Tonight's date line) and `WidgetSnapshot` (`zoned`, `rowTime`, `emptyPicksNote`), so a change is one edit.
+- The widget card is solid on iOS: it showed no transparency at 72% on a real Home Screen (27 October 2026). The Mac's see-through is macOS's own behaviour.
+
+Kept different on purpose: on the Mac, start at login, the update check, Text size, one Settings scroll including the sites; on the phone, Red night mode, the Lock Screen Live Activity, Dynamic Type, a Sites sheet.
+
+Open: "How to shoot this" is a click-to-open toggle on the Mac, which the at-a-glance rule forbids; it was an owner-approved mockup, so it waits for a later Mac update.
+
 ## Not done by this plan
 
 No App Store Connect change, no TestFlight, no change to any App ID, and nothing uploaded. Step 1 and step 2 are code changes in this repository only.
