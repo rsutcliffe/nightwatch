@@ -68,7 +68,7 @@ struct TonightView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("TONIGHT · \(store.site?.name.uppercased() ?? "NO SITE")").capsLabel()
                 if let s = store.site, let p = store.plan {
-                    Text("\(Copy.dayMonth(p.night.localDate, site: s)) · Bortle \(s.bortle) · EQ tilt \(String(format: "%.1f", abs(s.latitude)))° \(s.latitude >= 0 ? "true north" : "true south")" + (p.mode == .bright ? " · bright night" : ""))
+                    Text(Copy.nightLine(dayText: Copy.dayMonth(p.night.localDate, site: s), site: s, bright: p.mode == .bright))
                         .font(.system(size: TextScale.pt(11))).foregroundStyle(Tokens.textSecondary)   // wedge angle = site latitude; the vendor app does the alignment
                 }
             }

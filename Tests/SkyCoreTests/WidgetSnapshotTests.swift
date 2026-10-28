@@ -259,3 +259,21 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     s.mode = .bright   // the Moon and planets list has no "Best tonight" heading
     #expect(s.rowTime(t) == "Best 00:00 · 88° up")
 }
+
+@Test func theLargeWidgetSaysWhyItListsNoTargets() {
+    var s = WidgetSnapshot.sample
+    s.windowShort = nil
+    #expect(s.emptyPicksNote == "No clear window, so nothing is recommended.")
+    s.windowShort = "Clear 21:10–01:40"; s.mode = .dark
+    #expect(s.emptyPicksNote == "Nothing well placed in the window.")
+    s.mode = .bright
+    #expect(s.emptyPicksNote == "No Moon or planet well placed in the window.")
+}
+
+/// Tonight's second line is one string for both apps: the day, Bortle class, the polar-alignment tilt, and "bright night" when it is one.
+@Test func tonightsDateLineCarriesTheTiltAndTheBrightNote() {
+    let north = Site(name: "N", latitude: 54.04, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 3)
+    let south = Site(name: "S", latitude: -33.9, longitude: 151.2, elevationM: 20, timeZoneID: "Australia/Sydney", bortle: 7)
+    #expect(Copy.nightLine(dayText: "13 Oct", site: north, bright: false) == "13 Oct · Bortle 3 · EQ tilt 54.0° true north")
+    #expect(Copy.nightLine(dayText: "Tue 13 Oct", site: south, bright: true) == "Tue 13 Oct · Bortle 7 · EQ tilt 33.9° true south · bright night")
+}

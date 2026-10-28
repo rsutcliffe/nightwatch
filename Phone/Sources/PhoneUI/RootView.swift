@@ -437,25 +437,24 @@ struct SettingsScreen: View {
                 if permission.status == .denied {
                     Text("Alerts are off for Nightwatch in iOS Settings, Notifications.").font(.footnote)
                 }
-                Toggle("Alerts", isOn: Binding(get: { store.config.notifyEnabled }, set: { store.setNotifyEnabled($0) }))
-                Toggle("Heads-up before sunset", isOn: binding(\.headsUp))
-                Toggle("Tomorrow preview", isOn: binding(\.tomorrowPreview))
+                Toggle(store.site.map { Copy.notifyLabel(store.planning?.tonight, site: $0, settings: store.config.alerts) } ?? "Notify when clear",
+                       isOn: Binding(get: { store.config.notifyEnabled }, set: { store.setNotifyEnabled($0) }))
+                Toggle(SettingsCopy.headsUp, isOn: binding(\.headsUp))
+                Toggle(SettingsCopy.tomorrowPreview, isOn: binding(\.tomorrowPreview))
                 choiceRow("Nudge before the window opens", store.config.alerts.preWindowMinutes, Array(stride(from: 0, through: 120, by: 15)),
                           { v in store.setAlerts { $0.preWindowMinutes = v } }) { $0 == 0 ? "When it opens" : "\($0) min" }
                 Toggle("Clear-window card on the Lock Screen", isOn: $liveCard).onChange(of: liveCard) { _ in store.replan() }
                 Text("A countdown to the end of the clear window. iOS asks to allow Live Activities the first time one appears. It cannot update itself, so it shows the time of the forecast it came from.")
                     .font(.footnote).secondary()
-                Toggle("Cancel if the forecast worsens", isOn: binding(\.cancelOnDowngrade))
+                Toggle(SettingsCopy.cancelOnDowngrade, isOn: binding(\.cancelOnDowngrade))
                 // A switch that is on can always be turned off; one that is off needs Apple Weather, which supplies the forecast being checked.
                 Toggle("Alert only when Open-Meteo agrees", isOn: binding(\.requireAgreement))
                     .disabled(store.forecast?.cloudSource != "Apple Weather" && !store.config.alerts.requireAgreement)
                 if store.forecast?.cloudSource != "Apple Weather" && !store.config.alerts.requireAgreement {
                     Text("Needs Apple Weather, which is not answering at the moment.").font(.footnote).secondary()
                 }
-                Stepper("Quiet from \(store.config.alerts.quietStartHour):00", value: binding(\.quietStartHour), in: 0...23)
-                    .sensoryFeedback(.selection, trigger: store.config.alerts.quietStartHour)
-                Stepper("Quiet until \(store.config.alerts.quietEndHour):00", value: binding(\.quietEndHour), in: 0...23)
-                    .sensoryFeedback(.selection, trigger: store.config.alerts.quietEndHour)
+                choiceRow(SettingsCopy.quietHoursStart, store.config.alerts.quietStartHour, Array(0...23), { v in store.setAlerts { $0.quietStartHour = v } }) { String(format: "%02d:00", $0) }
+                choiceRow(SettingsCopy.quietHoursEnd, store.config.alerts.quietEndHour, Array(0...23), { v in store.setAlerts { $0.quietEndHour = v } }) { String(format: "%02d:00", $0) }
             } header: { Text("Alerts").capsLabel() } footer: {
                 Text("An alert is only sent from a forecast under six hours old. If you have not opened the app for a while, an alert may wait until the next refresh. iOS decides when the app may refresh in the background.")
             }.listRowBackground(theme.card)
