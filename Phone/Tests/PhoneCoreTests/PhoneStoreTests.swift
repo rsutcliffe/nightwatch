@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import Combine
 import SkyCore
 @testable import PhoneCore
 
@@ -271,28 +272,34 @@ final class GivenMarks: @unchecked Sendable { var list: [String] = [] }
     #expect(store.site?.timeZoneID == "America/Los_Angeles")
 }
 
-/// Records whether tonight's page was ready each time a comet or space-station feed was asked for. (File scope, like `GivenMarks` above.)
-final class FeedProbe: @unchecked Sendable {
-    var readyWhenAsked: [Bool] = []
-    weak var store: PhoneStore?
+/// Whether tonight's page was ready each time a comet or space-station feed was asked for. The page's readiness is noticed as it is published, so the
+/// feed closure needs no hop back to the main actor. (File scope, like `marksGiven`: the shape that is known to run on CI's Swift runtime.)
+final class FeedOrder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var ready = false, asked: [Bool] = []
+    func pageReady() { lock.lock(); ready = true; lock.unlock() }
+    func feedAsked() { lock.lock(); asked.append(ready); lock.unlock() }
+    var readyWhenAsked: [Bool] { lock.lock(); defer { lock.unlock() }; return asked }
+}
+
+@MainActor func readyWhenFeedsAreAsked() async -> [Bool] {
+    let order = FeedOrder(), calls = Calls()
+    let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("feedorder-\(UUID().uuidString)"),
+                           provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
+                           scheduler: FakeScheduler(), clock: { utc(2026, 9, 23, 12) }, fetchData: { _ in Data([1, 2, 3]) },
+                           feeds: { _ in order.feedAsked(); throw Failure() },
+                           occultations: false, darkLookups: nil)
+    let watch = store.$phase.sink { if $0 == .ready { order.pageReady() } }
+    store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
+    await store.refresh()
+    watch.cancel()
+    return order.readyWhenAsked
 }
 
 /// An unreachable feed (CelesTrak never answered on 28 October 2026) used to hold the first screen for its whole timeout, because the feeds were
 /// fetched before tonight was worked out. They are asked for afterwards now.
 @MainActor @Test func tonightIsWorkedOutBeforeTheCometAndSpaceStationFeedsAreAsked() async {
-    let probe = FeedProbe(), calls = Calls()
-    let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("feedorder-\(UUID().uuidString)"),
-                           provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
-                           scheduler: FakeScheduler(), clock: { utc(2026, 9, 23, 12) }, fetchData: { _ in Data([1, 2, 3]) },
-                           feeds: { _ in
-                               let ready = await MainActor.run { probe.store?.phase == .ready }
-                               probe.readyWhenAsked.append(ready)
-                               throw Failure()
-                           },
-                           occultations: false, darkLookups: nil)
-    probe.store = store
-    store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
-    await store.refresh()
-    #expect(!probe.readyWhenAsked.isEmpty)
-    #expect(probe.readyWhenAsked.allSatisfy { $0 })
+    let asked = await readyWhenFeedsAreAsked()
+    #expect(!asked.isEmpty)
+    #expect(asked.allSatisfy { $0 })
 }
