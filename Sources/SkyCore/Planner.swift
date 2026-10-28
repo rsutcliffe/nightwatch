@@ -138,6 +138,9 @@ public enum Planner {
         return max(0, min(100, Int(total.rounded())))
     }
 
+    /// "an" before the percentages said with a vowel sound (8, 11, 18 and 80 to 89), else "a": "a 40% moon", "an 88% moon".
+    static func article(forPercent n: Int) -> String { n == 8 || n == 11 || n == 18 || (80...89).contains(n) ? "an" : "a" }
+
     /// Each term that lost more than a third of its weight, most points lost first. On a bright plan the Moon term is
     /// never lost (the plan passes moonIllumination 0), so the Moon is never blamed.
     public static func limitingFactors(_ s: ScoreInputs) -> [LimitingFactor] {
@@ -147,7 +150,8 @@ public enum Planner {
             if lost > weight / 3 { out.append(LimitingFactor(kind: k, text: text, pointsLost: lost)) }
         }
         add(.cloud, "patchy cloud", lost: t.cloudWeight - t.cloud, of: t.cloudWeight)
-        add(.moon, "a \(Int((s.moonIllumination * 100).rounded()))% moon", lost: 15 - t.moon, of: 15)
+        let moonPct = Int((s.moonIllumination * 100).rounded())
+        add(.moon, "\(article(forPercent: moonPct)) \(moonPct)% moon", lost: 15 - t.moon, of: 15)
         // Worded from what the tiles show, so the line never contradicts them: transparency only when its tile is not
         // "Good", and seeing only when its tile reads worse than the 1″ the guide calls excellent.
         if let v = t.seeing, let band = Copy.seeingBand(s.darkHours), band > Copy.excellentSeeingBand, let figure = Copy.seeingText(s.darkHours) {

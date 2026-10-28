@@ -277,3 +277,9 @@ private let clearMiddle = [90, 90, 90, 10, 10, 10, 10, 10, 10, 90, 90, 90, 90, 9
     #expect(Copy.nightLine(dayText: "13 Oct", site: north, bright: false) == "13 Oct · Bortle 3 · EQ tilt 54.0° true north")
     #expect(Copy.nightLine(dayText: "Tue 13 Oct", site: south, bright: true) == "Tue 13 Oct · Bortle 7 · EQ tilt 33.9° true south · bright night")
 }
+
+/// "a 88% moon" was on screen on 28 October 2026.
+@Test func theMoonPercentageGetsTheRightArticle() {
+    for n in [8, 11, 18, 80, 88, 89] { #expect(Planner.article(forPercent: n) == "an", "\(n)") }
+    for n in [1, 7, 9, 10, 12, 17, 19, 40, 62, 79, 90, 95, 100] { #expect(Planner.article(forPercent: n) == "a", "\(n)") }
+}
