@@ -478,8 +478,9 @@ public final class PhoneStore: ObservableObject {
             }
         }
         stage = .planning
-        if connectivity.allowsOptionalDownloads { await refreshFeeds(now: clock()) }
         await recompute(now: clock())
+        // The comet and ISS downloads come after the first answer, so an unreachable feed cannot hold the loading screen (see the Mac's Store.refresh).
+        if connectivity.allowsOptionalDownloads, await refreshFeeds(now: clock()) { await recompute(now: clock()) }
         await pollAurora(connectivity: connectivity)
         if darkLookups != nil {
             darkTask?.cancel()
@@ -669,15 +670,18 @@ public final class PhoneStore: ObservableObject {
 
     /// Comet elements daily and the space station's elements every 2 hours (CelesTrak asks for no more), as the Mac does. Gated on the
     /// last attempt, not the last success, so a failing server is not hammered. They are small, but skipped on a costly connection.
-    func refreshFeeds(now: Date) async {
+    /// True when either feed brought new elements, so the plan can be worked out again with them.
+    func refreshFeeds(now: Date) async -> Bool {
+        var changed = false
         if feedDue("comets", every: 86_400, now: now), let data = try? await feeds(Comets.url) {
             let unzipped = await Task.detached { Gzip.decompress(data) ?? data }.value
-            if let c = try? Comets.decode(unzipped) { comets = c; Self.write(c, to: directory.appendingPathComponent("comets.json")) }
+            if let c = try? Comets.decode(unzipped) { comets = c; Self.write(c, to: directory.appendingPathComponent("comets.json")); changed = true }
         }
         if feedDue("iss", every: 2 * 3600, now: now), let data = try? await feeds(Satellites.issURL),
            let t = try? Satellites.parseTLE(String(decoding: data, as: UTF8.self)) {
-            tle = t; Self.write(t, to: directory.appendingPathComponent("iss-tle.json"))
+            tle = t; Self.write(t, to: directory.appendingPathComponent("iss-tle.json")); changed = true
         }
+        return changed
     }
 
     private func feedDue(_ key: String, every interval: TimeInterval, now: Date) -> Bool {

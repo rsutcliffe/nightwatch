@@ -270,3 +270,29 @@ final class GivenMarks: @unchecked Sendable { var list: [String] = [] }
     store.correctTimeZone(of: "Nowhere", to: "Europe/Paris")       // so is a site that is not saved
     #expect(store.site?.timeZoneID == "America/Los_Angeles")
 }
+
+/// Records whether tonight's page was ready each time a comet or space-station feed was asked for. (File scope, like `GivenMarks` above.)
+final class FeedProbe: @unchecked Sendable {
+    var readyWhenAsked: [Bool] = []
+    weak var store: PhoneStore?
+}
+
+/// An unreachable feed (CelesTrak never answered on 28 October 2026) used to hold the first screen for its whole timeout, because the feeds were
+/// fetched before tonight was worked out. They are asked for afterwards now.
+@MainActor @Test func tonightIsWorkedOutBeforeTheCometAndSpaceStationFeedsAreAsked() async {
+    let probe = FeedProbe(), calls = Calls()
+    let store = PhoneStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("feedorder-\(UUID().uuidString)"),
+                           provider: { site, now, _ in forecast(fetchedAt: now, source: calls.source, site: site) },
+                           scheduler: FakeScheduler(), clock: { utc(2026, 9, 23, 12) }, fetchData: { _ in Data([1, 2, 3]) },
+                           feeds: { _ in
+                               let ready = await MainActor.run { probe.store?.phase == .ready }
+                               probe.readyWhenAsked.append(ready)
+                               throw Failure()
+                           },
+                           occultations: false, darkLookups: nil)
+    probe.store = store
+    store.config.sites = [sheffield]; store.config.activeSiteName = "Sheffield"
+    await store.refresh()
+    #expect(!probe.readyWhenAsked.isEmpty)
+    #expect(probe.readyWhenAsked.allSatisfy { $0 })
+}
