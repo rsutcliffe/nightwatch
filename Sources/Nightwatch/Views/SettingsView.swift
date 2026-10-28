@@ -115,12 +115,12 @@ struct SettingsView: View {
                 // The master switch, moved here from the popover's footer (owner, 27 September 2026): "Notify at 20:30" tonight.
                 Toggle(store.site.map { Copy.notifyLabel(store.plan, site: $0, settings: store.config.alerts) } ?? "Notify when clear",
                        isOn: bind(\.notifyEnabled))
-                Toggle("Evening heads-up (one hour before sunset)", isOn: bind(\.alerts.headsUp))
-                Toggle("Tomorrow preview when tonight is out", isOn: bind(\.alerts.tomorrowPreview))
+                Toggle(SettingsCopy.headsUp, isOn: bind(\.alerts.headsUp))
+                Toggle(SettingsCopy.tomorrowPreview, isOn: bind(\.alerts.tomorrowPreview))
                 choiceRow("Nudge before the window opens", bind(\.alerts.preWindowMinutes), Array(stride(from: 0, through: 120, by: 15))) {
                     $0 == 0 ? "When it opens" : "\($0) min"
                 }
-                Toggle("Cancel notice if the forecast turns", isOn: bind(\.alerts.cancelOnDowngrade))
+                Toggle(SettingsCopy.cancelOnDowngrade, isOn: bind(\.alerts.cancelOnDowngrade))
                 // Keyed on the build's source, not on one fetch: a single failed Open-Meteo call must not grey it out, and a
                 // switch that is on can always be turned off.
                 let signed = store.forecast?.cloudSource == "Apple Weather"
@@ -129,8 +129,8 @@ struct SettingsView: View {
                 if !signed {
                     Text("Needs Apple Weather, which is not answering at the moment").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
                 }
-                choiceRow("Quiet hours start", bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
-                choiceRow("Quiet hours end", bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
+                choiceRow(SettingsCopy.quietHoursStart, bind(\.alerts.quietStartHour), Array(0...23)) { String(format: "%02d:00", $0) }
+                choiceRow(SettingsCopy.quietHoursEnd, bind(\.alerts.quietEndHour), Array(0...23)) { String(format: "%02d:00", $0) }
                 Text("No banners between those hours; the popover still shows what was missed.").font(Font.scaled(.caption)).foregroundStyle(Theme.dim)
             }
             Section(header: Text("Dark sites".uppercased()).capsLabel()) {

@@ -100,6 +100,12 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
         return parts.joined(separator: " · ")
     }
 
+    /// What the large widget says under "UP TONIGHT" when it has no targets to list, so the card is never left with a blank space.
+    public var emptyPicksNote: String {
+        windowShort == nil ? "No clear window, so nothing is recommended."
+            : mode == .bright ? "No Moon or planet well placed in the window." : "Nothing well placed in the window."
+    }
+
     /// A target's time under "BEST TONIGHT": the heading already says "Best", and repeating it is what truncated the type name on an iPad.
     /// The Moon and planets list has no such heading, so it keeps its wording.
     public func rowTime(_ t: WidgetTarget) -> String {

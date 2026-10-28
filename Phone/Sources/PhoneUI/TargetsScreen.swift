@@ -99,8 +99,12 @@ struct TargetGroupScreen: View {
                     }
                     Spacer()
                 }
-                Toggle("Only those that fit my telescope", isOn: $fitsOnly).font(.callout)
-                Toggle("Include those the Moon washes out", isOn: $includeMoonWashed).font(.callout)
+                // As the Mac's Targets window: both are things to show, so a switch that is on always means more cards.
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(SettingsCopy.showHeading).capsLabel()
+                    Toggle(SettingsCopy.showMisfits, isOn: Binding(get: { !fitsOnly }, set: { fitsOnly = !$0 })).font(.callout)
+                    Toggle(SettingsCopy.showMoonWashed, isOn: $includeMoonWashed).font(.callout)
+                }
                 if let hint = searchHint(all) {   // what the search found, as the Mac's Targets window says it
                     Text(hint).font(.callout).foregroundStyle(theme.warning).fixedSize(horizontal: false, vertical: true)
                 } else if shown.isEmpty {

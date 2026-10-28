@@ -235,8 +235,7 @@ struct LargeView: View {
             Rectangle().fill(Color.white.opacity(0.14)).frame(height: 1)
             Text(s.targets.isEmpty ? "UP TONIGHT" : "BEST TONIGHT").capsLabel()
             if s.targets.isEmpty {
-                Text(s.windowShort == nil ? "No clear window, so nothing is recommended."
-                     : s.mode == .bright ? "No Moon or planet well placed in the window." : "Nothing well placed in the window.")
+                Text(s.emptyPicksNote)
                     .font(.system(size: 10)).foregroundStyle(Tokens.textSecondary)
             }
             VStack(alignment: .leading, spacing: 5) { ForEach(s.targets, id: \.id) { t in

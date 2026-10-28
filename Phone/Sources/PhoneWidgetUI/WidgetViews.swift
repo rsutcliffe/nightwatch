@@ -20,9 +20,6 @@ public struct NightwatchWidgetView: View {
     /// The widget's plain card: the Mac widget's colour (0x1C1F27), so a widget looks the same on every device. Black in red mode.
     public static func background(red: Bool) -> Color { red ? .black : Color(red: 28 / 255, green: 31 / 255, blue: 39 / 255) }
 
-    /// How much of the card shows the Home Screen through it (owner, 27 October 2026: as the Mac's widget does). The Live Activity card stays solid.
-    public static let cardOpacity = 0.72
-
     /// Plain hyphens only, never an en or em dash, whatever wording SkyCore supplies.
     private func plain(_ t: String) -> String { t.replacingOccurrences(of: "\u{2013}", with: "-").replacingOccurrences(of: "\u{2014}", with: "-") }
 
@@ -155,7 +152,7 @@ public struct NightwatchWidgetView: View {
                     if showsReason, let a = s.agreement {
                         HStack(spacing: 5) {
                             if s.agreementWarns { Circle().fill(dim).frame(width: 5, height: 5) } else { Image(systemName: "checkmark").font(.system(size: 8, weight: .bold)) }
-                            Text(plain(a)).lineLimit(1)
+                            Text(plain(a)).lineLimit(2)
                         }.font(.caption).foregroundStyle(dim)
                     }
                 }
@@ -163,7 +160,13 @@ public struct NightwatchWidgetView: View {
             if !s.bars.isEmpty { NightArcCanvas(bars: s.bars, lit: accent, faint: text, height: [70, 54, 52][tier], lineWidth: 3.5) }
             // The rule between the night and the targets, as on the Mac's large widget: it balances the card (owner, 27 October 2026).
             Rectangle().fill(Color.white.opacity(0.14)).frame(height: 1)
-            if !s.targets.isEmpty {
+            if s.targets.isEmpty {
+                // As the Mac's: a heading and why there is nothing, so the card is not left with a blank space.
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("UP TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
+                    Text(plain(s.emptyPicksNote)).font(.caption).foregroundStyle(dim)
+                }
+            } else {
                 VStack(alignment: .leading, spacing: full ? 4 : 2) {
                     Text(s.mode == .bright ? "MOON AND PLANETS" : "BEST TONIGHT").font(.caption2.weight(.semibold)).tracking(1.4).foregroundStyle(dim)
                     ForEach(s.targets, id: \.id) { t in

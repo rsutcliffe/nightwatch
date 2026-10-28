@@ -28,14 +28,11 @@ struct NightProvider: TimelineProvider {
 struct NightwatchWidgetEntryView: View {
     let entry: NightEntry
     @Environment(\.widgetFamily) private var family
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
         NightwatchWidgetView(snapshot: entry.snapshot, size: family == .systemLarge ? .large : family == .systemMedium ? .medium : .small,
                              red: entry.red, now: entry.date)
             .widgetURL(family == .systemMedium ? WidgetLink.plan.url : nil)   // small opens the app on Tonight, medium on Plan; large's rows are their own links
-            .containerBackground(for: .widget) {   // the Mac's card colour, see-through as the Mac's widget is; solid in red mode and with Reduce Transparency
-                NightwatchWidgetView.background(red: entry.red).opacity(entry.red || reduceTransparency ? 1 : NightwatchWidgetView.cardOpacity)
-            }
+            .containerBackground(for: .widget) { NightwatchWidgetView.background(red: entry.red) }   // a plain card: iOS shows a widget's background solid (build 5 showed no transparency at 72%)
     }
 }
 

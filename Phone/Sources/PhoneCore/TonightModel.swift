@@ -113,7 +113,7 @@ public struct TonightModel: Equatable, Sendable {
             : plan.mode == .dark && plan.best.isEmpty ? "\(plan.targets.count) objects above the horizon during darkness. No clear window, so nothing is recommended." : nil
         return TonightModel(snapshot: snap, tiles: TonightTiles.make(plan: plan, site: site), source: source,
                             markURL: forecast.attributionMarkURL, legalURL: forecast.attributionLegalURL, fetchedAt: forecast.fetchedAt,
-                            overline: "TONIGHT · \(site.name.uppercased())", dateLine: "\(day.string(from: when)) · Bortle \(site.bortle)",
+                            overline: "TONIGHT · \(site.name.uppercased())", dateLine: Copy.nightLine(dayText: day.string(from: when), site: site, bright: plan.mode == .bright),
                             picksHeading: chosen.isEmpty ? "UP TONIGHT" : "BEST TONIGHT",
                             picks: chosen.map { TargetPick.make($0, site: site, fov: config.fov) }, picksNote: note?.plainDashes,
                             figureID: plan.targets.first { $0.group == .constellations }?.id, timeZoneID: site.timeZoneID)

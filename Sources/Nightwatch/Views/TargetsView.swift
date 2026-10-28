@@ -240,9 +240,9 @@ struct TargetsView: View {
             }
             // Only where they filter something: not on Events, Dark sites or Favourites (which shows every favourite).
             if case .group(let g) = ui.section, g != .events {
-                Text("SHOW").capsLabel().padding(.top, 2)
-                Toggle("Doesn't fit my frame", isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
-                Toggle("Washed out by the Moon", isOn: $ui.includeMoonWashed)
+                Text(SettingsCopy.showHeading).capsLabel().padding(.top, 2)
+                Toggle(SettingsCopy.showMisfits, isOn: Binding(get: { !ui.fitsOnly }, set: { ui.fitsOnly = !$0 }))
+                Toggle(SettingsCopy.showMoonWashed, isOn: $ui.includeMoonWashed)
             }
         }
         .toggleStyle(WarmSwitchStyle(compact: true)).font(.system(size: TextScale.pt(11))).padding(10)
@@ -471,7 +471,7 @@ struct TargetsView: View {
         if let s = store.site, !next.isEmpty, ui.search.trimmingCharacters(in: .whitespaces).isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Coming up from \(s.name)").font(Font.scaled(.headline))
-                Text("The Moon covering a planet, a bright star or the Pleiades, seen from here in darkness.")
+                Text(SettingsCopy.comingUpCaption)
                     .font(Font.scaled(.caption)).foregroundStyle(Tokens.textSecondary)
                 ForEach(Array(next)) { e in
                     HStack(spacing: 12) {

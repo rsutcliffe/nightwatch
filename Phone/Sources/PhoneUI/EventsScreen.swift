@@ -116,7 +116,8 @@ struct EventsScreen: View {
                         NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site) }.buttonStyle(PressStyle()).risesIn(i)
                     }
                     if !ahead.isEmpty {
-                        Text("COMING UP").capsLabel().padding(.top, 12)
+                        Text("COMING UP FROM \(site.name.uppercased())").capsLabel().padding(.top, 12)
+                        Text(SettingsCopy.comingUpCaption).font(.caption).secondary()
                         ForEach(Array(ahead), id: \.id) { e in
                             NavigationLink { EventDetailScreen(store: store, event: e) } label: { EventCard(event: e, site: site, withDate: true) }.buttonStyle(PressStyle())
                         }
