@@ -85,8 +85,10 @@ struct PlanScreen: View {
                     Text((t.commonName ?? t.typeName).uppercased()).font(.caption2).tracking(1.2).secondary()
                     Text("Best \(Copy.hhmm(t.peakTime, site: site)) at \(Copy.peakHeight(t, site: site))").font(.caption).monospacedDigit().foregroundStyle(theme.bestLine)
                     if !item.clashes.isEmpty {
-                        HStack(alignment: .center, spacing: 8) {
-                            WarningChip(text: "Clash").fixedSize()   // one short word: never wrap it, the text beside it gives way (it broke to "Cla / sh" on the iPhone Duo simulator)
+                        // The note sits under the chip, on the card's full width: beside it, it was squeezed into a column of one or two words a line
+                        // (owner's recording, 29 October 2026).
+                        VStack(alignment: .leading, spacing: 4) {
+                            WarningChip(text: "Clash").fixedSize()   // one short word: never wrap it (it broke to "Cla / sh" on the iPhone Duo simulator)
                             Text("Same best time as \(item.clashes.map(\.catalogueID).joined(separator: ", "))").font(.caption).secondary().fixedSize(horizontal: false, vertical: true)
                         }.padding(.top, 4)
                     }
