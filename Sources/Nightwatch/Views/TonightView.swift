@@ -268,8 +268,9 @@ struct TonightView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(t.catalogueID).font(.system(size: TextScale.pt(12), weight: .heavy)).lineLimit(1).fixedSize(horizontal: false, vertical: true)
                             Text((t.commonName ?? t.typeName).uppercased()).font(.system(size: TextScale.pt(9), weight: .semibold)).tracking(0.6).foregroundStyle(Tokens.textSecondary).lineLimit(1).minimumScaleFactor(0.7)
-                            Text("Best \(Copy.hhmm(t.peakTime, site: site)) · \(Copy.peakHeight(t, site: site))").font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
-                                .lineLimit(1).minimumScaleFactor(0.75)
+                            // No "Best": the heading above says it, and the longer line was cut off in the narrow popover ("84° over…").
+                            Text("\(Copy.hhmm(t.peakTime, site: site)) · \(Copy.peakHeight(t, site: site))").font(.system(size: TextScale.pt(9.5), weight: .medium)).foregroundStyle(Tokens.lit)
+                                .lineLimit(1).minimumScaleFactor(0.65)
                         }
                         .padding(8).frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.black.opacity(0.55))

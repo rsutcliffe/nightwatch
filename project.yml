@@ -15,7 +15,7 @@ settings:
     ENABLE_HARDENED_RUNTIME: YES
     # build-app.sh passes the app's version from Sources/Nightwatch/Info.plist, so the two never drift; these are fallbacks.
     MARKETING_VERSION: "1.7.1"
-    CURRENT_PROJECT_VERSION: "52"
+    CURRENT_PROJECT_VERSION: "53"
 targets:
   Nightwatch:
     type: application

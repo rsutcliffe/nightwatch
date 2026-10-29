@@ -26,14 +26,14 @@ import SkyCore
                                   site: sheffield, config: .default)
     #expect(model.picks.count <= 3)
     #expect(model.picksHeading == (model.picks.isEmpty ? "UP TONIGHT" : "BEST TONIGHT"))
-    for p in model.picks { #expect(p.best.hasPrefix("Best ")) }
+    for p in model.picks { #expect(!p.best.hasPrefix("Best ")) }   // the heading says it
 }
 
 @Test func aPicksBestLineSaysWhichWayToLookAsTheMacDoes() throws {
     let p = try plans(cloud: 5)
     let t = try #require(p.tonight.targets.first)
     let pick = TargetPick.make(t, site: sheffield, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2))
-    #expect(pick.best == "Best \(Copy.hhmm(t.peakTime, site: sheffield)) · \(Copy.peakHeight(t, site: sheffield))")
+    #expect(pick.best == "\(Copy.hhmm(t.peakTime, site: sheffield)) · \(Copy.peakHeight(t, site: sheffield))")
     #expect(pick.best.hasSuffix("overhead") || pick.best.contains("° in the "))
 }
 
