@@ -210,7 +210,11 @@ extension View {
     func risesIn(_ index: Int = 0) -> some View { modifier(RisesIn(index: index)) }
 }
 
-/// A warning, drawn once for the whole app: a triangle and words in a quiet capsule with an ember outline and a faint ember fill. Never a shouting
+/// The corner of a chip: a rounded rectangle, not a capsule, so a chip whose words wrap keeps them inside its corners (owner, 29 October 2026). A
+/// one-line chip is as tall as twice this at most, so it still reads as a pill.
+private let chipCorner: CGFloat = 12
+
+/// A warning, drawn once for the whole app: a triangle and words in a quiet rounded chip with an ember outline and a faint ember fill. Never a shouting
 /// line of coloured type and never a "!" in the text; the icon and the outline mean it does not rely on colour alone (red mode has one hue).
 struct WarningChip: View {
     let text: String
@@ -219,7 +223,8 @@ struct WarningChip: View {
         Label(text, systemImage: "exclamationmark.triangle.fill")
             .font(.footnote.weight(.semibold)).foregroundStyle(theme.lit).fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(theme.warning.opacity(0.16), in: Capsule()).overlay(Capsule().strokeBorder(theme.warning, lineWidth: 1))
+            .background(theme.warning.opacity(0.16), in: RoundedRectangle(cornerRadius: chipCorner))
+            .overlay(RoundedRectangle(cornerRadius: chipCorner).strokeBorder(theme.warning, lineWidth: 1))
             .accessibilityElement(children: .combine)
     }
 }
@@ -234,8 +239,8 @@ struct Chip: View {
         Label(text, systemImage: symbol).font(.caption.weight(warning ? .semibold : .medium)).lineLimit(2)
             .foregroundStyle(warning ? theme.lit : theme.textSecondary)
             .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(warning ? theme.warning.opacity(0.16) : theme.tile, in: Capsule())
-            .overlay { if warning { Capsule().strokeBorder(theme.warning, lineWidth: 1) } }
+            .background(warning ? theme.warning.opacity(0.16) : theme.tile, in: RoundedRectangle(cornerRadius: chipCorner))
+            .overlay { if warning { RoundedRectangle(cornerRadius: chipCorner).strokeBorder(theme.warning, lineWidth: 1) } }
     }
 }
 

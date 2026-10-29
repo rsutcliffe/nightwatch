@@ -38,8 +38,8 @@ public struct WarningChip: View {
         }
         .foregroundStyle(Tokens.lit)
         .padding(.horizontal, 9).padding(.vertical, 3)
-        .background(Tokens.ember.opacity(0.14), in: Capsule())
-        .overlay(Capsule().stroke(Tokens.ember, lineWidth: 1))
+        .background(Tokens.ember.opacity(0.14), in: RoundedRectangle(cornerRadius: Tokens.chipCorner))
+        .overlay(RoundedRectangle(cornerRadius: Tokens.chipCorner).stroke(Tokens.ember, lineWidth: 1))
         .accessibilityElement(children: .combine)
     }
 }
