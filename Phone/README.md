@@ -1,7 +1,8 @@
 # Nightwatch for iPhone and iPad
 
-A free companion to the [Nightwatch](https://github.com/rsutcliffe/nightwatch) Mac app, in development. It will tell you
-whether tonight is worth setting up the telescope and alert you on your phone.
+The iPhone and iPad version of [Nightwatch](https://github.com/rsutcliffe/nightwatch), in the same free App Store purchase as the Mac app
+([Nightwatch: Clear Sky Alerts](https://apps.apple.com/app/nightwatch-clear-sky-alerts/id6816390602)). It tells you whether tonight is worth
+setting up the telescope and alerts you on your phone.
 
 This folder holds the phone app and `PhoneCore`, its tested core. Since 24 October 2026 it lives in the Mac app's repository
 (it was a separate repository before, and its history is kept). The sky maths is the Mac app's `SkyCore`, a target of the same
@@ -22,8 +23,6 @@ What it does:
 - **Red night mode**, and a small, medium and large home-screen widget whose target rows open the target.
 - **Siri, Spotlight and Shortcuts:** sky score, clear window, best targets, events, show a target, refresh and notifications on or off.
 - **Aurora alerts**, telescope and go-rule editing, and "What the numbers mean".
-
-Not yet released.
 
 ## Credits
 
