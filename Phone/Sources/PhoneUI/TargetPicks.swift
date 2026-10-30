@@ -34,7 +34,7 @@ final class SurveyLoader: ObservableObject {
             return
         }
         guard allowDownload else { return }
-        guard let bytes = try? await URLSessionFetcher(timeout: timeout).get(url), Image(platformData: bytes) != nil else { return }
+        guard let bytes = await SurveyFetch.shared.image(url, timeout: timeout), Image(platformData: bytes) != nil else { return }
         ImageCache.save(bytes, to: file)
         Self.pruneStale(in: dir)
         data = bytes

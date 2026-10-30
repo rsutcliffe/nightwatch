@@ -136,7 +136,7 @@ Keyless; Apple Weather needs a signed build, which the download is. Full attribu
 | Constellation artwork | Original to Nightwatch, created with ChatGPT image generation; star lines from d3-celestial | MIT (artwork), BSD-3 (star lines) |
 | Backdrop pictures | Original to Nightwatch, created by Richard Sutcliffe in Google Stitch | The owner's; credit is theirs to give |
 | Bright stars | d3-celestial star catalogue and names, via `scripts/build-bright-stars.py` | BSD-3 |
-| Sky-survey images | Digitized Sky Survey (STScI/NASA), coloured by CDS, via hips2fits | ODbL 1.0 (CDS); STScI permits non-profit use with acknowledgement; plates copyright AAO, SERC, Caltech, AURA |
+| Sky-survey images | Digitized Sky Survey (STScI/NASA), coloured by CDS, via hips2fits; NASA SkyView (greyscale, same plates) when CDS is unreachable | ODbL 1.0 (CDS); STScI permits non-profit use with acknowledgement; plates copyright AAO, SERC, Caltech, AURA |
 | Comets | IAU Minor Planet Center | Public |
 | ISS passes | CelesTrak elements, SatelliteKit SGP4 | MIT |
 | Meteor showers | International Meteor Organization calendar | Compiled |
