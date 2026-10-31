@@ -124,11 +124,14 @@ public struct RootView: View {
     private func tabName(_ i: SidebarItem) -> String { i == .tonight ? "Tonight" : i == .plan ? "Plan" : i == .targets ? "Targets" : "Week" }
     private func tabSymbol(_ i: SidebarItem) -> String { i == .tonight ? "moon.stars" : i == .plan ? "list.bullet.rectangle" : i == .targets ? "sparkles" : "calendar" }
 
-    /// The selected row is drawn in the tint (a pale pill in the normal theme, red in the red one), so its label goes dark: the primary text
-    /// colour is close to both and would vanish into it.
+    /// The selected row is a pill drawn here, in the accent (pale in the normal theme, red in the red one), with a dark label: left to the system,
+    /// iPadOS 26 drew it mid-grey under that dark label (owner's screenshot, 29 October 2026: not WCAG AA). 15:1 normal, 5.6:1 red.
     private func labelColour(_ item: SidebarItem, _ theme: PhoneTheme) -> Color { selection == item ? theme.background : theme.textPrimary }
     private func row(_ title: String, _ symbol: String, _ item: SidebarItem, _ theme: PhoneTheme) -> some View {
-        Label(title, systemImage: symbol).tag(item).foregroundStyle(labelColour(item, theme))
+        Label(title, systemImage: symbol).tag(item).foregroundStyle(labelColour(item, theme)).listRowBackground(pill(item, theme))
+    }
+    private func pill(_ item: SidebarItem, _ theme: PhoneTheme) -> some View {
+        RoundedRectangle(cornerRadius: 12).fill(selection == item ? theme.accent : Color.clear).padding(.horizontal, 2)
     }
 
     /// iPad: a sidebar with Tonight, the sites and Settings, and the page beside it.
@@ -147,7 +150,7 @@ public struct RootView: View {
                         Label("Sites", systemImage: "mappin.and.ellipse")
                         Spacer()
                         Text(store.site?.name ?? "").font(.callout).secondary().lineLimit(1)
-                    }.tag(SidebarItem.sites).foregroundStyle(labelColour(.sites, theme))
+                    }.tag(SidebarItem.sites).foregroundStyle(labelColour(.sites, theme)).listRowBackground(pill(.sites, theme))
                     Toggle(isOn: $red) { Label("Red night mode", systemImage: "moon.fill") }
                         .toggleStyle(PhoneToggleStyle())
                 }
