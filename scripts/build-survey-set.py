@@ -7,7 +7,7 @@
 Written 31 October 2026 after CDS's hips2fits went unreachable. Sources:
   cds      hips2fits colour DSS2 (what the app uses): one request per target.
   skyview  NASA SkyView DSS2 Red, greyscale, fetched at twice the size and shrunk here. One shared NASA service: strictly one request at a
-           time, a pause between, and a longer wait when it answers "Too Many Processes" (a 200 with a web page). Measured 31 October 2026:
+           time, a pause between, and a longer wait when it answers "Too Many Processes" (a 200 with a web page). First run, 31 October 2026: 300 targets in well under a day. Measured 31 October 2026:
            about 75 s a target, so ~40 hours for the whole set; a Red + Blue merge was tried and rejected (each band is stretched on its own,
            so the colours came out blue or orange, and plate edges showed). Use it for a few hundred of the brightest targets at most.
   auto     cds, and skyview for the rest once cds fails.
@@ -16,7 +16,7 @@ Needs Pillow. Writes <out>/<id>.webp and <out>/manifest.json (sizes, totals).
 """
 import argparse, csv, io, json, sys, time, urllib.parse, urllib.request
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "Sources/SkyCore/Resources/catalog"
@@ -74,12 +74,16 @@ def from_cds(t):
 def skyview_band(t, survey, delay, tries=6):
     w, h = WIDTH * 2, HEIGHT * 2
     q = urllib.parse.urlencode({"Position": "%.5f,%.5f" % (t["ra"], t["dec"]), "Survey": survey, "Pixels": "%d,%d" % (w, h),
-                                "Size": "%.4f,%.4f" % (t["fov"], t["fov"] * HEIGHT / WIDTH), "Projection": "Tan", "Return": "JPEG"},
+                                "Size": "%.4f,%.4f" % (t["fov"], t["fov"] * HEIGHT / WIDTH), "Projection": "Tan", "Return": "JPEG", "Scaling": "Sqrt"},
                                quote_via=urllib.parse.quote)
     for attempt in range(tries):
         try:
             data = get("https://skyview.gsfc.nasa.gov/current/cgi/runquery.pl?" + q)
-            if is_jpeg(data): return Image.open(io.BytesIO(data)).convert("L").resize((WIDTH, HEIGHT), Image.LANCZOS)
+            if is_jpeg(data):
+                # Sqrt, then a stretch of our own: SkyView's default (log) washed 16 of the first 300 out to near-white (31 October 2026),
+                # and plates differ in exposure, so every picture is stretched to its own range.
+                grey = Image.open(io.BytesIO(data)).convert("L").resize((WIDTH, HEIGHT), Image.LANCZOS)
+                return ImageOps.autocontrast(grey, cutoff=(0.5, 0.05))
         except Exception as e:
             print("   ", survey, "error:", e, file=sys.stderr)
         time.sleep(delay * (attempt + 2) * 2)   # busy: wait longer each time
