@@ -10,11 +10,14 @@ Written 31 October 2026 after CDS's hips2fits went unreachable. Sources:
            time, a pause between, and a longer wait when it answers "Too Many Processes" (a 200 with a web page). First run, 31 October 2026: 300 targets in well under a day. Measured 31 October 2026:
            about 75 s a target, so ~40 hours for the whole set; a Red + Blue merge was tried and rejected (each band is stretched on its own,
            so the colours came out blue or orange, and plate edges showed). Use it for a few hundred of the brightest targets at most.
-  auto     cds, and skyview for the rest once cds fails.
+  hips     the same colour DSS2 survey as cds, cut from its HiPS tiles on two public mirrors (IRSA at Caltech, CASDA at CSIRO), which carried on
+           answering while CDS was down. Needs numpy and astropy-healpix. Tiles are kept in <out>/../hips-tiles, so a rerun costs no requests.
+           Written 2 November 2026; checked against the SkyView picture of the same field, so the tile orientation is right.
+  auto     cds, and hips for the rest once cds fails.
 Resumable: files already in --out are skipped. Brightest targets first, so a partial run holds the most useful ones.
-Needs Pillow. Writes <out>/<id>.webp and <out>/manifest.json (sizes, totals).
+Needs Pillow (and numpy and astropy-healpix for --source hips). Writes <out>/<id>.webp and <out>/manifest.json (sizes, totals).
 """
-import argparse, csv, io, json, sys, time, urllib.parse, urllib.request
+import argparse, csv, io, json, math, sys, time, urllib.parse, urllib.request
 from pathlib import Path
 from PIL import Image, ImageOps
 
@@ -93,12 +96,63 @@ def skyview_band(t, survey, delay, tries=6):
 def from_skyview(t, delay):
     return skyview_band(t, "DSS2 Red", delay).convert("RGB")
 
+HIPS_MIRRORS = ["https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/color", "https://casda.csiro.au/hips/DSS2/color"]
+_tiles, _tile_dir, _mirror = {}, ROOT / "build/hips-tiles", [0]
+
+
+def hips_tile(order, tile, delay):
+    """One 512 px JPEG tile, from disk if kept, else from a mirror (alternating, with a pause after each request and a retry on failure)."""
+    f = _tile_dir / f"{order}-{tile}.jpg"
+    if f not in _tiles:
+        if not f.exists():
+            _tile_dir.mkdir(parents=True, exist_ok=True)
+            path = f"/Norder{order}/Dir{tile // 10000 * 10000}/Npix{tile}.jpg"
+            for attempt in range(6):
+                _mirror[0] += 1
+                try:
+                    data = get(HIPS_MIRRORS[_mirror[0] % 2] + path, timeout=30)
+                    if not is_jpeg(data): raise ValueError("not a JPEG")
+                    f.write_bytes(data); time.sleep(delay); break
+                except Exception as e:
+                    print("   tile", order, tile, "error:", e, file=sys.stderr); time.sleep(2 * (attempt + 1))
+            else:
+                raise ValueError(f"no mirror gave tile {order}/{tile}")
+        import numpy as np
+        _tiles[f] = np.asarray(Image.open(f).convert("RGB"))
+    return _tiles[f]
+
+
+def from_hips(t, delay):
+    """The picture hips2fits would give (colour DSS2, TAN projection, 480x274), cut from the HiPS tiles: each output pixel is turned into
+    a sky position, then into the HiPS pixel that holds it. The tile order is the coarsest whose pixels are no bigger than the output's."""
+    import numpy as np, astropy.units as u
+    from astropy_healpix import HEALPix
+    scale = math.radians(t["fov"]) / WIDTH
+    order = next((o for o in range(10) if math.sqrt(4 * math.pi / (12 * 4 ** (o + 9))) <= scale), 9)
+    px, py = np.meshgrid(np.arange(WIDTH), np.arange(HEIGHT))
+    xi, eta = -(px - (WIDTH - 1) / 2) * scale, ((HEIGHT - 1) / 2 - py) * scale
+    d0, den = math.radians(t["dec"]), None
+    den = math.cos(d0) - eta * math.sin(d0)
+    ra = math.radians(t["ra"]) + np.arctan2(xi, den)
+    dec = np.arctan2(math.sin(d0) + eta * math.cos(d0), np.hypot(xi, den))
+    index = HEALPix(nside=2 ** (order + 9), order="nested").lonlat_to_healpix((np.degrees(ra) % 360) * u.deg, np.degrees(dec) * u.deg).astype(np.int64)
+    tile, within = index >> 18, index & (2 ** 18 - 1)
+    x, y = np.zeros_like(within), np.zeros_like(within)
+    for b in range(9):   # a tile's pixels are in nested order: even bits are one axis, odd bits the other
+        x |= ((within >> (2 * b)) & 1) << b
+        y |= ((within >> (2 * b + 1)) & 1) << b
+    out = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
+    for n in np.unique(tile):
+        m = tile == n
+        out[m] = hips_tile(order, int(n), delay)[x[m], y[m]]   # row x, column y: of the 8 flips and swaps, the one that matches SkyView's pictures (correlation 0.98 to 0.99 on M31 and M42)
+    return Image.fromarray(out)
+
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "build/survey-set"))
     ap.add_argument("--limit", type=int)
-    ap.add_argument("--source", choices=["auto", "cds", "skyview"], default="auto")
+    ap.add_argument("--source", choices=["auto", "cds", "hips", "skyview"], default="auto")
     ap.add_argument("--delay", type=float, default=3.0, help="seconds between requests to SkyView")
     ap.add_argument("--quality", type=int, default=65)
     a = ap.parse_args()
@@ -114,7 +168,9 @@ def main():
                 try: img = from_cds(t)
                 except Exception as e:
                     if source == "cds": raise
-                    print("CDS unreachable, using SkyView:", e, flush=True); source = "skyview"; img = from_skyview(t, a.delay); time.sleep(a.delay)
+                    print("CDS unreachable, using the HiPS mirrors:", e, flush=True); source = "hips"; img = from_hips(t, a.delay)
+            elif source == "hips":
+                img = from_hips(t, a.delay)
             else:
                 img = from_skyview(t, a.delay); time.sleep(a.delay)
             img.save(f, "WEBP", quality=a.quality, method=6)
