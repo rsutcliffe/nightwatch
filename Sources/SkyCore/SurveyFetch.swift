@@ -28,7 +28,7 @@ public enum SkyViewCutout {
     private static func value(_ name: String, _ q: [URLQueryItem]) -> Double? { q.first { $0.name == name }?.value.flatMap(Double.init) }
 }
 
-/// Survey photos: CDS first, SkyView when CDS cannot be reached. Once CDS has failed it is not tried again for ten minutes, so a screen of
+/// Survey photos: the pre-built set (SurveyPack) when it holds the card, then CDS, then SkyView when CDS cannot be reached. Once CDS has failed it is not tried again for ten minutes, so a screen of
 /// cards does not each wait out a timeout. SkyView is a shared NASA service that answers "Too Many Processes" (with a 200 and a web page) when
 /// busy (about half of the requests in testing on 30 October 2026), so it is asked for two images at a time, a busy page is tried again after
 /// a pause, and anything that is not a JPEG is a failure.
@@ -42,11 +42,14 @@ public actor SurveyFetch {
     private var waiting: [CheckedContinuation<Void, Never>] = []
     private var cdsDownUntil = Date.distantPast
 
-    public init() {}
+    private let pack: SurveyPackStore
+
+    public init(pack: SurveyPackStore = .shared) { self.pack = pack }
 
     public func image(_ url: URL, timeout: TimeInterval, now: Date = Date(), retryDelay: Duration = .seconds(2),
                       get: Get = { try await URLSessionFetcher(timeout: $1).get($0) }) async -> Data? {
         guard let fallback = SkyViewCutout.fallback(for: url) else { return try? await get(url, timeout) }
+        if let pic = await pack.picture(for: url) { return pic }
         if now >= cdsDownUntil {
             if let data = try? await get(url, timeout), !data.isEmpty { return data }
             cdsDownUntil = now.addingTimeInterval(Self.retryAfter)

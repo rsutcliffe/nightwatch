@@ -9,6 +9,12 @@ private final class Calls: @unchecked Sendable {
     var hosts: [String] { lock.lock(); defer { lock.unlock() }; return urls.compactMap(\.host) }
 }
 
+/// A fetcher whose pack cannot be had, so these tests never touch the network or the real caches folder.
+private func noPack() -> SurveyFetch {
+    SurveyFetch(pack: SurveyPackStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("no-pack-\(UUID()).nwsp"),
+                                      get: { _, _ in throw URLError(.notConnectedToInternet) }))
+}
+
 @Suite struct SurveyFetchTests {
     let cds = URL(string: "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/DSS2/color&ra=83.82000&dec=-5.39000&fov=2.100&width=480&height=270&projection=TAN&format=jpg")!
     let jpeg = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x00])
@@ -35,14 +41,14 @@ private final class Calls: @unchecked Sendable {
 
     @Test func cdsAnsweringIsEnoughAndSkyViewIsNotAsked() async {
         let calls = Calls()
-        let data = await SurveyFetch().image(cds, timeout: 1) { u, _ in calls.add(u); return self.jpeg }
+        let data = await noPack().image(cds, timeout: 1) { u, _ in calls.add(u); return self.jpeg }
         #expect(data == jpeg)
         #expect(calls.hosts == ["alasky.cds.unistra.fr"])
     }
 
     @Test func skyViewIsUsedWhenCdsFailsAndCdsIsLeftAloneForTenMinutes() async {
         let calls = Calls(), jpeg = self.jpeg
-        let fetch = SurveyFetch(), now = Date()
+        let fetch = noPack(), now = Date()
         let get: SurveyFetch.Get = { u, _ in calls.add(u); if u.host == "alasky.cds.unistra.fr" { throw URLError(.timedOut) }; return jpeg }
         #expect(await fetch.image(cds, timeout: 1, now: now, retryDelay: .zero, get: get) == jpeg)
         #expect(await fetch.image(cds, timeout: 1, now: now.addingTimeInterval(60), retryDelay: .zero, get: get) == jpeg)
@@ -53,7 +59,7 @@ private final class Calls: @unchecked Sendable {
 
     @Test func aBusyPageFromSkyViewIsNotAnImage() async {
         let busy = Data("<html>Too Many Processes</html>".utf8)
-        let data = await SurveyFetch().image(cds, timeout: 1, retryDelay: .zero) { u, _ in if u.host == "alasky.cds.unistra.fr" { throw URLError(.cannotConnectToHost) }; return busy }
+        let data = await noPack().image(cds, timeout: 1, retryDelay: .zero) { u, _ in if u.host == "alasky.cds.unistra.fr" { throw URLError(.cannotConnectToHost) }; return busy }
         #expect(data == nil)
     }
 
@@ -64,7 +70,16 @@ private final class Calls: @unchecked Sendable {
             if u.host == "alasky.cds.unistra.fr" { throw URLError(.timedOut) }
             return calls.hosts.filter { $0 == "skyview.gsfc.nasa.gov" }.count < 2 ? busy : jpeg
         }
-        #expect(await SurveyFetch().image(cds, timeout: 1, retryDelay: .zero, get: get) == jpeg)
+        #expect(await noPack().image(cds, timeout: 1, retryDelay: .zero, get: get) == jpeg)
         #expect(calls.hosts.count == 3)
+    }
+
+    @Test func aPictureInThePackIsUsedAndNeitherServiceIsAsked() async throws {
+        let calls = Calls(), pic = Data("webp".utf8)
+        let store = SurveyPackStore(file: FileManager.default.temporaryDirectory.appendingPathComponent("pack-\(UUID()).nwsp"),
+                                    get: { [cds] _, _ in SurveyPackTests.pack([SurveyPack.key(for: cds)!: pic]) })
+        let data = await SurveyFetch(pack: store).image(cds, timeout: 1) { u, _ in calls.add(u); return self.jpeg }
+        #expect(data == pic)
+        #expect(calls.hosts.isEmpty)
     }
 }

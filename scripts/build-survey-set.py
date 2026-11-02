@@ -14,6 +14,8 @@ Written 31 October 2026 after CDS's hips2fits went unreachable. Sources:
            answering while CDS was down. Needs numpy and astropy-healpix. Tiles are kept in <out>/../hips-tiles, so a rerun costs no requests.
            Written 2 November 2026; checked against the SkyView picture of the same field, so the tile orientation is right.
   auto     cds, and hips for the rest once cds fails.
+--pack FILE also writes the published file (see Sources/SkyCore/SurveyPack.swift for its layout), one entry per picture in --out, keyed by the numbers
+of the app's card request so the app finds it without a catalogue.
 Resumable: files already in --out are skipped. Brightest targets first, so a partial run holds the most useful ones.
 Needs Pillow (and numpy and astropy-healpix for --source hips). Writes <out>/<id>.webp and <out>/manifest.json (sizes, totals).
 """
@@ -148,6 +150,23 @@ def from_hips(t, delay):
     return Image.fromarray(out)
 
 
+def card_key(t):
+    """The app's card request as SurveyPack.key(for:) reads it: ra, dec, fov as printed into the hips2fits address, then the picture size."""
+    return "%.5f|%.5f|%.3f|%d|%d" % (t["ra"], t["dec"], t["fov"], WIDTH, HEIGHT)
+
+
+def write_pack(out, todo, path):
+    """The pack: 8-byte magic, little-endian UInt32 length of the JSON index, the index {"entries": {key: [offset, length]}}, then the pictures."""
+    body, entries = bytearray(), {}
+    for t in todo:
+        f = out / (t["id"] + ".webp")
+        if f.exists() and card_key(t) not in entries:
+            data = f.read_bytes(); entries[card_key(t)] = [len(body), len(data)]; body += data
+    index = json.dumps({"entries": entries}, separators=(",", ":")).encode()
+    Path(path).write_bytes(b"NWSURV1\n" + len(index).to_bytes(4, "little") + index + bytes(body))
+    print(f"pack {path}: {len(entries)} pictures, {Path(path).stat().st_size / 1e6:.1f} MB", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "build/survey-set"))
@@ -155,6 +174,7 @@ def main():
     ap.add_argument("--source", choices=["auto", "cds", "hips", "skyview"], default="auto")
     ap.add_argument("--delay", type=float, default=3.0, help="seconds between requests to SkyView")
     ap.add_argument("--quality", type=int, default=65)
+    ap.add_argument("--pack", help="also write the published pack file here")
     a = ap.parse_args()
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     todo = targets()[: a.limit]
@@ -185,6 +205,7 @@ def main():
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
     n = max(1, len(sizes))
     print(f"{len(sizes)} files, {manifest['totalBytes'] / 1e6:.1f} MB, mean {manifest['totalBytes'] // n} B; {len(failed)} failed", flush=True)
+    if a.pack: write_pack(out, todo, a.pack)
     sys.exit(1 if failed else 0)
 
 
