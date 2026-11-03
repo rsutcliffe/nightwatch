@@ -40,8 +40,13 @@ cd /Users/richardsutcliffe/Code/Astronomy
 python3 <skill>/scripts/creative_assets.py --art Resources/Backdrop/night-sky-wide.jpg --outdir build/event-art --caption "Moonless week" --which event16,event9 --focus 0.5,0.5
 ```
 
-To do in App Store Connect (Chrome was not reachable when this was written): app > In-App Events > + > the fields above, upload the two images, save as
-**draft**. Submit for review only with the owner's word. Attach the approved event to the featuring nomination as early as possible.
+**Created in App Store Connect on 3 November as a draft (event id 6830272647, "Moonless week December 2026"); not submitted.** Fields: Special Event badge, normal
+priority, no in-app purchase needed, purpose "Appropriate for all users", all countries, event 6 Dec 2026 00:00 to 13 Dec 2026 00:00 GMT, publish start
+22 Nov 2026 (the 14-day promotion window). Both images attached and read back after a reload. Quirk: a second upload through the same file input did not register
+and the first details image showed "Your file is in the wrong format" while still processing; removing it and uploading a copy under a new file name worked.
+Event URL: https://apps.apple.com/us/app/id6816390602?eventid=6830272647. Before **Add for Review**: match the dates to the app's own December Moonless run (the
+new Moon is on 9 or 10 December by a mean-lunation calculation, which gives 9 November, as the app does), and submit by about 14 November. Attach it to the
+featuring nomination once approved. Only the owner presses Add for Review.
 
 ## 3. Custom product pages and campaign links
 
