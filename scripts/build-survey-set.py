@@ -17,6 +17,7 @@ Written 31 October 2026 after CDS's hips2fits went unreachable. Sources:
 --pack FILE also writes the published file (see Sources/SkyCore/SurveyPack.swift for its layout), one entry per picture in --out, keyed by the numbers
 of the app's card request so the app finds it without a catalogue.
 Resumable: files already in --out are skipped. Brightest targets first, so a partial run holds the most useful ones.
+Licence of the output: the pictures are cut from CDS's DSS2 colour HiPS, so the set is published under the Open Database License 1.0 with the DSS and CDS attribution (docs/releasing.md).
 Needs Pillow (and numpy and astropy-healpix for --source hips). Writes <out>/<id>.webp and <out>/manifest.json (sizes, totals).
 """
 import argparse, csv, io, json, math, sys, time, urllib.parse, urllib.request
