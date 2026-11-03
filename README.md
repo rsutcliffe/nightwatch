@@ -2,7 +2,7 @@
 
 # Nightwatch
 
-Free macOS menu-bar app for astrophotography: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. See the [product page](https://delphi-dolphin.com/nightwatch).
+Free astrophotography app for the Mac (a menu-bar app), iPhone and iPad: finds tonight's clear window, ranks your targets, tells you when it's worth setting up. See the [product page](https://delphi-dolphin.com/nightwatch).
 
 **Trees, houses or a balcony roof in the way?** Tell Nightwatch how much sky you can actually see, direction by direction or from a phone photo, and it only suggests targets that clear it. See [Your horizon](#your-horizon).
 
@@ -62,7 +62,7 @@ Taken with version 1.7 and a DWARF Mini, observing from Furnace Creek in Death V
 
 ## Download
 
-Nightwatch is available on the [Mac App Store](https://apps.apple.com/app/nightwatch-clear-sky-alerts/id6816390602) as "Nightwatch: Clear Sky Alerts". It is the same app: the App Store updates it, so it has no update check of its own. The disk image below is the other way to get it.
+Nightwatch is available on the [App Store](https://apps.apple.com/app/nightwatch-clear-sky-alerts/id6816390602) as "Nightwatch: Clear Sky Alerts", for Mac, iPhone and iPad in one free purchase. It is the same app: the App Store updates it, so it has no update check of its own. The iPhone and iPad app is in [`Phone/`](Phone/README.md). The disk image below is the other way to get the Mac app.
 
 **[Download Nightwatch.dmg](https://github.com/rsutcliffe/nightwatch/releases/latest/download/Nightwatch.dmg)**, always the newest version, signed and notarised, for Apple silicon Macs on macOS 14 or later. Open it and drag Nightwatch to Applications. Each [GitHub release](https://github.com/rsutcliffe/nightwatch/releases) also carries the same file as `Nightwatch-<version>.dmg`, with its SHA-256 checksum. The first time you open it, macOS asks whether to open an app downloaded from the internet: choose Open. Nightwatch then asks what you image with and where you observe from; "Use this Mac's location" brings up macOS's location prompt, where you choose Allow. Nightwatch asks for location only when you press that button, or This Mac's location in Settings › Where you observe: it never asks by itself, and it works the same from a site you add by name. Nightwatch checks GitHub once a day for a newer version and says so in the popover (Settings › Updates turns this off). Questions and ideas are welcome in [Discussions](https://github.com/rsutcliffe/nightwatch/discussions); problems in [Issues](https://github.com/rsutcliffe/nightwatch/issues). How a release is made is in [docs/releasing.md](docs/releasing.md), and the Mac App Store build in [docs/app-store.md](docs/app-store.md).
 
