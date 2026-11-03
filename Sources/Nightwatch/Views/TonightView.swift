@@ -1,9 +1,11 @@
 import SwiftUI
 import NightwatchUI
 import SkyCore
+import StoreKit
 
 struct TonightView: View {
     @EnvironmentObject var store: Store
+    @Environment(\.requestReview) private var requestReview
     @Environment(\.openWindow) private var openWindow
 
     /// The popover's height as laid out, to know when it is taller than the screen (#60).
@@ -27,6 +29,11 @@ struct TonightView: View {
         .foregroundStyle(Theme.text)
         .preferredColorScheme(.dark)
         .onAppear { Task { await store.refresh(force: false) } }   // cheap: the 30-minute cache gate decides whether to fetch
+        .task {
+            // After a success, Apple's own rating prompt (ReviewPrompt): the popover is opened inside tonight's clear window on a third different night.
+            try? await Task.sleep(for: .seconds(2))
+            if ReviewPrompt.due(for: store.plan) { requestReview() }
+        }
         .background(WindowScreenReader { screenHeight = $0 - 24 })
     }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import SkyCore
 import PhoneCore
 
@@ -9,6 +10,7 @@ public struct RootView: View {
     @StateObject private var permission = NotificationPermission()
     @AppStorage("redNightMode") private var red = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.requestReview) private var requestReview
     @State private var showSites = false
     @State private var showSettings = false
     @State private var showHorizon: HorizonTarget?
@@ -23,6 +25,15 @@ public struct RootView: View {
     }
 
     private func refresh(force: Bool = false) { Task { await store.refresh(force: force, connectivity: connectivity.current) } }
+
+    /// After a success, Apple's own rating prompt (ReviewPrompt): the app is opened inside tonight's clear window on a third different night. A short pause
+    /// first, so it does not land on a half-drawn screen, and only if the app is still in front.
+    private func askForRatingIfDue() {
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            if scenePhase == .active, ReviewPrompt.due(for: store.planning?.tonight) { requestReview() }
+        }
+    }
 
     /// A refresh the person asked for (the Refresh button, pull down, Try again): it ends with a tap that says how it went.
     private func refreshByHand() {
@@ -208,11 +219,12 @@ public struct RootView: View {
         }
         .task {
             refresh()
+            askForRatingIfDue()
             // `-demoOpen horizon` opens the active site's horizon sheet at launch, for screenshots in the Simulator.
             if UserDefaults.standard.string(forKey: "demoOpen") == "horizon", let n = store.site?.name { try? await Task.sleep(for: .seconds(2)); showHorizon = HorizonTarget(name: n) }
             if UserDefaults.standard.string(forKey: "demoOpen") == "settings" { try? await Task.sleep(for: .seconds(2)); showSettings = true }
         }
-        .onChange(of: scenePhase) { _, p in if p == .active { refresh(); Task { await permission.refresh() } } }
+        .onChange(of: scenePhase) { _, p in if p == .active { refresh(); Task { await permission.refresh() }; askForRatingIfDue() } }
         .onChange(of: connectivity.current.isOnline) { _, on in if on { refresh() } }
     }
 }
