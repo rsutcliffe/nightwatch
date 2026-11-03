@@ -84,4 +84,5 @@ build/survey-venv/bin/python scripts/build-survey-set.py --source hips --out bui
 request at a time, alternating, with the tiles kept in `build/hips-tiles`. `--source cds` asks hips2fits instead when it is up. Publish with
 `gh release create survey-set-1 build/survey-set.nwsp --prerelease --latest=false --title "Survey picture set" --notes-file <notes>`, or, for a
 new set under the same tag, `gh release upload survey-set-1 build/survey-set.nwsp --clobber`. The credit (Digitized Sky Survey, STScI/NASA, plate
-owners, CDS) is in the app's About page and the notes.
+owners, CDS) is in the app's About page and the notes, and the notes say the set is offered under the Open Database License 1.0 (CDS asked for
+this on 3 November 2026: its HiPS are ODbL share-alike, and the original producers' terms take precedence).
