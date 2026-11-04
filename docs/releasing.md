@@ -69,7 +69,7 @@ Target pictures normally come from CDS's hips2fits. CDS was unreachable for days
 app also carries a pre-built set: one 480 x 274 colour DSS2 picture for each of the 1,948 targets the Planner can list, in the default 2.1 x 1.2
 degree field of view. It is one file, `survey-set.nwsp` (layout in `Sources/SkyCore/SurveyPack.swift`), published as an asset of the prerelease tagged
 `survey-set-1`. The app fetches it once, on the first card that wants a picture, and keeps it in the caches folder; `SurveyFetch` looks in it before
-CDS and SkyView.
+CDS. When CDS cannot be reached, a target outside the set shows its icon: a greyscale NASA SkyView stand-in shipped in 1.7.2 and 1.0.1 and was removed in 1.7.3 and 1.0.2, because on a target's page the large grey picture replaced the colour card picture.
 
 **It is a prerelease on purpose.** GitHub's "latest release" is what the update check and the disk image link read; a data release must never be it.
 
