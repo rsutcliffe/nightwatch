@@ -45,7 +45,7 @@ public extension TargetPick {
     static func sharp(_ t: RankedTarget, site: Site, fov: FieldOfView) -> (url: URL, cacheName: String)? {
         guard case .survey = make(t, site: site, fov: fov).picture else { return nil }
         return (SurveyThumbnail.url(raHours: t.raHours, decDeg: t.decDeg, sizeArcmin: t.sizeArcmin, fov: fov, width: sharpWidth),
-                "sharp-" + ThumbnailFiles.name(id: t.id, fovWidthDeg: fov.widthDeg, fovHeightDeg: fov.heightDeg))
+                "sharp-v2-" + ThumbnailFiles.name(id: t.id, fovWidthDeg: fov.widthDeg, fovHeightDeg: fov.heightDeg))
     }
     static let sharpWidth = 1600
     /// hips2fits took 12.5 s for a 1600 px image with extra sky, so this one gets longer than the card photos' 20 s.
