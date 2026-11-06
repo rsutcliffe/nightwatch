@@ -1,7 +1,7 @@
 # Nightwatch for iPhone and iPad
 
 The iPhone and iPad version of [Nightwatch](https://github.com/rsutcliffe/nightwatch), in the same free App Store purchase as the Mac app
-([Nightwatch: Clear Sky Alerts](https://apps.apple.com/app/nightwatch-clear-sky-alerts/id6816390602)). It tells you whether tonight is worth
+([Nightwatch: Clear Sky Alerts](https://apps.apple.com/gb/app/nightwatch-clear-sky-alerts/id6816390602?pt=1028621&ct=nightwatch-readme&mt=8)). It tells you whether tonight is worth
 setting up the telescope and alerts you on your phone.
 
 This folder holds the phone app and `PhoneCore`, its tested core. Since 24 October 2026 it lives in the Mac app's repository
