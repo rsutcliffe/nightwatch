@@ -30,8 +30,10 @@ Sections about the menu bar, Siri on the Mac, "Your Macs, in step" and the disk 
 ## Add for discovery (Apple's own web features)
 - **Smart App Banner:** in the `<head>` of the Nightwatch page (and any page that mentions the app): `<meta name="apple-itunes-app" content="app-id=6816390602">`.
   Apple's behaviour: it opens the app if it is installed, otherwise the App Store listing, and is hidden on devices or in regions that cannot use the app.
-- **Tagged App Store links** so we can see what the site sends: use the links from the campaign-links page in App Store Connect (`pt` provider token from the
-  owner, `ct=website`); do not invent the `pt`.
+- **Tagged App Store link** so we can see what the site sends: use this one for every App Store button and the badge on the site (made in App Store Connect's
+  campaign links, 6 November 2026; the provider token is not a secret, it is in every tagged link):
+  `https://apps.apple.com/gb/app/nightwatch-clear-sky-alerts/id6816390602?pt=1028621&ct=nightwatch-website&mt=8`
+  Apple reports a campaign only once five different accounts have installed through it, so App Store Connect (Analytics > Campaigns) will stay empty for a while.
 - **Badge:** use Apple's "Download on the App Store" badge as Apple's marketing guidelines require (size, clear space, one badge per layout), not a text lookalike.
 
 ## Verify
