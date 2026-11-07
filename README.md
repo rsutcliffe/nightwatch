@@ -10,11 +10,11 @@ Free astrophotography app for the Mac (a menu-bar app), iPhone and iPad: finds t
 
 *The full Moon, 26 September 2026, DWARF Mini, Richard Sutcliffe.*
 
-<img src="docs/images/screenshot-popover-clear-night.jpg" width="360" alt="The Nightwatch popover at Furnace Creek in Death Valley National Park: a sky score of 80, a clear window from 02:00 to 05:36, 3.6 hours, held back by a 96% Moon, with Open-Meteo agreeing, the night drawn as an arc with an amber dot at the present hour, darkness 19:27 to 05:36, seeing of 0.75 to 1 arcsecond, wind of 16 km/h, low dew risk, good transparency, the Moon 96% lit and setting at 05:24, and the three best targets, IC 417, NGC 1023 and Capella">
+<img src="docs/images/screenshot-popover-clear-night.jpg" width="360" alt="The Nightwatch popover at Furnace Creek in Death Valley National Park: a sky score of 95, a clear window from 18:13 to 04:48, 10.6 hours, held back by seeing at 1 to 1.25 arcseconds, with Open-Meteo agreeing, the night drawn as an arc, seeing of 1 to 1.25 arcseconds, wind of 9 km/h, low dew risk, good transparency, the Moon 4% lit and rising at 04:47, and the three best targets, IC 417, NGC 7331 and Capella">
 
 ## Screenshots
 
-Taken with version 1.7 and a DWARF Mini, observing from Furnace Creek in Death Valley National Park, a public place (the popover, Tonight's plan, the week ahead, the Targets window, the dark sites and the widgets). The alerts and the horizon dial are from earlier versions.
+Taken with version 1.7.3 and a DWARF Mini, observing from Furnace Creek in Death Valley National Park, a public place (the popover, Tonight's plan, the week ahead, the Targets window, a target's page and the widgets). The alerts, the horizon dial, the constellations, the dark sites, the events and the Moon covering a star are from earlier versions.
 
 **Alerts:** a heads-up an hour before sunset when tonight looks clear, with your plan and what the second forecast thinks, and a nudge as the clear window opens.
 
@@ -22,19 +22,19 @@ Taken with version 1.7 and a DWARF Mini, observing from Furnace Creek in Death V
 
 **Tonight's plan:** your favourites that are up in the clear window, in order of their best time, with your telescope's filter and frames, and one altitude chart showing where each is through the night. Two best at the same time are marked, so you can choose; take one off for the night, and the choice is kept.
 
-<img src="docs/images/screenshot-plan.jpg" width="728" alt="Tonight's plan at Furnace Creek, clear 02:00 to 05:36: an altitude chart with two lines, NGC 1491 at 02:30 and Capella at 04:00, above the rows for the plan, with Aries, the Pleiades and Uranus taken off for the night as dashed rows, each with Put back">
+<img src="docs/images/screenshot-plan.jpg" width="728" alt="Tonight's plan at Furnace Creek, clear 18:13 to 04:48, 10 hours 35 minutes, Moon 4%: an altitude chart with lines for Cygnus at 18:13, Saturn at 21:13, Aries at 23:43 and Orion at 02:13, above the rows for Cygnus, Saturn and Aries, each with Not tonight, and the Pleiades taken off for the night as a dashed row with Put back">
 
 **The week ahead:** up to ten nights in date order, each with its clear window or longest clear run, darkness and the Moon, so the best night of the week is easy to pick. Cloud from three days out is marked "Less certain".
 
-<img src="docs/images/screenshot-week-ahead.jpg" width="728" alt="The week ahead at Furnace Creek: ten nights in date order, five with a clear window, Monday the longest at 10.3 hours, and nights from three days out marked Less certain">
+<img src="docs/images/screenshot-week-ahead.jpg" width="728" alt="The week ahead at Furnace Creek: the next nine nights, all nine with a clear window, from 10.6 hours tonight to 7.8 hours on Thursday, with the Moon at most 22% lit on the nights shown, and nights from three days out marked Less certain">
 
-**Tonight or tomorrow night:** the whole Targets window can show tomorrow night instead, so you can plan ahead. Each card says how much of your frame the target fills, and when it is up in the clear window.
+**Tonight or tomorrow night:** the whole Targets window can show tomorrow night instead, so you can plan ahead. Each card says when the target is up in the clear window and when it is at its best; this is Eyes and binoculars, the targets that need no telescope.
 
-<img src="docs/images/screenshot-nebulae.jpg" width="728" alt="Nebulae for tonight, clear 02:00 to 05:36: sky-survey cards for the Flaming Star Nebula, IC 2067, IC 410, IC 417, the California Nebula and others, each with how much of the frame it fills and its best time">
+<img src="docs/images/screenshot-eyes-binoculars.jpg" width="728" alt="Eyes and binoculars for tonight, moonless until Wed 11 Nov: sky-survey cards for IC 444, the Iris Nebula, NGC 1975, NGC 1973, the Triangulum Galaxy and the Andromeda Galaxy, each marked Binoculars or Naked eye, with what it looks like, when it can be viewed and its best time">
 
 **A target's page:** the survey photo fills the window at your field of view, and "How to shoot this" gives your telescope's filter, exposure and frames, sized to the clear window.
 
-<img src="docs/images/screenshot-target.jpg" width="728" alt="The California Nebula page: a sky-survey photo with the dashed box of a DWARF Mini's field of view, How to shoot this with the Duo-Band filter, 15 to 60 second frames at gain 60 to 80 and 200 to 400 frames, the best time of 02:30 at 88 degrees, and the altitude through tonight's clear window">
+<img src="docs/images/screenshot-target.jpg" width="728" alt="The Maia Nebula page: a blue sky-survey photo with How to shoot this with your DwarfLab DWARF Mini open, giving the Duo-Band filter, 15 to 60 second frames at gain 60 to 80 and 200 to 400 frames, with the best time of 00:13 at 78 degrees in the south, 81% of the window above 30 degrees, the Moon 142 degrees away, and the altitude through tonight's clear window">
 
 **All 88 constellations:** each one drawn as a figure over its stars.
 
@@ -58,7 +58,7 @@ Taken with version 1.7 and a DWARF Mini, observing from Furnace Creek in Death V
 
 **Desktop widgets:** small, medium and large.
 
-<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 80, clear 02:00 to 05:36, Furnace Creek"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score 80, clear 02:00 to 05:36, the reason and the second forecast, and clear sky by hour"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score 80, the clear window, the night drawn as an arc, and the three best targets">
+<img src="docs/images/screenshot-widget-small.png" width="164" alt="Small widget: sky score 95, clear 18:13 to 04:48, Furnace Creek, with the time the alert will come"> <img src="docs/images/screenshot-widget-medium.png" width="344" alt="Medium widget: sky score 95, Furnace Creek, clear 18:13 to 04:48, 10.6 hours, the night drawn as an arc and the first targets"> <img src="docs/images/screenshot-widget-large.png" width="344" alt="Large widget: sky score 95, clear 18:13 to 04:48, held back by seeing with Open-Meteo agreeing, the night drawn as an arc, and the three best targets, IC 417, NGC 7331 and Capella">
 
 ## Download
 
