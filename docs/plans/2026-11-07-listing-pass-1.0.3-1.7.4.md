@@ -44,7 +44,7 @@ Checked with `listing_check.py --strict`: 0 failures, 0 warnings.
 |---|---|---|
 | iPhone and iPad now | `astronomy,telescope,stars,forecast,seeing,dark,aurora,moon,nebula,galaxy,messier,stargazing,bortle` | 98 |
 | iPhone and iPad proposed | `astronomy,telescope,forecast,stargazing,aurora,nebula,galaxy,messier,bortle,smart,light pollution` | 97 |
-| Mac now | `astronomy,telescope,stars,forecast,seeing,dark,aurora,moon,nebula,galaxy,messier,bortle,menu bar` | 97 |
+| Mac now | `astronomy,telescope,stars,forecast,seeing,dark,aurora,moon,nebula,galaxy,messier,bortle,menu bar` | 96 |
 | Mac proposed | `astronomy,telescope,forecast,aurora,nebula,galaxy,messier,bortle,smart,light pollution,menu bar` | 95 |
 
 Out: `stars`, `seeing`, `dark`, `moon` (generic or ambiguous; "seeing" is the only one with any showing, #60 of 114 on the proxy, where "Seeing AI" leads).
