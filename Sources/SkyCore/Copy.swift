@@ -231,6 +231,7 @@ public struct Copy: Sendable {
         for locale in ["en_US", "en_GB"] {   // en_US names the American zones, en_GB the European ones; neither names the rest
             if let name = z.localizedName(for: style, locale: Locale(identifier: locale)), name == "GMT" || !(name.hasPrefix("GMT") || name.hasPrefix("UTC")) { return name }
         }
+        if offset == 0 { return "GMT" }   // macOS 27.0.1 names London's winter zone "GMT+0", which the loop above rejects; no offset is "GMT"
         let minutes = abs(offset) / 60 % 60
         return "UTC" + (offset < 0 ? "-" : "+") + "\(abs(offset) / 3600)" + (minutes > 0 ? String(format: ":%02d", minutes) : "")
     }

@@ -30,7 +30,7 @@
    "marketing_url": "https://delphi-dolphin.com/nightwatch",
    "privacy_url": "https://github.com/rsutcliffe/nightwatch/blob/main/PRIVACY.md",
    "copyright": "2026 Richard Sutcliffe",
-   "whats_new": "Refreshed screenshots and App Store text. The app itself is unchanged."
+   "whats_new": "A time zone is named correctly beside a window: GMT, not UTC+0, when a GMT site is read on another clock. Refreshed screenshots and App Store text."
   }
  },
  "asset_text": {

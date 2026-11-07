@@ -11,9 +11,10 @@ pages, in-app events and the accessibility labels can change without one. The op
 result can be attributed. Bundling gives that up (the owner chose it), so the baseline below is recorded first and a before-and-after read is taken two to four
 weeks after release with `rank_log.py` and App Analytics (source: App Store Search).
 
-The code has not changed since 1.0.2 and 1.7.3 (the only commits since are READMEs and a status script). So 1.0.3 and 1.7.4 are the same app with a new build
-number, and What's New says so truthfully (below). If the picture set gains its eight stars (decision about 14 November) that becomes the real change and the
-What's New line.
+The code had not changed since 1.0.2 and 1.7.3 until 7 November, when the local test run found that macOS 27.0.1 names London's winter zone "GMT+0", so the widget
+would say "UTC+0" beside a window read on a US clock. `Copy.zoneName` now returns "GMT" for a zero offset; that is the one real change in 1.0.3 and 1.7.4, and the
+What's New line says it. Decision on the eight stars, 7 November: **not shipped** (eight of about two thousand targets; a survey cutout of a bright star is a saturated blob;
+it would need a rebuilt pack, a new release asset and app code, in a release meant to be the last listing pass). Revisit in any later release.
 
 ## Baseline (recorded before any change)
 
@@ -68,7 +69,7 @@ low-competition term), categories Weather and Utilities. No evidence supports a 
 
 ### What's New (both platforms)
 
-"Refreshed screenshots and App Store text. The app itself is unchanged." Truthful for an identical build. If the eight stars ship: "Added the eight brightest stars to the ready-made picture set."
+"A time zone is named correctly beside a window: GMT, not UTC+0, when a GMT site is read on another clock. Refreshed screenshots and App Store text."
 
 ### Screenshots and previews (files in `~/Downloads/Nightwatch-1.0.3-store-assets/`)
 
