@@ -196,9 +196,9 @@
    "country": "gb",
    "platform": "mac",
    "position": null,
-   "searched_depth": 4,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first screen is counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -206,9 +206,9 @@
    "country": "gb",
    "platform": "mac",
    "position": null,
-   "searched_depth": 4,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first screen is counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -216,9 +216,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -226,9 +226,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -236,9 +236,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -246,9 +246,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -256,9 +256,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -266,9 +266,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -276,9 +276,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -286,9 +286,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -296,9 +296,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -306,9 +306,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -316,9 +316,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -326,9 +326,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -336,9 +336,9 @@
    "country": "gb",
    "platform": "iphone",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   },
   {
    "date": "2026-11-10",
@@ -346,9 +346,9 @@
    "country": "gb",
    "platform": "ipad",
    "position": null,
-   "searched_depth": 2,
+   "searched_depth": 32,
    "source": "app-store",
-   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner saw nothing, depth not recorded: only the first two results are counted"
+   "notes": "10 Nov 2026, owner by hand in the UK App Store app (first real read; the 7 Nov rows came from Apple's public API); owner scrolled 8 to 10 pages of 4 results and saw nothing, so at least the first 32 results were checked"
   }
  ]
 }
