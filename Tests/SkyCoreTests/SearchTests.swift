@@ -278,3 +278,14 @@ private func extras(_ query: String, _ group: TargetGroup, _ plan: NightPlan, ra
     #expect(found.count == SearchExtras.limit)
     #expect(found.contains { $0.target.id == "NGC0224" })
 }
+
+@Test func aSharplessNumberFindsItsNebulaHoweverItIsTyped() throws {
+    let catalog = try Catalog.bundled()
+    for typed in ["Sh2-101", "sh2 101", "Sh 2-101", "SH2101"] { #expect(catalog.objects(matching: typed).map(\.id) == ["Sh2-101"], "\(typed)") }
+    #expect(catalog.objects(matching: "Sh2-117").map(\.id) == ["NGC7000"])   // the North America Nebula, by its Sharpless number
+    #expect(catalog.objects(matching: "Sh2-25").map(\.id).contains("NGC6523"))   // the Lagoon; a number is matched from its start, as "NGC 22" is
+    #expect(catalog.objects(matching: "sh2-155").map(\.id) == ["C009"])
+    // A bare number is still an NGC, IC, Messier or Caldwell number: every Sharpless name starts "2-".
+    #expect(!catalog.objects(matching: "21").contains { $0.id.hasPrefix("Sh2-") })
+    #expect(catalog.objects(matching: "2175").map(\.id) == ["NGC2175"])       // and not by the "Sh 2-252" it also carries
+}

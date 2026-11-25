@@ -11,6 +11,10 @@ Seeing and transparency from 7Timer (Shanghai Astronomical Observatory), non-com
 Aurora alert status from AuroraWatch UK, Lancaster University, used under its non-commercial terms. https://aurorawatch.lancs.ac.uk
 Aurora forecast outside the UK and Ireland from the 30-minute aurora forecast of NOAA's Space Weather Prediction Center, which is in the public domain. Nightwatch is not endorsed by or affiliated with NOAA; the yellow, amber and red bands are Nightwatch's own. https://www.spaceweather.gov/products/aurora-30-minute-forecast
 OpenNGC, Mattia Verga, CC BY-SA 4.0. https://github.com/mattiaverga/OpenNGC
+Sharpless nebulae: S. Sharpless, "A Catalogue of H II Regions", Astrophysical Journal Supplement 4, 257 (1959), from
+CDS/VizieR catalogue VII/20; other names and identifiers from CDS/SIMBAD. CDS, Strasbourg Astronomical Data Centre,
+distributes its datasets of public information under an Open Licence, ODbL or CC BY (https://cds.unistra.fr/legals/).
+Positions turned from B1950 to J2000 by scripts/build-sharpless.py.
 Constellation names, positions and star-line data, and the bright stars' names and positions, from d3-celestial, Olaf Frohn, BSD-3-Clause. https://github.com/ofrohn/d3-celestial
 Constellation artwork is original to Nightwatch: all 88 figures and star plots were created for the project by Richard Sutcliffe with ChatGPT image generation, not taken from any other source, and are under the project's MIT licence. The star plots are drawn from d3-celestial's star-line data.
 Event artwork (meteor showers, comets, conjunctions, the International Space Station, solar and lunar eclipses, the Moon covering a star or planet, the Milky Way, and the quiet horizon shown when there are no events) is original to Nightwatch, created for the project by Richard Sutcliffe with ChatGPT image generation, under the project's MIT licence.

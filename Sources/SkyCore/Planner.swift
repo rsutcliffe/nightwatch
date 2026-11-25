@@ -226,14 +226,16 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
     /// type, so a word for a kind of object finds every one of that kind, not only those whose name contains it (owner,
     /// 27 September 2026: "galaxy" found nine of 141 galaxies). Empty matches all.
     public func matches(_ query: String) -> Bool {
-        let q = query.filter { !$0.isWhitespace }.lowercased()
+        // A hyphen counts for no more than a space, so "sh2 101" and "Sh 2-101" both find Sh 2-101.
+        let q = query.filter { !$0.isWhitespace && $0 != "-" }.lowercased()
         guard !q.isEmpty else { return true }
         let letters = q.prefix { $0.isLetter }, number = q.dropFirst(letters.count)
         guard let first = number.first, first.isNumber else {
             return [name, subtitle, typeName].contains { $0.localizedCaseInsensitiveContains(query.trimmingCharacters(in: .whitespaces)) }
         }
-        let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace }.lowercased() }
-        if letters.isEmpty { return parts.contains { $0.drop { $0.isLetter }.hasPrefix(q) } }
+        let parts = name.components(separatedBy: " · ").map { $0.filter { !$0.isWhitespace && $0 != "-" }.lowercased() }
+        // A bare number is an NGC, IC, Messier or Caldwell number; every Sharpless name starts "2-", so "21" must not find them all.
+        if letters.isEmpty { return parts.contains { !$0.hasPrefix("sh2") && $0.drop { $0.isLetter }.hasPrefix(q) } }
         return parts.contains { $0.hasPrefix(q) }
     }
 
