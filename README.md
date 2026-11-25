@@ -152,7 +152,7 @@ killall chronod
 
 ## Telescope
 
-Any. Pick a preset (DwarfLab DWARF Mini, DWARF 3 and Draco; ZWO Seestar S30, S30 Pro, S50 and S50 Pro; Vaonis Vespera II, Vespera 3 and Vespera Pro 2; Unistellar Odyssey, Odyssey Pro, eVscope 2 and eQuinox 2; APS-C at 200 mm) or type your field of view in degrees. Each preset is the maker's own figure for a single frame, not a mosaic.
+Any. Pick a preset (DwarfLab DWARF Mini, DWARF 3 and Draco; ZWO Seestar S30, S30 Pro, S50 and S50 Pro; Vaonis Vespera II, Vespera 3 and Vespera Pro 2; Unistellar Odyssey, Odyssey Pro, eVscope 2 and eQuinox 2; Celestron Origin and Origin Mark II; APS-C at 200 mm) or type your field of view in degrees. Each preset is the maker's own figure for a single frame, not a mosaic.
 
 Spotlight runs Nightwatch's actions: type **Sky Score**, **Best Targets Tonight**, **Events Tonight** or **Refresh Forecast** and choose the Nightwatch result for a card with the answer and the forecast's source. They are in Shortcuts too, with Show Target and clear-sky notifications on or off.
 

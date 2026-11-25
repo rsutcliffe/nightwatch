@@ -53,6 +53,8 @@ public enum ShootingTips {
         case "seestar-s50", "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":   // every Seestar's manual gives 10 s frames by default
             let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
             return filter + "1,000 × 10 s"
+        case "origin", "origin-mark-ii":   // Celestron's schedule default for the kind of target, in its default 10 s frames
+            return "\(originMinutes(t) * 6) × 10 s"
         default:
             return nil
         }
@@ -167,6 +169,36 @@ public enum ShootingTips {
                     rows.append(.init("Frames", "Let it stack for as long as you can."))
                 }
             }
+        case "origin", "origin-mark-ii":
+            // Celestron's manuals, read 25 November 2026: #12099 (the Origin, ISO 200 by default) and #12100 (the Mark II's camera,
+            // ISO 1000). Both: 10-second frames by default, 15 or 30 s by choice, 30 s the most its alt-azimuth mount allows.
+            let iso = originISO(presetID)
+            source = "Settings from Celestron's Origin manual (\(presetID == "origin" ? "#12099" : "#12100"))."
+            switch k {
+            case .moon:
+                rows.append(.init("Mode", "Use SnapShot mode: the Moon needs exposures well under a second."))
+            case .planet:
+                rows.append(.init("Expect", "A small bright disc at this focal length; Jupiter's and Saturn's larger moons show as points."))
+                source = nil
+            case .constellation:
+                rows.append(.init("Framing", "Far larger than the field of view: use a wide-angle lens, or pick one bright object in it."))
+                source = nil
+            default:
+                rows.append(.init("Filter", filterText(k, dualBand: "Celestron's Nebula Filter in the filter drawer, if you have one",
+                                                       broadband: "No filter")))
+                rows.append(.init("Exposure", "10 s frames at ISO \(iso) by default, 15 s with the Nebula Filter. You can choose 15 or 30 s: "
+                                  + "30 s is the most its mount allows, and less for a target near the zenith."))
+                let minutes = originMinutes(t)
+                if let n = frames(10), let h = hours {
+                    rows.append(.init("Frames", "Celestron's schedule gives this kind of target \(minutes) minutes by default. "
+                                      + "Let it stack while it is up: \(h) is about \(n) frames."))
+                } else {
+                    rows.append(.init("Frames", "Celestron's schedule gives this kind of target \(minutes) minutes by default; longer shows more."))
+                }
+                // The owner's source, 25 November 2026: a thread in the Celestron Origin User Group. The one row not from the maker.
+                rows.append(.init("Owners' tip", "Owners in the Celestron Origin User Group often raise the frames to 15 s and keep dithering on. "
+                                  + "That is their advice, not Celestron's."))
+            }
         case "dslr-apsc-200":
             source = "The untracked limit comes from the 500 and NPF rules; tracked times are typical ranges, not a maker's figure."
             switch k {
@@ -233,6 +265,18 @@ public enum ShootingTips {
         return ShootingTip(title: "How to shoot this with a camera and wide lens", rows: rows, source: "Exposure limits from the 500 and NPF rules.")
     }
 
+    /// The Origin's default ISO: 200 for the first camera (manual #12099), 1000 for the Mark II's (#12100).
+    static func originISO(_ presetID: String?) -> Int { presetID == "origin" ? 200 : 1000 }
+    /// The total Celestron's imaging schedule gives a kind of target by default: 5 minutes for an open cluster, 10 for a globular
+    /// cluster or a planetary nebula, 20 for a galaxy or a diffuse nebula.
+    static func originMinutes(_ t: RankedTarget) -> Int {
+        switch t.typeName {
+        case "Open cluster", "Stellar association": 5
+        case "Globular cluster", "Planetary nebula": 10
+        default: 20
+        }
+    }
+
     /// The numbers the card gives, without the explanations; nil where it gives none.
     static func copyNumbers(_ k: Kind, presetID: String?) -> String? {
         switch presetID {
@@ -257,6 +301,12 @@ public enum ShootingTips {
             case .broadband: return "light-pollution filter off, 10 s frames"
             case .nebulaUnknown: return "light-pollution filter on if it glows red, off if not, 10 s frames"
             default: return nil
+            }
+        case "origin", "origin-mark-ii":
+            switch k {
+            case .moon, .planet, .star, .constellation: return nil
+            case .broadband: return "no filter, 10 s frames at ISO \(originISO(presetID))"
+            default: return "10 s frames at ISO \(originISO(presetID)), or 15 s with the Nebula Filter"
             }
         case "dslr-apsc-200":
             switch k {

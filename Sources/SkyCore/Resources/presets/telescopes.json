@@ -13,5 +13,7 @@
   {"id":"odyssey-pro","name":"Unistellar Odyssey Pro","maker":"Unistellar","widthDeg":0.75,"heightDeg":0.56,"source":"unistellar.com Odyssey page, 320 mm f/3.9, 85 mm mirror (33.6 x 45 arcmin)","batteryHours":5},
   {"id":"evscope-2","name":"Unistellar eVscope 2","maker":"Unistellar","widthDeg":0.76,"heightDeg":0.57,"source":"unistellar.com eVscope 2 and eQuinox 2 page, 450 mm f/4, 114 mm mirror (34.2 x 45.6 arcmin)","batteryHours":9},
   {"id":"equinox-2","name":"Unistellar eQuinox 2","maker":"Unistellar","widthDeg":0.76,"heightDeg":0.57,"source":"unistellar.com eVscope 2 and eQuinox 2 page, 450 mm, 114 mm mirror (34.2 x 45.6 arcmin)","batteryHours":11},
+  {"id":"origin","name":"Celestron Origin","maker":"Celestron","widthDeg":1.27,"heightDeg":0.85,"source":"Celestron Origin manual #12099 (July 2024), 152 mm f/2.2, 335 mm, IMX178","batteryHours":6},
+  {"id":"origin-mark-ii","name":"Celestron Origin Mark II","maker":"Celestron","widthDeg":1.32,"heightDeg":0.75,"source":"Celestron Origin manual #12100 (September 2025), 152 mm f/2.2, 335 mm, IMX678; Celestron's Origin page names this camera's model the Mark II","batteryHours":6},
   {"id":"dslr-apsc-200","name":"APS-C camera, 200 mm lens","maker":"Camera and lens","widthDeg":6.7,"heightDeg":4.5,"source":"computed from 23.5 x 15.6 mm sensor"}
 ]

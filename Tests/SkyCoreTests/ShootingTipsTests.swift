@@ -211,3 +211,27 @@ private func target(_ id: String, _ group: TargetGroup, _ type: String) -> Ranke
                                 stackMinutes: 300, site: site, night: "tomorrow night")
     #expect(mini.rows.first { $0.label == "Frames" }?.text == "200–400 recommended. At 30 s a frame, for example, 600 frames fill the 5 h it is up tomorrow night.")
 }
+
+// Celestron's Origin manuals (#12099 and #12100, read 25 November 2026): 10-second frames by default, ISO 200 on the first camera and
+// 1000 on the Mark II's, 15 s with the Nebula Filter, and the schedule's default total for each kind of target.
+@Test func originGivesCelestronsDefaultsAndOneOwnersTip() {
+    let em = ShootingTips.tip(for: target("NGC7000", .nebulae, "Emission nebula"), presetID: "origin", presetName: "Celestron Origin", stackMinutes: 120, site: site)
+    #expect(em.title == "How to shoot this with your Celestron Origin")
+    #expect(em.rows.first { $0.label == "Filter" }?.text.hasPrefix("Celestron's Nebula Filter in the filter drawer, if you have one") == true)
+    #expect(em.rows.first { $0.label == "Exposure" }?.text.hasPrefix("10 s frames at ISO 200 by default, 15 s with the Nebula Filter.") == true)
+    #expect(em.rows.first { $0.label == "Frames" }?.text == "Celestron's schedule gives this kind of target 20 minutes by default. Let it stack while it is up: 2 h is about 720 frames.")
+    #expect(em.rows.first { $0.label == "Owners' tip" }?.text.hasSuffix("That is their advice, not Celestron's.") == true)
+    #expect(em.source == "Settings from Celestron's Origin manual (#12099).")
+    #expect(em.copyLine == "NGC7000 · Celestron Origin: 10 s frames at ISO 200, or 15 s with the Nebula Filter")
+    // The Mark II's camera: ISO 1000 by default, from its own manual.
+    let mk2 = ShootingTips.tip(for: target("NGC0224", .galaxies, "Galaxy"), presetID: "origin-mark-ii", presetName: "Celestron Origin Mark II", stackMinutes: nil, site: site)
+    #expect(mk2.rows.first { $0.label == "Exposure" }?.text.hasPrefix("10 s frames at ISO 1000 by default") == true)
+    #expect(mk2.rows.first { $0.label == "Filter" }?.text.hasPrefix("No filter") == true && mk2.source == "Settings from Celestron's Origin manual (#12100).")
+    #expect(mk2.copyLine?.hasSuffix("no filter, 10 s frames at ISO 1000") == true)
+    // The schedule's default by kind: a globular cluster 10 minutes, an open cluster 5.
+    #expect(ShootingTips.planKit(target("NGC6205", .clusters, "Globular cluster"), presetID: "origin") == "60 × 10 s")
+    #expect(ShootingTips.planKit(target("NGC0869", .clusters, "Open cluster"), presetID: "origin") == "30 × 10 s")
+    #expect(ShootingTips.planKit(target("NGC0224", .galaxies, "Galaxy"), presetID: "origin-mark-ii") == "120 × 10 s")
+    let moon = ShootingTips.tip(for: target("moon", .planets, "Moon"), presetID: "origin", presetName: "Celestron Origin", stackMinutes: 60, site: site)
+    #expect(moon.rows.first { $0.label == "Mode" }?.text.hasPrefix("Use SnapShot mode") == true && moon.copyLine == nil)
+}
