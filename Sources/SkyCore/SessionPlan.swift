@@ -103,7 +103,10 @@ public enum SessionPlanner {
     /// Objects only (nebulae, galaxies, star clusters, planets and the Moon), as the popover's best three are; never a
     /// favourite, one washed out by the Moon, one too big or too small for the frame, or a deep-sky object clear of the
     /// horizon for under `gapHours` before the plan ends. In haze the brightest wins, not the highest (`Planner.hazeBrightness`).
-    static func suggestions(anchors: [RankedTarget], plan: NightPlan, excluding: Set<String>, window: ClearWindow) -> [RankedTarget] {
+    /// `brightest`: among what qualifies, the brightest of its kind and not the highest. The week ahead's Highlights line asks for it
+    /// (owner, 25 November 2026): by height, 2 December's highlight was the Owl Cluster, overhead, where a brighter object was also up.
+    static func suggestions(anchors: [RankedTarget], plan: NightPlan, excluding: Set<String>, window: ClearWindow,
+                            brightest: Bool = false) -> [RankedTarget] {
         let gap = gapHours * 3600
         var used = excluding, out: [RankedTarget] = []
         func best(from: Date, to: Date) -> RankedTarget? {
@@ -120,7 +123,7 @@ public enum SessionPlanner {
             // what pass overhead in October). Among that kind the highest, or in haze the brightest.
             let had = Dictionary(grouping: anchors + out, by: \.group).mapValues(\.count)
             func key(_ t: RankedTarget) -> (Int, Double, Double) {
-                (had[t.group] ?? 0, plan.hazy ? Planner.hazeBrightness(t) : -t.peakAltDeg, t.magnitude ?? 99)
+                (had[t.group] ?? 0, plan.hazy ? Planner.hazeBrightness(t) : (brightest ? t.magnitude ?? 99 : -t.peakAltDeg), t.magnitude ?? 99)
             }
             return pool.min { key($0) < key($1) }
         }

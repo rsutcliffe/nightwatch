@@ -110,8 +110,11 @@ private func bestMinutes(_ highlight: String) -> Int {
     let h = Planner.highlights(plan: p, site: site, fov: frame, showers: try MeteorShowers.bundled())
     #expect(h.count == 1 && h[0].contains(", best ") && !h[0].contains("at peak"))
     let window = try #require(p.primary)
-    let pick = try #require(SessionPlanner.suggestions(anchors: [], plan: p, excluding: [], window: window).first)
+    let pick = try #require(SessionPlanner.suggestions(anchors: [], plan: p, excluding: [], window: window, brightest: true).first)
     #expect(pick.isShowpiece && !pick.isSharplessOnly && pick.fit == .fits && !pick.moonWashed && h[0].contains(pick.catalogueID))
+    // The brightest that qualifies, not the highest: Tonight's plan still suggests by height, and that night it is a fainter object.
+    let highest = try #require(SessionPlanner.suggestions(anchors: [], plan: p, excluding: [], window: window).first)
+    #expect(highest.id != pick.id && (pick.magnitude ?? 99) < (highest.magnitude ?? 99) && highest.peakAltDeg > pick.peakAltDeg)
     #expect(Copy.weekHighlights(WeekNight(plan: p, daysAhead: 7, highlights: h)) == "Highlights: " + h[0])
     print("HIGHLIGHT 2 Dec: \(h)")
 }

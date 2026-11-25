@@ -49,7 +49,8 @@ extension Planner {
         // A bright night's targets are the Moon and planets, there every night: its events are its highlights.
         guard p.mode != .bright else { return out }
         let wanted = min(highlightLimit - out.count, max(1, Int(w.hours / highlightStackHours)))
-        let picks = SessionPlanner.suggestions(anchors: [], plan: p, excluding: [], window: w).prefix(wanted).sorted { $0.peakTime < $1.peakTime }
+        let picks = SessionPlanner.suggestions(anchors: [], plan: p, excluding: [], window: w, brightest: true).prefix(wanted)
+            .sorted { $0.peakTime < $1.peakTime }
         out += picks.map { t in
             let name = t.commonName.map { $0 == t.catalogueID || t.catalogueID.isEmpty ? $0 : "\($0) (\(t.catalogueID))" } ?? t.catalogueID
             return "\(name), best \(Copy.hhmm(t.peakTime, site: site))"
