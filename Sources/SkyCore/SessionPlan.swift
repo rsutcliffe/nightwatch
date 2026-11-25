@@ -116,7 +116,8 @@ public enum SessionPlanner {
                     && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
             // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
-            let known = candidates.contains { !$0.isSharplessOnly } ? candidates.filter { !$0.isSharplessOnly } : candidates
+            let offered = candidates.filter { !$0.id.hasPrefix("minor-") }   // Pluto, Ceres and the Lagrange points: never suggested
+            let known = offered.contains { !$0.isSharplessOnly } ? offered.filter { !$0.isSharplessOnly } : offered
             let showpieces = known.contains(where: \.isShowpiece) ? known.filter(\.isShowpiece) : known
             // The Highlights line names one that has a name when one qualifies: by brightness alone 2 December's was "M39".
             let pool = brightest && showpieces.contains { $0.commonName != nil } ? showpieces.filter { $0.commonName != nil } : showpieces

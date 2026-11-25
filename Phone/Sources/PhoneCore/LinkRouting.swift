@@ -22,8 +22,8 @@ public extension PhoneStore {
     /// What a spoken search matches in the whole catalogue, up tonight or not, and the group it opens (the Mac's Siri search, #72).
     func catalogueMatches(_ query: String) -> [DeepSkyObject] { Self.bundledCatalogue.objects(matching: query) }
     /// A search's catalogue matches that the night's list leaves out (#250), every group, for the hint.
-    func notListed(_ query: String, ranked: [RankedTarget], plan: NightPlan) -> [DeepSkyObject] {
-        Self.searchExtras.notListed(query: query, ranked: ranked, catalog: Self.bundledCatalogue, nightKey: plan.night.key)
+    func notListed(_ query: String, ranked: [RankedTarget], plan: NightPlan) -> [TargetGroup] {
+        Self.searchExtras.unlistedGroups(query: query, ranked: ranked, catalog: Self.bundledCatalogue, nightKey: plan.night.key)
     }
     /// The same for one group, as cards: greyed with when each is next well placed.
     func searchExtraCards(_ query: String, group: TargetGroup, ranked: [RankedTarget], plan: NightPlan, site: Site) -> [FavouriteTarget] {

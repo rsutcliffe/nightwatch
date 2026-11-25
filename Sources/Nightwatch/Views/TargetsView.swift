@@ -59,7 +59,7 @@ struct TargetsView: View {
     private var targets: [RankedTarget] { plan.map { $0.mode == .bright ? $0.brightTargets : $0.targets } ?? [] }
 
     /// What the search matches in the catalogue that the night's list leaves out (#250): counted in the hint, and carded after the group's own.
-    private var notPlanned: [DeepSkyObject] { plan.map { store.notListed(ui.search, ranked: targets, plan: $0) } ?? [] }
+    private var notPlanned: [TargetGroup] { plan.map { store.notListed(ui.search, ranked: targets, plan: $0) } ?? [] }
 
     private func count(_ g: TargetGroup) -> Int {
         g == .events ? store.events.count : targets.filter { $0.group == g }.count

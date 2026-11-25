@@ -199,11 +199,11 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
 @Test func theHintSaysATargetIsInTheCatalogueButNotUpTonight() throws {
     let catalog = try Catalog.bundled()
     let crescent = catalog.objects(matching: "Crescent Nebula")
-    let hint = try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: crescent))
+    let hint = try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: crescent.map(\.group)))
     #expect(hint == "No match for “Crescent Nebula” in Nebulae tonight. 1 more not in tonight's list, shown last.")
     // Matches in another group are counted there, listed tonight or not.
     let andromeda = catalog.objects(matching: "M31")
-    #expect(try #require(Copy.searchHint(query: "M31", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: andromeda))
+    #expect(try #require(Copy.searchHint(query: "M31", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: andromeda.map(\.group)))
             == "No match for “M31” in Nebulae tonight. Also in Galaxies (1).")
     // With nothing to add, or a planned match, the hint is as it was.
     #expect(try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false)) == "No match for “Crescent Nebula” in Nebulae tonight.")

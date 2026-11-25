@@ -25,7 +25,7 @@ public enum ShootingTips {
 
     static func kind(_ t: RankedTarget) -> Kind {
         if t.id == "moon" { return .moon }
-        if t.id.hasPrefix("planet-") { return .planet }
+        if t.id.hasPrefix("planet-") || t.id.hasPrefix("minor-") { return .planet }   // neither has a deep-sky filter or a copy line
         switch t.group {
         case .constellations: return .constellation
         case .stars: return .star
@@ -65,6 +65,7 @@ public enum ShootingTips {
     public static func tip(for t: RankedTarget, presetID: String?, presetName: String?, stackMinutes: Double?, site: Site,
                            night: String = "tonight") -> ShootingTip {
         if MilkyWay.isMilkyWay(t.id) { return milkyWayTip(t, site: site) }
+        if let b = MinorBody(targetID: t.id) { return minorTip(b, t, presetName: presetName, site: site) }
         let k = kind(t)
         var rows: [ShootingTip.Row] = []
         var source: String?
@@ -242,6 +243,24 @@ public enum ShootingTips {
             return "\(what.isEmpty ? t.name : what) · \(presetName ?? name): \(numbers)"
         }
         return tip
+    }
+
+    /// Pluto, Ceres and the Earth–Moon Lagrange points (#250): no maker publishes settings for them, so guidance without numbers,
+    /// and for a Lagrange point the plain fact that there is nothing a small telescope will record.
+    static func minorTip(_ b: MinorBody, _ t: RankedTarget, presetName: String?, site: Site) -> ShootingTip {
+        var rows: [ShootingTip.Row]
+        if b.isLagrangePoint {
+            rows = [.init("What is here", "A point 60° \(b == .l4 ? "ahead of" : "behind") the Moon in its orbit, where the pull of the Earth and the Moon balance. "
+                          + "The Kordylewski dust clouds claimed here are too faint for a small telescope: there is nothing to record."),
+                    .init("Where", "It moves with the Moon, about 13° a day, so its place is right for tonight only, and to a few degrees.")]
+        } else {
+            rows = [.init("Expect", b == .pluto ? "A faint point among the stars, near magnitude 14 to 15: a long stack shows it, a single frame may not."
+                                                : "A point like a star, bright enough for a short stack."),
+                    .init("Proof", "Shoot the same field on two nights: it is the point that has moved."),
+                    .init("Exposure", "Use your telescope's ordinary deep-sky settings with no narrowband filter: its light is reflected sunlight.")]
+        }
+        if let v = t.viewable { rows.append(.init("When", "Up and clear from \(Copy.hhmm(v.start, site: site)); highest at \(Copy.hhmm(t.peakTime, site: site)).")) }
+        return ShootingTip(title: "How to shoot this with \(presetName.map { "your \($0)" } ?? "your telescope")", rows: rows, source: nil)
     }
 
     /// The Milky Way (#114, owner-approved mock-up): a camera and wide lens whatever the telescope, since even the widest

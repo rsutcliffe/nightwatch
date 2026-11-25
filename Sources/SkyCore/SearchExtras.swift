@@ -27,6 +27,14 @@ public final class SearchExtras {
         return list
     }
 
+    /// The group of every match the night's list leaves out, one entry a match, for the search hint's counts: the catalogue's, and
+    /// Pluto, Ceres and the Lagrange points (`MinorBody`), which are in no catalogue.
+    public func unlistedGroups(query: String, ranked: [RankedTarget], catalog: Catalog, nightKey: String) -> [TargetGroup] {
+        let listed = Set(ranked.map(\.id))
+        return notListed(query: query, ranked: ranked, catalog: catalog, nightKey: nightKey).map(\.group)
+            + MinorBody.matching(query).filter { !listed.contains($0.id) }.map { _ in TargetGroup.planets }
+    }
+
     public func cards(query: String, group: TargetGroup, ranked: [RankedTarget], catalog: Catalog, plan: NightPlan, site: Site,
                       fov: FieldOfView, rule: GoRule) -> [FavouriteTarget] {
         guard !query.allSatisfy(\.isWhitespace) else { return [] }
@@ -35,11 +43,17 @@ public final class SearchExtras {
             let found = notListed(query: query, ranked: ranked, catalog: catalog, nightKey: plan.night.key).filter { $0.group == group }
             let nk = "\(plan.night.key)|\(site.latitude),\(site.longitude),\(site.timeZoneID)"
             if nk != nightsKey { nights = [:]; nightsKey = nk }
-            kept = Planner.searchExtras(found, plan: plan, site: site, fov: fov, rule: rule) { i in
+            let night: (Int) -> Night? = { i in
                 if let n = self.nights[i] { return n }
                 let n = try? Ephemeris.night(localDate: site.calendar.date(byAdding: .day, value: i, to: plan.night.localDate)!, site: site)
                 self.nights[i] = n
                 return n
+            }
+            kept = Planner.searchExtras(found, plan: plan, site: site, fov: fov, rule: rule, night: night)
+            if group == .planets {
+                let listed = Set(ranked.map(\.id))
+                kept += Planner.searchExtras(MinorBody.matching(query).filter { !listed.contains($0.id) }, plan: plan, site: site, fov: fov,
+                                             rule: rule, night: night)
             }
             key = k
         }
@@ -66,18 +80,48 @@ extension Planner {
         }
     }
 
-    /// The first night after tonight, within a year, on which a place in the sky is above the floor for half of the darkness: the test the
-    /// night's list sets. `night(i)` is the night i days on. Looked for a week at a time, then to the day in the week before the first hit.
-    static func nextWellPlaced(raHours: Double, decDeg: Double, site: Site, minAlt: Double, night: (Int) -> Night?) -> Night? {
+    /// Pluto, Ceres or a Lagrange point a search matched and the night's list leaves out: built as a planet is, and greyed with when it
+    /// is next well placed. A Lagrange point circles the sky with the Moon each month, so it is looked for night by night for two
+    /// months; Pluto and Ceres, which keep their place for weeks, a week at a time for a year.
+    static func searchExtras(_ bodies: [MinorBody], plan: NightPlan, site: Site, fov: FieldOfView, rule: GoRule, night: (Int) -> Night?) -> [FavouriteTarget] {
+        guard !bodies.isEmpty else { return [] }
+        let window = plan.primary ?? plan.darkSpan
+        let span = window ?? ClearWindow(start: plan.night.sunset, end: plan.night.sunrise)
+        let moon = Ephemeris.moon(at: span.midpoint, site: site)
+        return bodies.compactMap { body in
+            guard let b = build(.minor(body), window: span, site: site, fov: fov, rule: rule, moon: moon, moonUp: false) else { return nil }
+            if window != nil, b.fraction >= 0.5 { return FavouriteTarget(target: b.target, notTonight: nil) }
+            let next = nextWellPlaced(site: site, minAlt: rule.minAltitudeDeg, night: night, step: body.isLagrangePoint ? 1 : 7,
+                                      days: body.isLagrangePoint ? 60 : 364) { n in
+                let p = body.place(at: n.darkStart.map { $0.addingTimeInterval((n.darkEnd ?? $0).timeIntervalSince($0) / 2) } ?? n.sunset, site: site)
+                return (p.raHours, p.decDeg)
+            }
+            // Pluto keeps its declination for years, so "never clears" can be said of it; the others move too far to say.
+            let text = Copy.nextWellPlaced(next, decDeg: body == .pluto ? b.target.decDeg : nil, site: site, minAlt: rule.minAltitudeDeg)
+            return FavouriteTarget(target: b.target, notTonight: text)
+        }
+    }
+
+    /// The first night after tonight, within `days`, on which a place in the sky is above the floor for half of the darkness: the test
+    /// the night's list sets. `night(i)` is the night i days on, and `place` where the thing is that night. Looked for `step` nights at a
+    /// time, then to the night in the stretch before the first hit.
+    /// shortcut: a spell of good nights shorter than `step` can be stepped over; a fixed place in the sky is well placed for weeks.
+    static func nextWellPlaced(site: Site, minAlt: Double, night: (Int) -> Night?, step: Int = 7, days: Int = 364,
+                               place: (Night) -> (raHours: Double, decDeg: Double)) -> Night? {
         func placed(_ i: Int) -> Night? {
             guard let n = night(i), let s = n.darkStart, let e = n.darkEnd else { return nil }
-            return track(raHours: raHours, decDeg: decDeg, window: ClearWindow(start: s, end: e), site: site, minAlt: minAlt).fraction >= 0.5 ? n : nil
+            let p = place(n)
+            return track(raHours: p.raHours, decDeg: p.decDeg, window: ClearWindow(start: s, end: e), site: site, minAlt: minAlt).fraction >= 0.5 ? n : nil
         }
-        for week in stride(from: 7, through: 364, by: 7) where placed(week) != nil {
-            for day in (week - 6)..<week { if let n = placed(day) { return n } }
-            return placed(week)
+        for i in stride(from: step, through: days, by: step) where placed(i) != nil {
+            for day in (i - step + 1)..<i { if let n = placed(day) { return n } }
+            return placed(i)
         }
         return nil
+    }
+
+    static func nextWellPlaced(raHours: Double, decDeg: Double, site: Site, minAlt: Double, night: (Int) -> Night?) -> Night? {
+        nextWellPlaced(site: site, minAlt: minAlt, night: night) { _ in (raHours, decDeg) }
     }
 
     public static func nextWellPlaced(raHours: Double, decDeg: Double, after tonight: Night, site: Site, minAlt: Double) -> Night? {
@@ -89,12 +133,14 @@ extension Planner {
 
 extension Copy {
     /// A searched-for target's greyed card (#250): when to come back for it, or that this site never gets it.
-    static func nextWellPlaced(_ night: Night?, decDeg: Double, site: Site, minAlt: Double) -> String {
+    /// `decDeg`: nil for something that moves too far for "never" to be said of it.
+    static func nextWellPlaced(_ night: Night?, decDeg: Double?, site: Site, minAlt: Double) -> String {
         if let night {
             let f = DateFormatter(); f.timeZone = site.timeZone; f.dateFormat = "d MMM"; f.locale = Locale(identifier: "en_GB")
             return "Next well placed from \(f.string(from: night.localDate))"
         }
         // Its highest point anywhere in the year is when it crosses the meridian.
-        return 90 - abs(site.latitude - decDeg) < minAlt ? "Never clears \(Int(minAlt.rounded()))° from here" : "Not well placed from here in the coming year"
+        if let decDeg, 90 - abs(site.latitude - decDeg) < minAlt { return "Never clears \(Int(minAlt.rounded()))° from here" }
+        return "Not well placed from here in the coming year"
     }
 }

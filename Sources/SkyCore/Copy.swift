@@ -103,9 +103,9 @@ public struct Copy: Sendable {
     /// What a Targets search found, leading the header so it is plain the search ran: the count in this group, the matches
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the
     /// group on screen). Nil with no search.
-    /// `notPlanned`: the catalogue's matches that are not in `targets`, in any group (`SearchExtras.notListed`).
+    /// `notPlanned`: the group of each match that is not in `targets`, one entry a match (`SearchExtras.unlistedGroups`).
     public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool,
-                                    notPlanned: [DeepSkyObject] = []) -> String? {
+                                    notPlanned: [TargetGroup] = []) -> String? {
         guard !query.allSatisfy(\.isWhitespace) else { return nil }   // the grid's test for "no search", newlines included
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let found = targets.filter { $0.matches(query) }
@@ -118,12 +118,12 @@ public struct Copy: Sendable {
         let unfit = here.filter { $0.hiddenByFit(fitsOnly: fitsOnly) }.count
         if unfit > 0 { parts.append("\(unfit) not fitting your field of view, shown last.") }
         let elsewhere = TargetGroup.allCases.filter { $0 != group }.compactMap { g -> String? in
-            let n = found.filter { $0.group == g }.count + notPlanned.filter { $0.group == g }.count
+            let n = found.filter { $0.group == g }.count + notPlanned.filter { $0 == g }.count
             return n == 0 ? nil : "\(g.displayName) (\(n))"
         }
         if !elsewhere.isEmpty { parts.append("Also in \(elsewhere.joined(separator: ", ")).") }
         // In the catalogue but not in tonight's list (#250): each has a card after the others, greyed with when it is next well placed.
-        let extra = notPlanned.filter { $0.group == group }.count
+        let extra = notPlanned.filter { $0 == group }.count
         if extra > 0 {
             parts.insert(extra > SearchExtras.limit ? "\(extra) more not in tonight's list: the brightest \(SearchExtras.limit) are shown last."
                                                     : "\(extra) more not in tonight's list, shown last.", at: 1)

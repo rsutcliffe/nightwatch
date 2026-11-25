@@ -70,8 +70,8 @@ final class Store: ObservableObject {
     func catalogueMatches(_ query: String) -> [DeepSkyObject] { catalog.objects(matching: query) }
     private let searchExtras = SearchExtras()
     /// A search's catalogue matches that `plan`'s list leaves out (#250), every group, for the hint.
-    func notListed(_ query: String, ranked: [RankedTarget], plan: NightPlan) -> [DeepSkyObject] {
-        searchExtras.notListed(query: query, ranked: ranked, catalog: catalog, nightKey: plan.night.key)
+    func notListed(_ query: String, ranked: [RankedTarget], plan: NightPlan) -> [TargetGroup] {
+        searchExtras.unlistedGroups(query: query, ranked: ranked, catalog: catalog, nightKey: plan.night.key)
     }
     /// The same for one group, as cards: greyed with when each is next well placed.
     func searchExtraCards(_ query: String, group: TargetGroup, ranked: [RankedTarget], plan: NightPlan, site: Site) -> [FavouriteTarget] {
