@@ -83,6 +83,6 @@ build/survey-venv/bin/python scripts/build-survey-set.py --source hips --out bui
 `--source hips` cuts the pictures from the HiPS tiles of the DSS2 colour survey on two public mirrors (IRSA at Caltech and CASDA at CSIRO), one
 request at a time, alternating, with the tiles kept in `build/hips-tiles`. `--source cds` asks hips2fits instead when it is up. Publish with
 `gh release create survey-set-1 build/survey-set.nwsp --prerelease --latest=false --title "Survey picture set" --notes-file <notes>`, or, for a
-new set under the same tag, `gh release upload survey-set-1 build/survey-set.nwsp --clobber`. The credit (Digitized Sky Survey, STScI/NASA, plate
+new set under the same tag, `gh release upload survey-set-1 build/survey-set.nwsp --clobber`. When a new set adds targets, also raise the number in `SurveyPackStore.fileName` (`Sources/SkyCore/SurveyPack.swift`) and add the old name to `earlierFileNames`: the app never fetches a set it already holds, so without that only new installs get the new pictures. The credit (Digitized Sky Survey, STScI/NASA, plate
 owners, CDS) is in the app's About page and the notes, and the notes say the set is offered under the Open Database License 1.0 (CDS asked for
 this on 3 November 2026: its HiPS are ODbL share-alike, and the original producers' terms take precedence).
