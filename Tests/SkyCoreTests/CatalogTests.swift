@@ -118,3 +118,17 @@ import Foundation
     // The Orion Nebula lies inside Sh 2-281: no row, and no number claimed for it.
     #expect(!own.contains { $0.sharpless == 281 } && c.objects.first { $0.messier == 42 }?.sharpless == nil)
 }
+
+// With the Sharpless rows in the catalogue, the highest nebula on 2 December 2026 from 54° north was Sh 2-210: a faint region with no
+// magnitude, as the popover's first pick. A Sharpless-only row is listed and searchable, never the pick while another nebula qualifies.
+@Test func aSharplessOnlyRowIsNeverThePopoversPickWhileAnotherNebulaQualifies() throws {
+    let site = Site(name: "Test site", latitude: 54.0, longitude: -1.5, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+    let window = ClearWindow(start: utc(2026, 12, 2, 20, 0), end: utc(2026, 12, 3, 0, 0))
+    let ranked = Planner.rank(catalog: try Catalog.bundled(), constellations: try Constellations.bundled(), stars: try BrightStars.bundled(),
+                              window: window, site: site, fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule())
+    #expect(ranked.first { $0.group == .nebulae && !$0.moonWashed }?.id == "Sh2-210")   // still listed, and still the highest
+    let best = Planner.best(from: ranked)
+    #expect(best.count == 3 && !best.contains { $0.isSharplessOnly })
+    let only = ranked.filter { $0.isSharplessOnly }
+    #expect(Planner.best(from: only).first?.isSharplessOnly == true)   // with nothing else, it is still offered
+}

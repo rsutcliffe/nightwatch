@@ -66,7 +66,7 @@ without notarising; that image is for checking only, never for distribution.
 ## The survey picture set
 
 Target pictures normally come from CDS's hips2fits. CDS was unreachable for days from 26 October 2026 and every card fell back to its icon, so the
-app also carries a pre-built set: one 480 x 274 colour DSS2 picture for each of the 2,031 targets the Planner can list (1,948 from OpenNGC and 83 Sharpless nebulae, added 25 November 2026), in the default 2.1 x 1.2
+app also carries a pre-built set: one 480 x 274 colour DSS2 picture for each of the 2,080 targets the app can list (1,948 from OpenNGC, and 83 Sharpless nebulae and the 49 named stars, both added 25 November 2026), in the default 2.1 x 1.2
 degree field of view. It is one file, `survey-set.nwsp` (layout in `Sources/SkyCore/SurveyPack.swift`), published as an asset of the prerelease tagged
 `survey-set-1`. The app fetches it once, on the first card that wants a picture, and keeps it in the caches folder; `SurveyFetch` looks in it before
 CDS. When CDS cannot be reached, a target outside the set shows its icon: a greyscale NASA SkyView stand-in shipped in 1.7.2 and 1.0.1 and was removed in 1.7.3 and 1.0.2, because on a target's page the large grey picture replaced the colour card picture.

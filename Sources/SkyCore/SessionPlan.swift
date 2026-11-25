@@ -113,7 +113,8 @@ public enum SessionPlanner {
                     && t.peakTime >= from && t.peakTime <= min(to, window.end)   // never a target best after the finish time
             }
             // A Messier or Caldwell object when one is best in the stretch, else anything (owner, 9 October 2026).
-            let pool = candidates.contains(where: \.isShowpiece) ? candidates.filter(\.isShowpiece) : candidates
+            let known = candidates.contains { !$0.isSharplessOnly } ? candidates.filter { !$0.isSharplessOnly } : candidates
+            let pool = known.contains(where: \.isShowpiece) ? known.filter(\.isShowpiece) : known
             // Then the kind the night has least of so far, favourites included, so the rows are a mix of nebulae,
             // galaxies and clusters (owner, 10 October 2026: highest alone gave three star clusters, since those are
             // what pass overhead in October). Among that kind the highest, or in haze the brightest.

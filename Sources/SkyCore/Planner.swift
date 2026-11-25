@@ -214,6 +214,10 @@ public struct RankedTarget: Codable, Equatable, Sendable, Identifiable {
         caldwell != nil || (catalogueID.first == "M" && catalogueID.count > 1 && catalogueID.dropFirst().allSatisfy(\.isNumber))
     }
 
+    /// A Sharpless region with a row of its own: no magnitude, usually faint, and known by a number. It is listed and found by search, but
+    /// is never the popover's pick or a plan suggestion while anything else qualifies (the highest nebula on 2 December 2026 was Sh 2-210).
+    public var isSharplessOnly: Bool { id.hasPrefix("Sh2-") }
+
     /// Beside the catalogue ID on a card: the Caldwell number, unless it already is the ID ("C14").
     public var cardNote: String? { caldwell.map { "C\($0)" }.flatMap { $0 == catalogueID ? nil : $0 } }
     /// A card's second line, so the name people know is never cut (owner, 28 September 2026): "Little Sombrero Galaxy",
@@ -528,7 +532,8 @@ extension Planner {
     static func best(from ranked: [RankedTarget], favourites: [RankedTarget] = [], hazy: Bool = false) -> [RankedTarget] {
         var picked: [RankedTarget] = []
         for g in hazy ? [TargetGroup.planets, .clusters, .nebulae, .galaxies] : [TargetGroup.nebulae, .galaxies, .clusters, .planets] {
-            let usable = ranked.filter { $0.group == g && !$0.moonWashed }
+            let all = ranked.filter { $0.group == g && !$0.moonWashed }
+            let usable = all.contains { !$0.isSharplessOnly } ? all.filter { !$0.isSharplessOnly } : all
             let roomy = usable.filter { g == .planets || $0.fit != .small }
             let pick = hazy ? (roomy.isEmpty ? usable : roomy).min { hazeBrightness($0) < hazeBrightness($1) } : usable.first
             if let t = pick { picked.append(t) }
