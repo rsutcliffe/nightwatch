@@ -44,7 +44,7 @@ def sexagesimal(s):
 def targets():
     """The objects the app lists (Planner: magnitude 12 or brighter; nebulae and cluster-plus-nebula without one are kept)."""
     out = []
-    for name in ("NGC.csv", "addendum.csv"):
+    for name in ("NGC.csv", "addendum.csv", "sharpless.csv"):
         for r in csv.DictReader(open(CATALOG / name, encoding="utf-8"), delimiter=";"):
             if r["Type"] not in GROUPS or not r["RA"] or not r["Dec"]:
                 continue
