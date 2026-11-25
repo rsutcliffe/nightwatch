@@ -497,7 +497,8 @@ final class Store: ObservableObject {
                              bright: config.brightNights, favourites: config.favourites)
         plan = p; tomorrow = t
         fetchPagePhotosAhead(for: p)
-        week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights)
+        week = Planner.week(tonight: p, tomorrow: t, forecast: fc, site: site, fov: fov, rule: rule, bright: config.brightNights,
+                            catalog: catalog, constellations: constellations, stars: stars, showers: showers, occultations: occultationsAhead)
         scheduleCheck(at: [Ephemeris.nightEnds(night)] + AlertEngine.dueTimes(tonight: p, settings: config.alerts))
         let moonKey = "\(night.key)|\(site.latitude)|\(site.longitude)"
         if moonlessFor != moonKey { moonlessRun = MoonCalendar.nextRun(from: night, site: site); moonlessFor = moonKey }
