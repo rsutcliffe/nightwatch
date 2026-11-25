@@ -103,6 +103,7 @@ public struct Copy: Sendable {
     /// What a Targets search found, leading the header so it is plain the search ran: the count in this group, the matches
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the
     /// group on screen). Nil with no search.
+    /// `notPlanned`: the catalogue's matches that are not in `targets`, in any group (`SearchExtras.notListed`).
     public static func searchHint(query: String, targets: [RankedTarget], group: TargetGroup, fitsOnly: Bool, includeMoonWashed: Bool,
                                     notPlanned: [DeepSkyObject] = []) -> String? {
         guard !query.allSatisfy(\.isWhitespace) else { return nil }   // the grid's test for "no search", newlines included
@@ -117,13 +118,15 @@ public struct Copy: Sendable {
         let unfit = here.filter { $0.hiddenByFit(fitsOnly: fitsOnly) }.count
         if unfit > 0 { parts.append("\(unfit) not fitting your field of view, shown last.") }
         let elsewhere = TargetGroup.allCases.filter { $0 != group }.compactMap { g -> String? in
-            let n = found.filter { $0.group == g }.count
+            let n = found.filter { $0.group == g }.count + notPlanned.filter { $0.group == g }.count
             return n == 0 ? nil : "\(g.displayName) (\(n))"
         }
         if !elsewhere.isEmpty { parts.append("Also in \(elsewhere.joined(separator: ", ")).") }
-        // In the catalogue but not in tonight's list: it is below the horizon, or too close to the Moon, all through the dark.
-        if found.isEmpty, !notPlanned.isEmpty {
-            parts.append("In the catalogue but not up during tonight's darkness: \(notPlanned.prefix(3).map(\.displayName).joined(separator: "; ")).")
+        // In the catalogue but not in tonight's list (#250): each has a card after the others, greyed with when it is next well placed.
+        let extra = notPlanned.filter { $0.group == group }.count
+        if extra > 0 {
+            parts.insert(extra > SearchExtras.limit ? "\(extra) more not in tonight's list: the brightest \(SearchExtras.limit) are shown last."
+                                                    : "\(extra) more not in tonight's list, shown last.", at: 1)
         }
         return parts.joined(separator: " ")
     }

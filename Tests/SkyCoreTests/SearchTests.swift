@@ -200,8 +200,11 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     let catalog = try Catalog.bundled()
     let crescent = catalog.objects(matching: "Crescent Nebula")
     let hint = try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: crescent))
-    #expect(hint.hasPrefix("No match for “Crescent Nebula” in Nebulae tonight."))
-    #expect(hint.contains("not up during tonight's darkness: NGC 6888"))
+    #expect(hint == "No match for “Crescent Nebula” in Nebulae tonight. 1 more not in tonight's list, shown last.")
+    // Matches in another group are counted there, listed tonight or not.
+    let andromeda = catalog.objects(matching: "M31")
+    #expect(try #require(Copy.searchHint(query: "M31", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false, notPlanned: andromeda))
+            == "No match for “M31” in Nebulae tonight. Also in Galaxies (1).")
     // With nothing to add, or a planned match, the hint is as it was.
     #expect(try #require(Copy.searchHint(query: "Crescent Nebula", targets: [], group: .nebulae, fitsOnly: false, includeMoonWashed: false)) == "No match for “Crescent Nebula” in Nebulae tonight.")
 }
@@ -226,4 +229,52 @@ private func eyeTarget(_ id: String, _ group: TargetGroup, mag: Double?, size: D
     #expect(SpokenSearch.group(for: "Crescent Nebula", planned: [], catalogue: catalog) == .nebulae)
     #expect(SpokenSearch.group(for: "M31", planned: [], catalogue: catalog) == .galaxies)
     #expect(SpokenSearch.group(for: "zzzz nothing", planned: [], catalogue: catalog) == nil)
+}
+
+// #250: "I wanted to search for the North American Nebula so I could put a heart on it ... but could not find a way to do so if it was not
+// visible". A search now cards what the catalogue has and the night's list leaves out, greyed with when it is next well placed.
+private let searchSite = Site(name: "Sheffield", latitude: 53.38, longitude: -1.47, elevationM: 100, timeZoneID: "Europe/London", bortle: 5)
+private func searchPlan(_ y: Int, _ m: Int, _ d: Int) throws -> NightPlan {
+    let night = try Ephemeris.night(localDate: utc(y, m, d, 12, 0), site: searchSite)
+    return NightPlan(night: night, windows: [], primary: nil, score: 10, qualifies: false, moonIllumination: 0.3, moonRise: nil, moonSet: nil,
+                     darkHours: [], targets: [], best: [], seeingAvailable: false)
+}
+private func extras(_ query: String, _ group: TargetGroup, _ plan: NightPlan, ranked: [RankedTarget] = []) throws -> [FavouriteTarget] {
+    SearchExtras().cards(query: query, group: group, ranked: ranked, catalog: try Catalog.bundled(), plan: plan, site: searchSite,
+                         fov: FieldOfView(widthDeg: 2.1, heightDeg: 1.2), rule: GoRule())
+}
+
+@Test func aSearchCardsWhatTheNightsListLeavesOutWithWhenItIsNextWellPlaced() throws {
+    // Midsummer in Sheffield has no astronomical darkness, so nothing is listed: the Andromeda Galaxy is greyed with the night it returns.
+    let june = try searchPlan(2026, 6, 21)
+    let m31 = try #require(try extras("M31", .galaxies, june).first)
+    let reason = try #require(m31.notTonight)
+    #expect(m31.target.id == "NGC0224" && reason.hasPrefix("Next well placed from "))
+    // The date is the first such night, to the day: the same answer as trying every night in turn.
+    let o = try #require(try Catalog.bundled().objects.first { $0.id == "NGC0224" })
+    let next = try #require(Planner.nextWellPlaced(raHours: o.raHours, decDeg: o.decDeg, after: june.night, site: searchSite, minAlt: 30))
+    func placed(_ i: Int) throws -> Bool {
+        let n = try Ephemeris.night(localDate: searchSite.calendar.date(byAdding: .day, value: i, to: june.night.localDate)!, site: searchSite)
+        guard let s = n.darkStart, let e = n.darkEnd else { return false }
+        return Planner.track(raHours: o.raHours, decDeg: o.decDeg, window: ClearWindow(start: s, end: e), site: searchSite, minAlt: 30).fraction >= 0.5
+    }
+    let first = try #require(try (1...364).first { try placed($0) })
+    #expect(next.localDate == searchSite.calendar.date(byAdding: .day, value: first, to: june.night.localDate))
+    #expect(reason == Copy.nextWellPlaced(next, decDeg: o.decDeg, site: searchSite, minAlt: 30))
+    // The Lagoon Nebula reaches 12° at best from 53° north.
+    #expect(try extras("M8", .nebulae, june).first { $0.target.id == "NGC6523" }?.notTonight == "Never clears 30° from here")
+}
+
+@Test func aSearchedTargetThatIsUpTonightIsAnOrdinaryCardAndOneAlreadyListedIsNotRepeated() throws {
+    let september = try searchPlan(2026, 9, 21)
+    let m31 = try #require(try extras("M31", .galaxies, september).first)
+    #expect(m31.notTonight == nil && m31.target.visibleFraction >= 0.5)
+    #expect(try extras("M31", .galaxies, september, ranked: [m31.target]).isEmpty)
+    #expect(try extras("M31", .nebulae, september).isEmpty && extras("  ", .galaxies, september).isEmpty)
+}
+
+@Test func aBroadSearchCardsOnlyTheBrightestFew() throws {
+    let found = try extras("galaxy", .galaxies, try searchPlan(2026, 6, 21))
+    #expect(found.count == SearchExtras.limit)
+    #expect(found.contains { $0.target.id == "NGC0224" })
 }

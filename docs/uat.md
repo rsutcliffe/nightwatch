@@ -129,3 +129,5 @@ Run on each Mac after `scripts/build-app.sh`.
 125. Targets › The week ahead: still the clear-sky bars, one row per night, with the lit hours in warm white. → pass (20 October 2026: owner's screenshot).
 
 126. Targets, which way to look: every target's best time reads with its height and direction, for example "Best 02:30 · 75° in the N" or "88° overhead" from 80° up, on the cards, the detail page, the popover's best three, the plan rows and the widget rows. → plan page pass (24 October 2026: seen in a dev build at Furnace Creek); the rest not yet seen.
+
+127. Targets › Galaxies on a night the Andromeda Galaxy is not up (or with the Mac's site set to somewhere in midsummer), search "M31": the line under the header says "1 more not in tonight's list, shown last", and a greyed card reads "Next well placed from" a date; it opens the target's page and takes a heart. Search "galaxy": twelve such cards at most. The same on the iPhone's Targets. → not yet seen on screen.

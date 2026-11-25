@@ -68,6 +68,15 @@ final class Store: ObservableObject {
     private let catalog: Catalog
     /// The catalogue objects a search matches, up tonight or not (Siri's search, #72).
     func catalogueMatches(_ query: String) -> [DeepSkyObject] { catalog.objects(matching: query) }
+    private let searchExtras = SearchExtras()
+    /// A search's catalogue matches that `plan`'s list leaves out (#250), every group, for the hint.
+    func notListed(_ query: String, ranked: [RankedTarget], plan: NightPlan) -> [DeepSkyObject] {
+        searchExtras.notListed(query: query, ranked: ranked, catalog: catalog, nightKey: plan.night.key)
+    }
+    /// The same for one group, as cards: greyed with when each is next well placed.
+    func searchExtraCards(_ query: String, group: TargetGroup, ranked: [RankedTarget], plan: NightPlan, site: Site) -> [FavouriteTarget] {
+        searchExtras.cards(query: query, group: group, ranked: ranked, catalog: catalog, plan: plan, site: site, fov: config.fov, rule: config.goRule)
+    }
     let constellations: [Constellation]
     private let stars: [BrightStar]
     private let showers: [MeteorShower]
