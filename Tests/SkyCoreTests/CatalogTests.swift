@@ -115,8 +115,19 @@ import Foundation
     #expect(lagoon.sharpless == 25 && lagoon.displayName.hasSuffix(" · Sh 2-25") && !own.contains { $0.sharpless == 25 })
     let cave = try #require(c.objects.first { $0.id == "C009" })   // OpenNGC's own "SH 2-155" identifier
     #expect(cave.sharpless == 155 && cave.displayName == "C9 · Cave Nebula · Sh 2-155")
-    // The Orion Nebula lies inside Sh 2-281: no row, and no number claimed for it.
-    #expect(!own.contains { $0.sharpless == 281 } && c.objects.first { $0.messier == 42 }?.sharpless == nil)
+    // The Orion Nebula lies inside Sh 2-281: no second row, and the number is given to it by position.
+    #expect(!own.contains { $0.sharpless == 281 } && c.objects.first { $0.messier == 42 }?.sharpless == 281)
+    // The Running Man lies in the next region, Sh 2-279, which overlaps: each object keeps one number, each number one object.
+    #expect(c.objects.first { $0.id == "NGC1977" }?.sharpless == 279)
+    #expect(Set(Catalog.sharplessByPosition.values).count == Catalog.sharplessByPosition.count)
+    #expect(Set(Catalog.sharplessByPosition.keys).isDisjoint(with: Catalog.sharplessNumbers.keys))
+    #expect(Set(Catalog.sharplessByPosition.values).isDisjoint(with: Catalog.sharplessNumbers.values))
+    // Every key is an object the catalogue lists, never a planetary or reflection nebula, and SIMBAD's identifications stand.
+    for (name, _) in Catalog.sharplessByPosition {
+        let o = c.objects.first { $0.id == name }
+        #expect(o != nil && o?.typeCode != "PN" && o?.typeCode != "RfN", "\(name)")
+    }
+    #expect(c.objects.first { $0.id == "NGC7000" }?.sharpless == 117)
 }
 
 // With the Sharpless rows in the catalogue, the highest nebula on 2 December 2026 from 54° north was Sh 2-210: a faint region with no

@@ -4,7 +4,8 @@
 Sharpless's catalogue of H II regions (1959, 313 objects) is CDS/VizieR catalogue VII/20. Its positions are B1950 and are
 turned to J2000 here. An object OpenNGC already lists under another name gets no row: where SIMBAD or OpenNGC says
 which it is, its number is printed, for Catalog.sharplessNumbers; where an OpenNGC nebula merely lies inside the region
-(the Orion Nebula inside Sh 2-281), the row is left out and no number is claimed. Of the rest, a row is written for the
+(the Orion Nebula inside Sh 2-281), the row is left out and the number is given by position: to the nebula nearest the
+region's centre, printed apart for Catalog.sharplessByPosition, since that is a match and not an identification. Of the rest, a row is written for the
 two brighter of Sharpless's three classes from 10 arcminutes to 5 degrees across (the Tulip, Sh 2-101, is class 2 and 20'),
 in OpenNGC's columns, with no magnitude (he gives none). Names and the other catalogues' numbers are SIMBAD's.
 Standard library only.
@@ -65,6 +66,7 @@ def main(catalog_dat, simbad_tsv):
             others.setdefault(int(m.group(1)), []).append(" ".join(row[1].split()))
 
     glowing = []   # (name, RA hours, Dec degrees, radius in arcminutes)
+    kinds, sizes = {}, {}   # OpenNGC name -> type, and width in arcminutes
     by_key, header = {}, None   # "NGC7000", "M8", "LBN 373", "SH 2-155" -> OpenNGC names
     for name in ("NGC", "addendum"):
         rows = csv.reader(open(CATALOG / f"{name}.csv"), delimiter=";")
@@ -80,6 +82,7 @@ def main(catalog_dat, simbad_tsv):
                 by_key.setdefault(k, []).append(r[col["Name"]])
             if r[col["Type"]] in GLOWING and r[col["RA"]] and r[col["Dec"]]:
                 glowing.append((r[col["Name"]], hours(r[col["RA"]]), hours(r[col["Dec"]]), float(r[col["MajAx"]] or 0) / 2))
+                kinds[r[col["Name"]]], sizes[r[col["Name"]]] = r[col["Type"]], float(r[col["MajAx"]] or 0)
 
     def opengc(ident):
         m = re.fullmatch(r"(NGC|IC) (\d+)", ident)
@@ -90,7 +93,7 @@ def main(catalog_dat, simbad_tsv):
             return by_key.get("M" + m.group(1), [])
         return by_key.get(ident, []) if re.fullmatch(r"LBN \d+", ident) else []
 
-    aliases, new, inside = {}, [], []
+    aliases, new, inside, claims = {}, [], [], []
     for line in open(catalog_dat):
         n, diam, bright = int(line[0:4]), int(line[48:52]), int(line[54])
         ra = int(line[34:36]) + int(line[36:38]) / 60 + int(line[38:41]) / 36000
@@ -99,10 +102,19 @@ def main(catalog_dat, simbad_tsv):
         known = [x for i in ids for x in opengc(i)] + by_key.get("SH 2-%d" % n, [])
         for name in dict.fromkeys(known):
             aliases.setdefault(name, n)   # the first Sharpless number that names it
-        if known or bright < MIN_CLASS or diam < MIN_ARCMIN or diam > MAX_ARCMIN:
+        if known:
             continue
         ra2000, dec2000 = j2000(ra, dec)
-        holds = [g[0] for g in glowing if separation_arcmin(ra2000, dec2000, g[1], g[2]) <= max(diam / 2, g[3])]
+        near = sorted((separation_arcmin(ra2000, dec2000, g[1], g[2]), g[0]) for g in glowing
+                      if separation_arcmin(ra2000, dec2000, g[1], g[2]) <= max(diam / 2, g[3]))
+        # Any region SIMBAD does not identify, whatever its class. Not one wider than MAX_ARCMIN (Barnard's Loop, Sh 2-276, is 20
+        # degrees: it is not the small nebula at its centre), nor a planetary or reflection nebula, which is no H II region, nor an
+        # object over six times the region's width (Sh 2-192 is a 1' knot beside IC 1831).
+        if diam <= MAX_ARCMIN:
+            claims += [(sep, n, name) for sep, name in near if kinds[name] not in ("PN", "RfN") and sizes[name] <= 6 * diam]
+        holds = [name for _, name in near]
+        if bright < MIN_CLASS or diam < MIN_ARCMIN or diam > MAX_ARCMIN:
+            continue
         if holds:
             inside.append("Sh 2-%d (%s)" % (n, ", ".join(holds[:3])))
             continue
@@ -119,7 +131,16 @@ def main(catalog_dat, simbad_tsv):
         w = csv.writer(f, delimiter=";", lineterminator="\n")
         w.writerow(header)
         w.writerows(new)
+    # By position: the number goes to the OpenNGC nebula nearest the region's centre among those inside it. The nearest pairs are
+    # settled first, an object keeps one number, and one SIMBAD or OpenNGC already identifies keeps that.
+    by_position, numbered = {}, set()
+    for sep, n, name in sorted(claims):
+        if name not in aliases and name not in by_position and n not in numbered:
+            by_position[name] = n
+            numbered.add(n)
     print(f"{len(inside)} left out, an OpenNGC nebula lying inside each: " + "; ".join(inside))
+    print(f"{len(by_position)} OpenNGC objects numbered by position:")
+    print(", ".join('"%s": %d' % kv for kv in sorted(by_position.items(), key=lambda kv: kv[1])))
     print(f"{len(new)} new rows in sharpless.csv; {len(aliases)} OpenNGC objects with a Sharpless number:")
     items = sorted(aliases.items(), key=lambda kv: kv[1])
     print(", ".join('"%s": %d' % kv for kv in items))
