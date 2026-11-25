@@ -109,7 +109,7 @@ import Foundation
     #expect(abs(tulip.raHours - 20.0) < 0.02 && abs(tulip.decDeg - 35.3) < 0.1 && tulip.constellation == "Cyg")
     #expect(c.objects.first { $0.id == "Sh2-261" }?.displayName == "Sh 2-261 · Lower's Nebula")
     let own = c.objects.filter { $0.id.hasPrefix("Sh2-") }
-    #expect(own.count == 87 && Set(own.map(\.id)).count == 87 && own.allSatisfy { ($0.majAxisArcmin ?? 0) >= 10 && !$0.constellation.isEmpty })
+    #expect(own.count == 83 && Set(own.map(\.id)).count == 83 && own.allSatisfy { (10...300).contains($0.majAxisArcmin ?? 0) && !$0.constellation.isEmpty })
     // Known under another name: no second row, and the number joins the name.
     let lagoon = try #require(c.objects.first { $0.id == "NGC6523" })
     #expect(lagoon.sharpless == 25 && lagoon.displayName.hasSuffix(" · Sh 2-25") && !own.contains { $0.sharpless == 25 })

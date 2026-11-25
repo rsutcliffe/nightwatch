@@ -5,7 +5,7 @@ Sharpless's catalogue of H II regions (1959, 313 objects) is CDS/VizieR catalogu
 turned to J2000 here. An object OpenNGC already lists under another name gets no row: where SIMBAD or OpenNGC says
 which it is, its number is printed, for Catalog.sharplessNumbers; where an OpenNGC nebula merely lies inside the region
 (the Orion Nebula inside Sh 2-281), the row is left out and no number is claimed. Of the rest, a row is written for the
-two brighter of Sharpless's three classes at 10 arcminutes across or more (the Tulip, Sh 2-101, is class 2 and 20'),
+two brighter of Sharpless's three classes from 10 arcminutes to 5 degrees across (the Tulip, Sh 2-101, is class 2 and 20'),
 in OpenNGC's columns, with no magnitude (he gives none). Names and the other catalogues' numbers are SIMBAD's.
 Standard library only.
 
@@ -26,6 +26,7 @@ CATALOG = pathlib.Path(__file__).resolve().parent.parent / "Sources/SkyCore/Reso
 KEPT = {"PN", "HII", "EmN", "Neb", "RfN", "SNR", "DrkN", "Cl+N", "OCl", "*Ass"}   # what a Sharpless region can be in OpenNGC
 GLOWING = {"PN", "HII", "EmN", "Neb", "RfN", "SNR", "Cl+N"}   # an OpenNGC object of these inside a region is that region, or part of it
 MIN_CLASS, MIN_ARCMIN = 2, 10
+MAX_ARCMIN = 300   # wider than this (Sh 2-27, 245, 310, 312: 8 to 12 degrees) no telescope here frames, and the survey shows only plate seams
 # FK4 B1950 to FK5 J2000 (Standish 1982), without the E-terms: good to an arcsecond, against sizes in arcminutes.
 B1950_TO_J2000 = ((0.9999256794956877, -0.0111814832204662, -0.0048590038153592),
                   (0.0111814832391717, 0.9999374848933135, -0.0000271625947142),
@@ -98,7 +99,7 @@ def main(catalog_dat, simbad_tsv):
         known = [x for i in ids for x in opengc(i)] + by_key.get("SH 2-%d" % n, [])
         for name in dict.fromkeys(known):
             aliases.setdefault(name, n)   # the first Sharpless number that names it
-        if known or bright < MIN_CLASS or diam < MIN_ARCMIN:
+        if known or bright < MIN_CLASS or diam < MIN_ARCMIN or diam > MAX_ARCMIN:
             continue
         ra2000, dec2000 = j2000(ra, dec)
         holds = [g[0] for g in glowing if separation_arcmin(ra2000, dec2000, g[1], g[2]) <= max(diam / 2, g[3])]
