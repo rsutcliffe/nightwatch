@@ -97,6 +97,8 @@ public struct Copy: Sendable {
     }
 
     public static func hoursAgo(_ from: Date, now: Date) -> String { "\(Int(now.timeIntervalSince(from) / 3600)) h ago" }
+    /// The end of an alert sent from a forecast over an hour old (`AlertEngine.ageNoteAfter`), in the site's time like the rest of it.
+    public static func forecastFrom(_ fetched: Date, site: Site) -> String { "Forecast from \(hhmm(fetched, site: site))." }
 
     /// What a Targets search found, leading the header so it is plain the search ran: the count in this group, the matches
     /// the two switches would hide (shown last while searching), and matches in other groups (the search covers only the

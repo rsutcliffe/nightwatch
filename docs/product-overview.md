@@ -104,6 +104,7 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 - When tonight qualifies, the heads-up ends "Also tonight: …" with up to two events from the Events page in clear sky tonight: ISS passes, eclipses, conjunctions, and showers only on their peak night; never a comet (on the list for weeks) or an event behind the site's horizon (owner, 1 October 2026, from the competitor review).
 - Quiet hours, default 00:00 to 07:00.
 - Nothing fires from a forecast older than six hours.
+- An alert sent from a forecast more than an hour old ends "Forecast from 14:05." The iPhone and iPad write an alert when they fetch the forecast and hand it to iOS to deliver later, so it can be hours old when it arrives; the Mac refreshes every half hour and seldom shows the line.
 
 ## Telescope presets
 
