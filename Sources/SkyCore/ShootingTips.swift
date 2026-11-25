@@ -48,13 +48,11 @@ public enum ShootingTips {
         switch presetID {
         case "dwarf-mini", "dwarf-3":
             return "\(k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")) · 200 × 30 s"
-        case "draco":   // filter names only: DWARFLAB has published no frame counts for it
+        case "draco":   // filter names only: DWARFLAB's Auto-Parameter sets the count to 999, which is a ceiling and not a plan
             return k == .emission ? "Hα + O III" : (k == .broadband ? "Astronomy filter" : "Hα + O III or Astronomy filter")
-        case "seestar-s50":
+        case "seestar-s50", "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":   // every Seestar's manual gives 10 s frames by default
             let filter = k == .emission ? "Light-pollution filter on · " : (k == .broadband ? "Light-pollution filter off · " : "")
             return filter + "1,000 × 10 s"
-        case "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":   // filter only: ZWO has published no frame length for them
-            return k == .emission ? "Light-pollution filter on" : (k == .broadband ? "Light-pollution filter off" : nil)
         default:
             return nil
         }
@@ -110,8 +108,8 @@ public enum ShootingTips {
                                   + "and keep one exposure and gain, to be safe. Trailed stars in any night can stop the stack."))
             }
         case "draco":
-            // #69: DWARFLAB publishes the Draco's filters but, as of 29 September 2026, no manual with exposure, gain or
-            // frame figures, so the tip names the filters and gives the rest without numbers (and no copy icon).
+            // #69: DWARFLAB's Draco help pages (read 25 November 2026) give what Auto-Parameter sets, shutter auto, gain 60 and
+            // count 999, and which filter suits what. They give no frame length in seconds, so the tip gives none either.
             switch k {
             case .moon:
                 rows.append(.init("Exposure", "The Moon is bright: use short exposures and check the histogram."))
@@ -120,9 +118,10 @@ public enum ShootingTips {
             case .constellation:
                 rows.append(.init("Framing", "Far larger than the field of view: use a wide-angle lens, or pick one bright object in it."))
             default:
-                source = "Filters from DWARFLAB's Draco product page; it has published no exposure settings yet."
+                source = "Filters and Auto-Parameter from DWARFLAB's Draco help pages; they give no frame length."
                 rows.append(.init("Filter", filterText(k, dualBand: "Hα + O III dual-narrowband filter", broadband: "Astronomy filter")))
-                rows.append(.init("Exposure", "Single frames can run up to 300 s; DWARFLAB has not yet published a recommended exposure or gain."))
+                rows.append(.init("Exposure", "Auto-Parameter picks the filter and sets the shutter to auto, gain 60 and count 999. "
+                                  + "Set by hand, single frames can run up to 300 s: shorten them if stars stretch."))
                 if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) \(night).")) }
             }
         case "seestar-s50":
@@ -146,9 +145,8 @@ public enum ShootingTips {
                 }
             }
         case "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":
-            // ZWO's pages for these three (read 7 October 2026) name the same light-pollution filter as the S50's but give no
-            // alt-az frame length, only EQ mode's 60 s cap, so the tip quotes that cap and nothing else (and no copy icon),
-            // as for the Draco.
+            // ZWO's manuals for these three (read 25 November 2026) each say it "captures 10-second exposure frames and stacks
+            // them" by default, as the S50 does; its pages give EQ mode's 60 s cap.
             switch k {
             case .moon:
                 // ZWO names it Solar System mode for these models (the S30's page, the S30 Pro's FAQ and its
@@ -159,11 +157,15 @@ public enum ShootingTips {
             case .constellation:
                 rows.append(.init("Framing", "Far larger than the field of view: use a wide-angle lens, or pick one bright object in it."))
             default:
-                let page = ["seestar-s30": "Seestar S30 page", "seestar-s50-pro": "Seestar S50 Pro page"][presetID ?? ""] ?? "Seestar S30 Pro FAQ"
-                source = "Filter and EQ-mode limit from ZWO's \(page); it publishes no frame length."
+                let model = ["seestar-s30": "Seestar S30", "seestar-s50-pro": "Seestar S50 Pro"][presetID ?? ""] ?? "Seestar S30 Pro"
+                source = "Filter and frame length from ZWO's \(model) manual; the EQ-mode limit from its pages."
                 rows.append(.init("Filter", filterText(k, dualBand: "Light-pollution filter on", broadband: "Light-pollution filter off (UV/IR cut)")))
-                rows.append(.init("Exposure", "Short frames in alt-az mode, up to 60 s in EQ mode; the Seestar stacks them as it goes."))
-                if let h = hours { rows.append(.init("Frames", "It is up and clear for \(h) \(night).")) }
+                rows.append(.init("Exposure", "10 s frames by default, up to 60 s in EQ mode; the Seestar stacks them as it goes."))
+                if let n = frames(10), let h = hours {
+                    rows.append(.init("Frames", "Let it stack while it is up: \(h) is about \(n) frames."))
+                } else {
+                    rows.append(.init("Frames", "Let it stack for as long as you can."))
+                }
             }
         case "dslr-apsc-200":
             source = "The untracked limit comes from the 500 and NPF rules; tracked times are typical ranges, not a maker's figure."
@@ -242,7 +244,14 @@ public enum ShootingTips {
                 let filter = k == .emission ? "Duo-Band" : (k == .broadband ? "Astro" : "Duo-Band or Astro")
                 return "\(filter) filter, 15–60 s at gain 60–80, 200–400 frames"
             }
-        case "seestar-s50":
+        case "draco":
+            switch k {
+            case .moon, .planet, .constellation, .star: return nil
+            default:
+                let filter = k == .emission ? "Hα + O III" : (k == .broadband ? "Astronomy" : "Hα + O III or Astronomy")
+                return "\(filter) filter, Auto-Parameter: shutter auto, gain 60, count 999"
+            }
+        case "seestar-s50", "seestar-s30", "seestar-s30-pro", "seestar-s50-pro":
             switch k {
             case .emission: return "light-pollution filter on, 10 s frames"
             case .broadband: return "light-pollution filter off, 10 s frames"

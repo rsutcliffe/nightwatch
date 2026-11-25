@@ -72,7 +72,7 @@ Nothing leaves the Mac except the forecast requests (for the active site, home w
   - Deep-sky survey photos fill the page, fetched sharp at 1600 px. Pictures already on the Mac are kept in memory and drawn in a card's or page's first frame, and a page seen before opens sharp with no soft card photo first; the page photos for the popover's picks and Tonight's plan are fetched ahead, one at a time in the background, since the survey takes about 8 s for each (owner, 3 October 2026). A pill says "Shown at your field of view", or, for an object bigger than the field, a dashed box marks what you would capture, with extra sky around it.
   - The Moon, planet photographs and constellation artwork are fitted above the caption.
   - The caption holds the name, type and coordinates, and the survey image's credit where one is shown. On a night with a clear window it adds best time, time above the minimum altitude, Moon separation, a suggested stack, and an altitude chart from sunset to sunrise. The chart shows the window shaded and the minimum altitude dashed (or, at a site with a horizon, the horizon in the target's direction shaded), and the curve is in the accent colour only where the target is up inside the window.
-  - **How to shoot this:** a button in the caption opens the settings for the user's own telescope and this kind of target: the filter and why, exposure and gain, frames sized to the time the target is up inside tonight's window, and when to start. The numbers come from DWARFLAB's user manual (DWARF Mini, DWARF 3) and ZWO's Seestar S50 FAQ, named on the card; for a camera and lens, the untracked exposure limit and star-tracker ranges. Where no verified figure exists (planets, ISO), it gives guidance without numbers.
+  - **How to shoot this:** a button in the caption opens the settings for the user's own telescope and this kind of target: the filter and why, exposure and gain, frames sized to the time the target is up inside tonight's window, and when to start. The numbers come from DWARFLAB's user manual (DWARF Mini, DWARF 3), its Draco help pages (what Auto-Parameter sets: shutter auto, gain 60, count 999; no frame length is published), ZWO's Seestar S50 FAQ and its manuals for the S30, S30 Pro and S50 Pro (10-second frames by default; read 25 November 2026), each named on the card; for a camera and lens, the untracked exposure limit and star-tracker ranges. Where no verified figure exists (planets, ISO), it gives guidance without numbers.
 
 **Accessibility.** VoiceOver reads the menu-bar icon as tonight's verdict, each card as one sentence, and each chart, dial and diagram as a description in words. Cards open with Return or Space as well as a click, when macOS's keyboard navigation is on. Text size can be raised in Settings. The app follows macOS's Increase Contrast, Reduce Transparency and Reduce Motion, and nothing is told by colour alone.
 
@@ -117,8 +117,15 @@ All alerts are macOS notifications and all are derived from local sunset at the 
 | ZWO Seestar S30 Pro | 3.99 x 2.24 degrees |
 | ZWO Seestar S50 | 1.29 x 0.73 degrees |
 | ZWO Seestar S50 Pro | 2.45 x 1.38 degrees |
+| Vaonis Vespera II | 2.5 x 1.4 degrees |
+| Vaonis Vespera 3 | 2.6 x 1.4 degrees |
+| Vaonis Vespera Pro 2 | 1.6 x 1.6 degrees |
+| Unistellar Odyssey, Odyssey Pro | 0.75 x 0.56 degrees (the maker's 45 x 33.6 arcminutes) |
+| Unistellar eVscope 2, eQuinox 2 | 0.76 x 0.57 degrees (the maker's 45.6 x 34.2 arcminutes) |
 | APS-C camera, 200 mm lens | 6.7 x 4.5 degrees |
 | Custom | any width and height in degrees |
+
+Vaonis and Unistellar rows are the makers' single-frame figures, read from their own pages on 25 November 2026; a Vaonis mosaic covers more. Celestron's Origin has no row: its product page could not be read that day, and no figure is taken from anywhere else. In the welcome and in Settings the presets are one menu, a heading per maker.
 
 ## Data sources
 

@@ -209,6 +209,8 @@ private func nightWith(_ targets: [RankedTarget], favourites: [FavouriteTarget] 
     let b = Dictionary(uniqueKeysWithValues: try TelescopePresets.bundled().map { ($0.id, $0.batteryHours) })
     #expect(b["dwarf-mini"] == 4 && b["dwarf-3"] == 5.5 && b["draco"] == 5 && b["seestar-s50"] == 6 && b["seestar-s30-pro"] == 6)
     #expect(b["seestar-s30"] == 6 && b["seestar-s50-pro"] == 9)
+    #expect(b["vespera-2"] == 4 && b["vespera-3"] == 11 && b["vespera-pro-2"] == 11)
+    #expect(b["odyssey"] == 5 && b["odyssey-pro"] == 5 && b["evscope-2"] == 9 && b["equinox-2"] == 11)
     #expect(b["dslr-apsc-200"] == .some(nil))
 }
 
