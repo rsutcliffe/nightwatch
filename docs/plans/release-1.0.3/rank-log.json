@@ -419,6 +419,66 @@
    "searched_depth": 3,
    "source": "app-store",
    "notes": "26 Nov 2026, read in the UK Mac App Store app, Mac Apps tab, results counted left to right in rows of two; the Mac Apps tab listed only 3 results in all and Nightwatch was not one of them"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "nightwatch",
+   "country": "gb",
+   "platform": "iphone",
+   "position": 4,
+   "searched_depth": null,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "astronomy forecast",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "smart telescope",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "light pollution",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "stargazing",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
+  },
+  {
+   "date": "2026-11-26",
+   "term": "astrophotography",
+   "country": "gb",
+   "platform": "iphone",
+   "position": null,
+   "searched_depth": 25,
+   "source": "app-store",
+   "notes": "26 Nov 2026, owner by hand in the UK App Store app on an iPhone; not seen in the first 25 results"
   }
  ]
 }
